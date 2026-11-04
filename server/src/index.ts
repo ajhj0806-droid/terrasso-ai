@@ -3,6 +3,7 @@ import { config } from "./config.js";
 import { validSignature } from "./whatsapp.js";
 import { handleWebhook } from "./inbound.js";
 import { pendingJobs } from "./queue.js";
+import { privacyHtml } from "./pages/privacidade.js";
 
 function readBody(req: IncomingMessage, limit = 2_000_000): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -24,6 +25,12 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/healthz") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, pending: pendingJobs() }));
+      return;
+    }
+
+    if (req.method === "GET" && (url.pathname === "/privacidade" || url.pathname === "/exclusao-de-dados")) {
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(privacyHtml);
       return;
     }
 
