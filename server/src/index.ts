@@ -39,11 +39,13 @@ const server = createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/webhooks/whatsapp") {
       const raw = await readBody(req);
       if (!validSignature(raw, req.headers["x-hub-signature-256"] as string | undefined)) {
+        console.warn("webhook recusado: assinatura inválida (confira WHATSAPP_APP_SECRET)");
         res.writeHead(401).end();
         return;
       }
       // Responde 200 já; a Meta reenvia se demorar
       res.writeHead(200).end();
+      console.log(`webhook recebido (${raw.length} bytes)`);
       let payload: unknown;
       try { payload = JSON.parse(raw.toString("utf8")); } catch { return; }
       handleWebhook(payload).catch((e) => console.error("webhook", e));
