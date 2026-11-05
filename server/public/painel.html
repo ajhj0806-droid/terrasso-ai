@@ -63,7 +63,9 @@
   .ap.sel { outline:2px solid var(--brand); }
   .agora { position:absolute; left:0; right:0; border-top:2px solid var(--danger); z-index:2; pointer-events:none; }
   .st { font-size:11px; padding:1px 6px; border-radius:999px; background:#eee; }
-  .st.confirmed { background:#e8eaf6; } .st.checked_in { background:#ffe7a3; } .st.in_service { background:#cfe3ff; } .st.done { background:#c8e6c9; } .st.no_show, .st.cancelled { background:#f3e3e2; color:var(--danger); }
+  .st.atrasado.atrasado { background:#ffd8b0; color:#8a3b00; } .st.clica { cursor:pointer; } .st.clica:hover { outline:1px solid rgba(0,0,0,.25); }
+  .xcanc { background:none; border:0; color:var(--danger); font-weight:700; font-size:15px; padding:0 4px; cursor:pointer; line-height:1; }
+  .st.scheduled, .st.confirmed { background:#e8eaf6; } .st.checked_in, .st.in_service { background:#cfe3ff; } .st.done { background:#c8e6c9; } .st.no_show, .st.cancelled { background:#f3e3e2; color:var(--danger); }
   .row.itens { grid-template-columns: 130px minmax(200px,2fr) minmax(150px,1.3fr) 80px 130px 130px; }
   .row.pags { grid-template-columns: minmax(150px,1fr) minmax(130px,1fr) minmax(110px,1fr) 2fr; }
   .row.periodo { grid-template-columns: 160px 160px auto; align-items:end; }
@@ -205,7 +207,7 @@
 
       <div class="card">
         <div class="grade-wrap"><div class="grade" id="agGrade"></div></div>
-        <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. Arraste um horário para remarcar. Clique num bloqueio cinza para removê-lo. "Feito" abre a comanda da cliente para lançar no caixa; "Cancelado" libera o horário e conta na classificação da cliente. Clique no horário para ver mais opções. Áreas listradas ficam fora do horário de trabalho. A agenda se atualiza sozinha a cada minuto.</p>
+        <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. Arraste um horário para remarcar. Clique num bloqueio cinza para removê-lo. Clique na situação para avançar: Agendado → Atendendo → Concluído ("Atrasado" é agendado com o horário já passado). "Feito" abre a comanda para lançar no caixa; o ✕ cancela o horário e conta na classificação da cliente. Clique no horário para ver mais opções. Áreas listradas ficam fora do horário de trabalho. A agenda se atualiza sozinha a cada minuto.</p>
       </div>
     </div>
 
@@ -942,7 +944,16 @@ function faixa(ini, fim) { return `[${ini.toISOString()},${fim.toISOString()})`;
 function minutoNoDia(instante, inicioDia) { return Math.round((instante - inicioDia) / 60000); }
 
 // ---------- Agenda do dia ----------
-const STATUS = { scheduled: "Agendado", confirmed: "Confirmado", checked_in: "Chegou", in_service: "Em atendimento", done: "Finalizado", no_show: "Faltou", cancelled: "Cancelado" };
+const STATUS = { scheduled: "Agendado", confirmed: "Agendado", checked_in: "Atendendo", in_service: "Atendendo", done: "Concluído", no_show: "Faltou", cancelled: "Cancelado" };
+// Agendado -> Atendendo -> Concluído; "Atrasado" é Agendado com o horário já passado
+const atrasado = (a) => ["scheduled", "confirmed"].includes(a.status) && a.ini < new Date();
+const PROXIMO_CLIQUE = { scheduled: "in_service", confirmed: "in_service", checked_in: "done", in_service: "done" };
+function seloStatus(a) {
+  const nome = atrasado(a) ? "Atrasado" : STATUS[a.status] + (a.status === "confirmed" ? " ✓" : "");
+  const prox = PROXIMO_CLIQUE[a.status];
+  const dica = prox ? `Clique para marcar ${STATUS[prox]}` : "";
+  return `<span class="st ${a.status} ${atrasado(a) ? "atrasado" : ""} ${prox ? "clica" : ""}" ${prox ? `data-prox="${a.id}"` : ""} title="${a.status === "confirmed" ? "Confirmado pela cliente. " : ""}${dica}">${nome}</span>`;
+}
 const PX = 1.3; // pixels por minuto
 let agenda = { data: null, ini: null, fim: null, ags: [], escalas: [], bloqueios: [] }, agSel = null;
 
@@ -981,10 +992,10 @@ function desenharKpis() {
   const soma = (l) => reais(l.reduce((t, a) => t + a.price_cents, 0));
   const itens = [
     ["Horários", n("scheduled", "confirmed", "checked_in", "in_service", "done", "no_show")],
-    ["Confirmados", n("confirmed")],
-    ["Chegaram", n("checked_in", "in_service", "done")],
-    ["Em atendimento", n("in_service")],
-    ["Finalizados", n("done")],
+    ["Agendados", n("scheduled", "confirmed")],
+    ["Atrasados", vivos.filter(atrasado).length],
+    ["Atendendo", n("checked_in", "in_service")],
+    ["Concluídos", n("done")],
     ["Faltas", n("no_show")],
     ["Previsto", soma(vivos.filter(a => a.status !== "no_show"))],
     ["Realizado", soma(vivos.filter(a => a.status === "done"))],
@@ -1028,9 +1039,9 @@ function desenharGrade() {
         const ini = Math.max(de, minutoNoDia(a.ini, agenda.ini)), fim = Math.min(ate, minutoNoDia(a.fim, agenda.ini));
         const arrasta = ["scheduled", "confirmed"].includes(a.status);
         return `<div class="ap ${a.status} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" ${arrasta ? 'draggable="true"' : ""} style="top:${top(ini)}px;height:${Math.max(18, (fim - ini) * PX - 2)}px;border-left-color:${esc(p.color || "#8a5a3c")}">
-          ${["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status) ? `<span class="ap-bt"><button class="feito" data-feito="${a.id}" title="Lançar na comanda">Feito</button><button class="canc" data-canc="${a.id}">Cancelado</button></span>` : ""}
+          ${["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status) ? `<span class="ap-bt"><button class="feito" data-feito="${a.id}" title="Lançar na comanda">Feito</button></span>` : ""}
           <b>${hhmm(minutoNoDia(a.ini, agenda.ini))} ${esc(a.clients?.full_name || "Cliente")}</b> ${estrela(a.client_id)}<br>
-          ${esc(a.services?.name || "")} <span class="st ${a.status}">${STATUS[a.status]}</span>${a.source === "whatsapp_ai" ? " 💬" : ""}</div>`;
+          ${esc(a.services?.name || "")} ${seloStatus(a)}${["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status) ? `<button class="xcanc" data-canc="${a.id}" title="Cancelar horário">✕</button>` : ""}${a.source === "whatsapp_ai" ? " 💬" : ""}</div>`;
       }).join("");
     return `<div class="col" style="height:${altura}px">${cels.join("")}${bloq}${ags}${linhaAgora}</div>`;
   });
@@ -1040,6 +1051,7 @@ function desenharGrade() {
     + `<div class="horas" style="height:${altura}px">${horas.join("")}</div>` + colunas.join("");
   $("agGrade").querySelectorAll("[data-ag]").forEach(el => el.onclick = () => abrirAgendamento(el.dataset.ag));
   $("agGrade").querySelectorAll("[data-feito]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); comandaDoAgendamento(agenda.ags.find(x => x.id === el.dataset.feito)); });
+  $("agGrade").querySelectorAll("[data-prox]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); const a = agenda.ags.find(x => x.id === el.dataset.prox); mudarStatus(a, PROXIMO_CLIQUE[a.status]); });
   $("agGrade").querySelectorAll("[data-canc]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); mudarStatus(agenda.ags.find(x => x.id === el.dataset.canc), "cancelled"); });
   $("agGrade").querySelectorAll("[data-livre]").forEach(el => {
     el.onclick = () => { const [p, m] = el.dataset.livre.split("|"); novoHorario(p, hhmm(Number(m))); };
@@ -1123,10 +1135,10 @@ $("bSalvar").onclick = async () => {
 
 // ---------- Detalhe e mudança de situação ----------
 const PROXIMOS = {
-  scheduled: [["confirmed", "Confirmar"], ["checked_in", "Chegou"], ["no_show", "Faltou"], ["cancelled", "Cancelar"]],
-  confirmed: [["checked_in", "Chegou"], ["no_show", "Faltou"], ["cancelled", "Cancelar"]],
-  checked_in: [["in_service", "Iniciar atendimento"], ["confirmed", "Desfazer chegada"], ["cancelled", "Cancelar"]],
-  in_service: [["done", "Finalizar"], ["checked_in", "Voltar para 'chegou'"]],
+  scheduled: [["in_service", "Atendendo"], ["confirmed", "Cliente confirmou"], ["no_show", "Faltou"], ["cancelled", "Cancelar"]],
+  confirmed: [["in_service", "Atendendo"], ["no_show", "Faltou"], ["cancelled", "Cancelar"]],
+  checked_in: [["done", "Concluído"], ["scheduled", "Voltar para agendado"], ["cancelled", "Cancelar"]],
+  in_service: [["done", "Concluído"], ["scheduled", "Voltar para agendado"], ["cancelled", "Cancelar"]],
   done: [["in_service", "Reabrir"]],
   no_show: [["scheduled", "Restaurar horário"]],
   cancelled: [["scheduled", "Restaurar horário"]],
@@ -1137,7 +1149,7 @@ function abrirAgendamento(id) {
   const p = profissionais.find(x => x.id === a.professional_id);
   const ini = minutoNoDia(a.ini, agenda.ini), fim = minutoNoDia(a.fim, agenda.ini);
   const cat = categoriaDe(clientStats[a.client_id]?.points);
-  $("dTitulo").innerHTML = `${esc(a.clients?.full_name || "Cliente")} ${estrela(a.client_id)} <span class="muted" style="font-weight:400;font-size:13px">${esc(cat?.name || "")}</span> <span class="st ${a.status}">${STATUS[a.status]}</span>`;
+  $("dTitulo").innerHTML = `${esc(a.clients?.full_name || "Cliente")} ${estrela(a.client_id)} <span class="muted" style="font-weight:400;font-size:13px">${esc(cat?.name || "")}</span> ${seloStatus(a)}`;
   $("dInfo").innerHTML = `${esc(a.services?.name || "")} com ${esc(p?.name || "")} · ${hhmm(ini)} às ${hhmm(fim)} · ${reais(a.price_cents)}<br>
     WhatsApp ${esc(a.clients?.phone_e164 || "")} · marcado ${a.source === "whatsapp_ai" ? "pela IA no WhatsApp" : a.source === "avec_import" ? "no AVEC" : "pela recepção"}
     ${a.notes ? `<br>Obs.: ${esc(a.notes)}` : ""}`;
