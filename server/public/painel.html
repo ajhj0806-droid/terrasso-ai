@@ -102,6 +102,8 @@
   <section id="vApp" class="hidden">
     <nav class="tabs">
       <button data-tab="agenda" class="on">Agenda</button>
+      <button data-tab="caixa">Caixa</button>
+      <button data-tab="produtos">Produtos</button>
       <button data-tab="servicos">Serviços</button>
       <button data-tab="profissionais">Profissionais</button>
       <button data-tab="horarios">Horários</button>
@@ -157,6 +159,94 @@
       <div class="card">
         <div class="grade-wrap"><div class="grade" id="agGrade"></div></div>
         <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. Clique num horário para mudar a situação. Áreas listradas ficam fora do horário de trabalho. A agenda se atualiza sozinha a cada minuto.</p>
+      </div>
+    </div>
+
+    <!-- Caixa -->
+    <div id="tab-caixa" class="hidden">
+      <div class="card">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
+          <b>Comandas abertas</b>
+          <span class="actions" style="margin:0">
+            <button class="ghost" id="kAtualizar">Atualizar</button>
+            <button id="kNovaBtn">+ Nova comanda</button>
+          </span>
+        </div>
+        <div class="hidden" id="kNova" style="margin-top:8px">
+          <div class="row">
+            <div><label for="kTel">WhatsApp da cliente</label><input id="kTel" inputmode="tel" placeholder="41 99999-9999"></div>
+            <div><label for="kNome">Nome da cliente</label><input id="kNome" placeholder="Nome e sobrenome"></div>
+          </div>
+          <div class="actions"><button id="kCriar">Abrir comanda</button><button class="ghost" id="kCancelarNova">Fechar</button></div>
+        </div>
+        <table><thead><tr><th>Cliente</th><th>Aberta</th><th>Total</th><th>Falta</th><th></th></tr></thead><tbody id="kLista"></tbody></table>
+      </div>
+
+      <div class="card hidden" id="kDet">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
+          <b id="kTitulo"></b>
+          <button class="ghost" id="kFecharDet">Fechar</button>
+        </div>
+        <table style="margin-top:8px"><thead><tr><th>Item</th><th>Qtd</th><th>Valor</th><th></th></tr></thead><tbody id="kItens"></tbody></table>
+        <div id="kAddItem">
+          <div class="row">
+            <div><label for="iTipo">Tipo</label><select id="iTipo"><option value="servico">Serviço</option><option value="produto">Produto</option></select></div>
+            <div><label for="iItem">Item</label><select id="iItem"></select></div>
+            <div id="iProfBox"><label for="iProf">Profissional</label><select id="iProf"></select></div>
+            <div><label for="iQtd">Qtd</label><input id="iQtd" type="number" min="1" value="1"></div>
+            <div><label for="iPreco">Preço unit. (R$)</label><input id="iPreco" inputmode="decimal"></div>
+            <div><label for="iDesc">Desconto (R$)</label><input id="iDesc" inputmode="decimal" placeholder="0,00"></div>
+          </div>
+          <div class="actions"><button class="ghost" id="iAdd">+ Adicionar item</button></div>
+        </div>
+        <h3 style="margin:18px 0 4px;font-size:15px">Pagamentos</h3>
+        <table><tbody id="kPags"></tbody></table>
+        <div id="kAddPag">
+          <div class="row">
+            <div><label for="gMetodo">Forma</label><select id="gMetodo"></select></div>
+            <div><label for="gValor">Valor (R$)</label><input id="gValor" inputmode="decimal"></div>
+            <div id="gParcBox" class="hidden"><label for="gParc">Parcelas</label><select id="gParc"><option>1</option><option>2</option><option>3</option></select></div>
+          </div>
+          <div class="actions"><button class="ghost" id="gAdd">+ Registrar pagamento</button></div>
+        </div>
+        <div class="kpis" id="kTotais"></div>
+        <div class="actions" id="kAcoes">
+          <button id="kFechar">Fechar comanda</button>
+          <button class="danger" id="kCancelar">Cancelar comanda</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
+          <b>Caixa do dia</b>
+          <input type="date" id="kData" style="width:auto">
+        </div>
+        <div class="kpis" id="kResumo"></div>
+        <table style="margin-top:8px"><thead><tr><th>Cliente</th><th>Fechada</th><th>Total</th><th></th></tr></thead><tbody id="kFechadas"></tbody></table>
+      </div>
+    </div>
+
+    <!-- Produtos -->
+    <div id="tab-produtos" class="hidden">
+      <div class="card">
+        <h2 style="margin-top:0" id="fprTitulo">Novo produto</h2>
+        <input type="hidden" id="prId">
+        <div class="row">
+          <div><label for="prNome">Nome</label><input id="prNome" placeholder="Ex.: Shampoo reconstrutor 300 ml"></div>
+          <div><label for="prCat">Categoria</label><input id="prCat" placeholder="Ex.: Cabelo"></div>
+          <div><label for="prPreco">Preço de venda (R$)</label><input id="prPreco" inputmode="decimal" placeholder="89,90"></div>
+          <div><label for="prCusto">Custo (R$, opcional)</label><input id="prCusto" inputmode="decimal"></div>
+          <div id="prEstBox"><label for="prEst">Estoque atual</label><input id="prEst" type="number" min="0" value="0"></div>
+          <div><label for="prMin">Avisar quando ficar com</label><input id="prMin" type="number" min="0" value="2"></div>
+        </div>
+        <label class="checks"><span><input type="checkbox" id="prAtivo" checked> Ativo (aparece na comanda)</span></label>
+        <div class="actions">
+          <button id="prSalvar">Salvar produto</button>
+          <button class="ghost" id="prLimpar">Limpar</button>
+        </div>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Produto</th><th>Preço</th><th>Estoque</th><th></th></tr></thead><tbody id="prLista"></tbody></table>
       </div>
     </div>
 
@@ -267,7 +357,7 @@ const SUPABASE_KEY = "sb_publishable_apq4DYqUCLSr82maiLjIiQ_PmknYK9b";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const $ = (id) => document.getElementById(id);
-let tenantId = null, usuarioId = null, TZ = "America/Sao_Paulo", servicos = [], profissionais = [], vinculos = [];
+let meuPapel = null, produtos = [], tenantId = null, usuarioId = null, TZ = "America/Sao_Paulo", servicos = [], profissionais = [], vinculos = [];
 
 function aviso(texto, tipo) {
   const m = $("msg"); m.textContent = texto; m.className = "msg " + (tipo || "ok");
@@ -306,7 +396,7 @@ async function iniciar() {
   const { data: staff, error } = await sb.from("staff_members").select("tenant_id, full_name, role").eq("user_id", user.id).eq("active", true).limit(1);
   if (error) return erro(error);
   if (!staff.length) { $("emailPend").textContent = user.email; mostrar("vSemAcesso"); return; }
-  tenantId = staff[0].tenant_id; usuarioId = user.id;
+  tenantId = staff[0].tenant_id; usuarioId = user.id; meuPapel = staff[0].role;
   const { data: t } = await sb.from("tenants").select("timezone").eq("id", tenantId).single();
   if (t?.timezone) TZ = t.timezone;
   $("who").textContent = staff[0].full_name + " · " + user.email;
@@ -319,21 +409,25 @@ async function iniciar() {
 // ---------- Abas ----------
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
-  for (const t of ["agenda","servicos","profissionais","horarios","conversas","perfil"]) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
+  for (const t of ["agenda","caixa","produtos","servicos","profissionais","horarios","conversas","perfil"]) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
   if (b.dataset.tab === "agenda") carregarAgenda();
+  if (b.dataset.tab === "caixa") carregarCaixa();
+  if (b.dataset.tab === "produtos") desenharProdutos();
   if (b.dataset.tab === "horarios") desenharHorarios();
   if (b.dataset.tab === "conversas") carregarConversas();
   if (b.dataset.tab === "perfil") carregarPerfil();
 });
 
 async function carregar() {
-  const [s, p, v] = await Promise.all([
+  const [s, p, v, pr] = await Promise.all([
     sb.from("services").select("*").eq("tenant_id", tenantId).order("name"),
     sb.from("professionals").select("*").eq("tenant_id", tenantId).order("name"),
     sb.from("professional_services").select("professional_id, service_id").eq("tenant_id", tenantId),
+    sb.from("products").select("*").eq("tenant_id", tenantId).order("name"),
   ]);
-  for (const r of [s, p, v]) if (r.error) return erro(r.error);
-  servicos = s.data; profissionais = p.data; vinculos = v.data;
+  for (const r of [s, p, v, pr]) if (r.error) return erro(r.error);
+  servicos = s.data; profissionais = p.data; vinculos = v.data; produtos = pr.data;
+  desenharProdutos();
   desenharServicos(); desenharProfissionais(); desenharSelectHorarios();
 }
 
@@ -682,7 +776,9 @@ function abrirAgendamento(id) {
     ${a.notes ? `<br>Obs.: ${esc(a.notes)}` : ""}`;
   $("dAcoes").innerHTML = (PROXIMOS[a.status] || []).map(([st, t]) =>
     `<button class="${st === "cancelled" || st === "no_show" ? "danger" : st === "confirmed" && a.status !== "scheduled" ? "ghost" : ""}" data-st="${st}">${t}</button>`).join("");
+  if (!["cancelled", "no_show"].includes(a.status)) $("dAcoes").insertAdjacentHTML("beforeend", `<button class="ghost" id="dComanda">Comanda</button>`);
   $("dAcoes").querySelectorAll("[data-st]").forEach(b => b.onclick = () => mudarStatus(a, b.dataset.st));
+  if ($("dComanda")) $("dComanda").onclick = () => comandaDoAgendamento(a);
   $("agDetalhe").classList.remove("hidden");
   desenharGrade();
 }
@@ -765,20 +861,8 @@ $("nSalvar").onclick = async () => {
   if (!dentro && !confirm(`${hora} fica fora do horário de trabalho de ${prof?.name}. Marcar mesmo assim?`)) return;
   $("nSalvar").disabled = true;
   try {
-    // confere o cliente de novo na hora de salvar (o campo pode ter mudado)
-    if (!clienteAchado || !variantesTel(tel).includes(clienteAchado.phone_e164)) {
-      const r = await sb.from("clients").select("id, full_name, phone_e164").eq("tenant_id", tenantId).in("phone_e164", variantesTel(tel)).limit(1);
-      if (r.error) return erro(r.error);
-      clienteAchado = r.data[0] || null;
-    }
-    let clientId = clienteAchado?.id;
-    if (!clientId) {
-      const r = await sb.from("clients").insert({ tenant_id: tenantId, full_name: nome, phone_e164: tel }).select("id").single();
-      if (r.error) return erro(r.error);
-      clientId = r.data.id;
-    } else if (nome && !clienteAchado.full_name) {
-      await sb.from("clients").update({ full_name: nome }).eq("id", clientId);
-    }
+    let clientId;
+    try { clientId = await acharOuCriarCliente(tel, nome); } catch (e) { return erro(e); }
     const { error } = await sb.from("appointments").insert({
       tenant_id: tenantId, client_id: clientId, professional_id: profId, service_id: s.id,
       period: faixa(ini, fim), price_cents: preco, source: "reception",
@@ -793,6 +877,267 @@ $("nSalvar").onclick = async () => {
     carregarAgenda();
   } finally { $("nSalvar").disabled = false; }
 };
+
+// ---------- Cliente (busca pelo WhatsApp, cria se for nova) ----------
+async function acharOuCriarCliente(tel, nome) {
+  const r = await sb.from("clients").select("id, full_name, phone_e164").eq("tenant_id", tenantId).in("phone_e164", variantesTel(tel)).limit(1);
+  if (r.error) throw r.error;
+  const c = r.data[0];
+  if (c) { if (nome && !c.full_name) await sb.from("clients").update({ full_name: nome }).eq("id", c.id); return c.id; }
+  if (!nome) throw new Error("informe o nome da cliente nova");
+  const n = await sb.from("clients").insert({ tenant_id: tenantId, full_name: nome, phone_e164: tel }).select("id").single();
+  if (n.error) throw n.error;
+  return n.data.id;
+}
+
+// ---------- Caixa e comandas ----------
+const METODOS = { pix: "Pix", cash: "Dinheiro", debit: "Débito", credit: "Crédito", voucher: "Vale-presente", package: "Pacote", other: "Outro" };
+const podeDesconto = () => ["owner", "manager"].includes(meuPapel);
+let comandas = [], comandaAberta = null, kItens = [], kPags = [];
+const totalItem = (i) => i.quantity * i.unit_price_cents - i.discount_cents;
+
+$("gMetodo").innerHTML = Object.entries(METODOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+$("gMetodo").onchange = () => $("gParcBox").classList.toggle("hidden", $("gMetodo").value !== "credit");
+
+function irParaAba(t) { document.querySelector(`.tabs button[data-tab="${t}"]`).click(); }
+
+async function comandaDoAgendamento(a) {
+  // já está numa comanda? abre ela
+  const ja = await sb.from("comanda_items").select("comanda_id").eq("appointment_id", a.id).limit(1);
+  if (ja.error) return erro(ja.error);
+  let cid = ja.data[0]?.comanda_id;
+  if (!cid) {
+    const aberta = await sb.from("comandas").select("id").eq("tenant_id", tenantId).eq("client_id", a.client_id).eq("status", "open").order("opened_at", { ascending: false }).limit(1);
+    if (aberta.error) return erro(aberta.error);
+    cid = aberta.data[0]?.id;
+    if (!cid) {
+      const n = await sb.from("comandas").insert({ tenant_id: tenantId, client_id: a.client_id, opened_by: usuarioId }).select("id").single();
+      if (n.error) return erro(n.error);
+      cid = n.data.id;
+    }
+    const it = await sb.from("comanda_items").insert({
+      tenant_id: tenantId, comanda_id: cid, appointment_id: a.id, service_id: a.service_id, professional_id: a.professional_id,
+      description: a.services?.name || "Serviço", quantity: 1, unit_price_cents: a.price_cents,
+    });
+    if (it.error) return erro(it.error);
+    if (["scheduled", "confirmed"].includes(a.status)) await sb.from("appointments").update({ status: "checked_in", updated_at: new Date().toISOString() }).eq("id", a.id);
+  }
+  comandaAberta = cid;
+  irParaAba("caixa");
+}
+
+async function carregarCaixa() {
+  if (!$("kData").value) $("kData").value = hojeLocal();
+  const { data, error } = await sb.from("comandas")
+    .select("id, status, opened_at, closed_at, client_id, clients(full_name, phone_e164), comanda_items(quantity, unit_price_cents, discount_cents), payments(amount_cents)")
+    .eq("tenant_id", tenantId).eq("status", "open").order("opened_at");
+  if (error) return erro(error);
+  comandas = data;
+  const tot = (c) => c.comanda_items.reduce((t, i) => t + totalItem(i), 0), pago = (c) => c.payments.reduce((t, p) => t + p.amount_cents, 0);
+  $("kLista").innerHTML = comandas.length ? comandas.map(c => `<tr>
+      <td><b>${esc(c.clients?.full_name || "Cliente")}</b><br><span class="muted">${esc(c.clients?.phone_e164 || "")}</span></td>
+      <td class="muted">${quando(c.opened_at)}</td><td>${reais(tot(c))}</td>
+      <td>${tot(c) - pago(c) > 0 ? `<span class="pill off">${reais(tot(c) - pago(c))}</span>` : '<span class="pill">pago</span>'}</td>
+      <td><button class="ghost" data-k="${c.id}">Abrir</button></td></tr>`).join("")
+    : '<tr><td colspan="5" class="muted">Nenhuma comanda aberta. Abra pela Agenda (botão Comanda) ou em "+ Nova comanda".</td></tr>';
+  $("kLista").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.k; abrirComanda(); });
+  if (comandaAberta) abrirComanda(); else $("kDet").classList.add("hidden");
+  carregarResumo();
+}
+
+async function abrirComanda() {
+  const { data: c, error } = await sb.from("comandas").select("id, status, opened_at, clients(full_name, phone_e164)").eq("id", comandaAberta).single();
+  if (error) return erro(error);
+  const [i, p] = await Promise.all([
+    sb.from("comanda_items").select("*, professionals(name)").eq("comanda_id", comandaAberta).order("created_at"),
+    sb.from("payments").select("*").eq("comanda_id", comandaAberta).order("paid_at"),
+  ]);
+  for (const r of [i, p]) if (r.error) return erro(r.error);
+  kItens = i.data; kPags = p.data;
+  const aberta = c.status === "open";
+  $("kDet").classList.remove("hidden");
+  $("kTitulo").innerHTML = `Comanda de ${esc(c.clients?.full_name || "Cliente")} ${aberta ? "" : `<span class="pill ${c.status === "cancelled" ? "off" : ""}">${c.status === "closed" ? "fechada" : "cancelada"}</span>`}`;
+  $("kItens").innerHTML = kItens.length ? kItens.map(x => `<tr>
+      <td><b>${esc(x.description)}</b>${x.professionals ? ` <span class="muted">· ${esc(x.professionals.name)}</span>` : ""}${x.product_id ? ' <span class="pill">produto</span>' : ""}
+        ${x.discount_cents ? `<br><span class="muted">desconto de ${reais(x.discount_cents)}</span>` : ""}</td>
+      <td>${x.quantity}</td><td>${reais(totalItem(x))}</td>
+      <td>${aberta ? `<button class="danger" data-rmi="${x.id}">Remover</button>` : ""}</td></tr>`).join("")
+    : '<tr><td colspan="4" class="muted">Sem itens ainda.</td></tr>';
+  $("kPags").innerHTML = kPags.map(g => `<tr><td>${METODOS[g.method]}${g.installments > 1 ? ` em ${g.installments}x` : ""}</td><td class="muted">${quando(g.paid_at)}</td><td>${reais(g.amount_cents)}</td>
+      <td>${aberta ? `<button class="danger" data-rmp="${g.id}">Remover</button>` : ""}</td></tr>`).join("") || '<tr><td class="muted">Nenhum pagamento ainda.</td></tr>';
+  const total = kItens.reduce((t, x) => t + totalItem(x), 0), pago = kPags.reduce((t, g) => t + g.amount_cents, 0);
+  $("kTotais").innerHTML = `<div class="kpi"><b>${reais(total)}</b>Total</div><div class="kpi"><b>${reais(pago)}</b>Pago</div>`
+    + (pago > total ? `<div class="kpi"><b>${reais(pago - total)}</b>Troco</div>` : `<div class="kpi"><b>${reais(total - pago)}</b>Falta</div>`);
+  for (const id of ["kAddItem", "kAddPag", "kAcoes"]) $(id).classList.toggle("hidden", !aberta);
+  $("gValor").value = total > pago ? ((total - pago) / 100).toFixed(2).replace(".", ",") : "";
+  $("iDesc").disabled = !podeDesconto(); $("iDesc").title = podeDesconto() ? "" : "Só dono ou gerente dá desconto";
+  preencherItens();
+  $("kItens").querySelectorAll("[data-rmi]").forEach(b => b.onclick = async () => {
+    if (!confirm("Remover este item da comanda?")) return;
+    const { error } = await sb.from("comanda_items").delete().eq("id", b.dataset.rmi); if (error) return erro(error); carregarCaixa();
+  });
+  $("kPags").querySelectorAll("[data-rmp]").forEach(b => b.onclick = async () => {
+    if (!confirm("Remover este pagamento?")) return;
+    const { error } = await sb.from("payments").delete().eq("id", b.dataset.rmp); if (error) return erro(error); carregarCaixa();
+  });
+}
+
+function preencherItens() {
+  const tipo = $("iTipo").value;
+  const lista = tipo === "servico" ? servicos.filter(s => s.active) : produtos.filter(p => p.active);
+  $("iItem").innerHTML = lista.map(x => `<option value="${x.id}">${esc(x.name)}${tipo === "produto" ? ` (estoque ${x.stock_qty})` : ""}</option>`).join("")
+    || `<option value="">${tipo === "servico" ? "Cadastre serviços" : "Cadastre produtos na aba Produtos"}</option>`;
+  $("iProfBox").classList.toggle("hidden", tipo !== "servico");
+  $("iItem").onchange();
+}
+$("iTipo").onchange = preencherItens;
+$("iItem").onchange = () => {
+  const tipo = $("iTipo").value, id = $("iItem").value;
+  const x = (tipo === "servico" ? servicos : produtos).find(y => y.id === id);
+  $("iPreco").value = x ? (x.price_cents / 100).toFixed(2).replace(".", ",") : "";
+  if (tipo === "servico") {
+    const fazem = new Set(vinculos.filter(v => v.service_id === id).map(v => v.professional_id));
+    $("iProf").innerHTML = profissionais.filter(p => p.active && (!fazem.size || fazem.has(p.id))).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+  }
+};
+$("iAdd").onclick = async () => {
+  const tipo = $("iTipo").value, id = $("iItem").value;
+  const x = (tipo === "servico" ? servicos : produtos).find(y => y.id === id);
+  const qtd = parseInt($("iQtd").value, 10), preco = paraCentavos($("iPreco").value);
+  const desc = $("iDesc").value.trim() ? paraCentavos($("iDesc").value) : 0;
+  if (!x) return aviso("Escolha o item.", "err");
+  if (!(qtd > 0)) return aviso("Informe a quantidade.", "err");
+  if (!(preco >= 0)) return aviso("Confira o preço, por exemplo 89,90.", "err");
+  if (!(desc >= 0) || desc > qtd * preco) return aviso("O desconto não pode passar do valor do item.", "err");
+  if (desc > 0 && !podeDesconto()) return aviso("Só o dono ou o gerente pode dar desconto.", "err");
+  if (tipo === "produto" && x.stock_qty < qtd && !confirm(`O estoque de ${x.name} é ${x.stock_qty}. Lançar mesmo assim?`)) return;
+  const { error } = await sb.from("comanda_items").insert({
+    tenant_id: tenantId, comanda_id: comandaAberta, description: x.name, quantity: qtd, unit_price_cents: preco,
+    discount_cents: desc, discount_approved_by: desc > 0 ? usuarioId : null,
+    service_id: tipo === "servico" ? x.id : null, product_id: tipo === "produto" ? x.id : null,
+    professional_id: tipo === "servico" ? ($("iProf").value || null) : null,
+  });
+  if (error) return erro(error);
+  $("iQtd").value = 1; $("iDesc").value = "";
+  aviso("Item adicionado."); carregarCaixa();
+};
+$("gAdd").onclick = async () => {
+  const valor = paraCentavos($("gValor").value), metodo = $("gMetodo").value;
+  if (!(valor > 0)) return aviso("Informe o valor recebido, por exemplo 120,00.", "err");
+  const { error } = await sb.from("payments").insert({
+    tenant_id: tenantId, comanda_id: comandaAberta, method: metodo, amount_cents: valor,
+    installments: metodo === "credit" ? parseInt($("gParc").value, 10) : 1, received_by: usuarioId,
+  });
+  if (error) return erro(error);
+  aviso(`Pagamento em ${METODOS[metodo]} registrado.`); carregarCaixa();
+};
+$("kFechar").onclick = async () => {
+  const { error } = await sb.rpc("close_comanda", { p_comanda: comandaAberta });
+  if (error) return aviso(error.message, "err");
+  aviso("Comanda fechada. Atendimentos marcados como finalizados e estoque atualizado.");
+  comandaAberta = null; await carregar(); carregarCaixa();
+};
+$("kCancelar").onclick = async () => {
+  if (kPags.length) return aviso("Remova os pagamentos antes de cancelar a comanda.", "err");
+  if (!confirm("Cancelar esta comanda?")) return;
+  const { error } = await sb.from("comandas").update({ status: "cancelled", closed_at: new Date().toISOString(), closed_by: usuarioId }).eq("id", comandaAberta);
+  if (error) return erro(error);
+  // libera os atendimentos para entrarem em outra comanda
+  await sb.from("comanda_items").update({ appointment_id: null }).eq("comanda_id", comandaAberta);
+  aviso("Comanda cancelada."); comandaAberta = null; carregarCaixa();
+};
+$("kFecharDet").onclick = () => { comandaAberta = null; $("kDet").classList.add("hidden"); };
+$("kAtualizar").onclick = carregarCaixa;
+$("kNovaBtn").onclick = () => $("kNova").classList.toggle("hidden");
+$("kCancelarNova").onclick = () => $("kNova").classList.add("hidden");
+$("kCriar").onclick = async () => {
+  const tel = normalizarTel($("kTel").value);
+  if (!tel) return aviso("Informe o WhatsApp da cliente com DDD.", "err");
+  let clientId;
+  try { clientId = await acharOuCriarCliente(tel, $("kNome").value.trim()); } catch (e) { return aviso("Não deu para abrir: " + e.message, "err"); }
+  const n = await sb.from("comandas").insert({ tenant_id: tenantId, client_id: clientId, opened_by: usuarioId }).select("id").single();
+  if (n.error) return erro(n.error);
+  $("kTel").value = ""; $("kNome").value = ""; $("kNova").classList.add("hidden");
+  comandaAberta = n.data.id; carregarCaixa();
+};
+$("kData").onchange = carregarResumo;
+async function carregarResumo() {
+  const data = $("kData").value || hojeLocal();
+  const ini = localParaUtc(data, "00:00").toISOString(), fim = localParaUtc(somarDias(data, 1), "00:00").toISOString();
+  const { data: fechadas, error } = await sb.from("comandas")
+    .select("id, closed_at, clients(full_name), comanda_items(quantity, unit_price_cents, discount_cents, product_id), payments(method, amount_cents)")
+    .eq("tenant_id", tenantId).eq("status", "closed").gte("closed_at", ini).lt("closed_at", fim).order("closed_at", { ascending: false });
+  if (error) return erro(error);
+  const porMetodo = {}; let total = 0, servs = 0, prods = 0;
+  for (const c of fechadas) {
+    for (const i of c.comanda_items) { const v = totalItem(i); total += v; i.product_id ? prods += v : servs += v; }
+    for (const g of c.payments) porMetodo[g.method] = (porMetodo[g.method] || 0) + g.amount_cents;
+  }
+  $("kResumo").innerHTML = `<div class="kpi"><b>${reais(total)}</b>Faturado</div><div class="kpi"><b>${fechadas.length}</b>Comandas</div>`
+    + `<div class="kpi"><b>${reais(fechadas.length ? Math.round(total / fechadas.length) : 0)}</b>Ticket médio</div>`
+    + `<div class="kpi"><b>${reais(servs)}</b>Serviços</div><div class="kpi"><b>${reais(prods)}</b>Produtos</div>`
+    + Object.entries(porMetodo).map(([m, v]) => `<div class="kpi"><b>${reais(v)}</b>${METODOS[m]}</div>`).join("");
+  $("kFechadas").innerHTML = fechadas.map(c => `<tr><td>${esc(c.clients?.full_name || "Cliente")}</td><td class="muted">${quando(c.closed_at)}</td>
+      <td>${reais(c.comanda_items.reduce((t, i) => t + totalItem(i), 0))}</td><td><button class="ghost" data-kv="${c.id}">Ver</button></td></tr>`).join("")
+    || '<tr><td colspan="4" class="muted">Nenhuma comanda fechada neste dia.</td></tr>';
+  $("kFechadas").querySelectorAll("[data-kv]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.kv; abrirComanda(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+}
+
+// ---------- Produtos ----------
+function desenharProdutos() {
+  $("prLista").innerHTML = produtos.length ? produtos.map(p => `<tr>
+      <td><b>${esc(p.name)}</b>${p.category ? ` <span class="muted">· ${esc(p.category)}</span>` : ""}${p.active ? "" : ' <span class="pill off">inativo</span>'}</td>
+      <td>${reais(p.price_cents)}${p.cost_cents != null ? `<br><span class="muted" style="font-size:12px">custo ${reais(p.cost_cents)}</span>` : ""}</td>
+      <td>${p.stock_qty}${p.stock_qty <= p.min_stock ? ' <span class="pill off">repor</span>' : ""}</td>
+      <td><span class="actions" style="margin:0"><button class="ghost" data-ent="${p.id}">+ Entrada</button><button class="ghost" data-edit-pr="${p.id}">Editar</button></span></td></tr>`).join("")
+    : '<tr><td colspan="4" class="muted">Nenhum produto ainda. Cadastre os produtos que vocês vendem no salão.</td></tr>';
+  $("prLista").querySelectorAll("[data-edit-pr]").forEach(b => b.onclick = () => editarProduto(b.dataset.editPr));
+  $("prLista").querySelectorAll("[data-ent]").forEach(b => b.onclick = () => entradaEstoque(b.dataset.ent));
+}
+function limparProduto() {
+  for (const id of ["prId", "prNome", "prCat", "prPreco", "prCusto"]) $(id).value = "";
+  $("prEst").value = 0; $("prMin").value = 2; $("prAtivo").checked = true;
+  $("prEstBox").classList.remove("hidden"); $("fprTitulo").textContent = "Novo produto";
+}
+function editarProduto(id) {
+  const p = produtos.find(x => x.id === id); if (!p) return;
+  $("prId").value = p.id; $("prNome").value = p.name; $("prCat").value = p.category || "";
+  $("prPreco").value = (p.price_cents / 100).toFixed(2).replace(".", ",");
+  $("prCusto").value = p.cost_cents != null ? (p.cost_cents / 100).toFixed(2).replace(".", ",") : "";
+  $("prMin").value = p.min_stock; $("prAtivo").checked = p.active;
+  $("prEstBox").classList.add("hidden"); // estoque muda só por entrada ou venda, para ficar rastreável
+  $("fprTitulo").textContent = "Editar produto"; window.scrollTo({ top: 0, behavior: "smooth" });
+}
+$("prLimpar").onclick = limparProduto;
+$("prSalvar").onclick = async () => {
+  const row = {
+    tenant_id: tenantId, name: $("prNome").value.trim(), category: $("prCat").value.trim() || null,
+    price_cents: paraCentavos($("prPreco").value), cost_cents: $("prCusto").value.trim() ? paraCentavos($("prCusto").value) : null,
+    min_stock: parseInt($("prMin").value, 10) || 0, active: $("prAtivo").checked,
+  };
+  if (!row.name) return aviso("Informe o nome do produto.", "err");
+  if (!(row.price_cents >= 0)) return aviso("Informe o preço de venda, por exemplo 89,90.", "err");
+  if (row.cost_cents !== null && !(row.cost_cents >= 0)) return aviso("Confira o custo.", "err");
+  const id = $("prId").value;
+  if (id) {
+    const { error } = await sb.from("products").update(row).eq("id", id); if (error) return erro(error);
+  } else {
+    const est = parseInt($("prEst").value, 10) || 0;
+    const { data, error } = await sb.from("products").insert({ ...row, stock_qty: est }).select("id").single(); if (error) return erro(error);
+    if (est) await sb.from("stock_movements").insert({ tenant_id: tenantId, product_id: data.id, qty_delta: est, reason: "estoque inicial", created_by: usuarioId });
+  }
+  aviso("Produto salvo."); limparProduto(); carregar();
+};
+async function entradaEstoque(id) {
+  const p = produtos.find(x => x.id === id); if (!p) return;
+  const q = parseInt(prompt(`Quantas unidades de ${p.name} chegaram? (use número negativo para corrigir uma contagem)`, "1"), 10);
+  if (!q) return;
+  const m = await sb.from("stock_movements").insert({ tenant_id: tenantId, product_id: id, qty_delta: q, reason: q > 0 ? "entrada" : "ajuste", created_by: usuarioId });
+  if (m.error) return erro(m.error);
+  const { error } = await sb.from("products").update({ stock_qty: p.stock_qty + q }).eq("id", id);
+  if (error) return erro(error);
+  aviso(`Estoque de ${p.name}: ${p.stock_qty + q}.`); carregar();
+}
 
 iniciar();
 </script>
