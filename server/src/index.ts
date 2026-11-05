@@ -4,6 +4,11 @@ import { validSignature } from "./whatsapp.js";
 import { handleWebhook } from "./inbound.js";
 import { pendingJobs } from "./queue.js";
 import { privacyHtml } from "./pages/privacidade.js";
+import { readFileSync } from "node:fs";
+
+// Painel do gestor: página estática; os dados vêm da Supabase com login e RLS
+const painelHtml = readFileSync(new URL("../public/painel.html", import.meta.url), "utf8");
+const supabaseUmd = readFileSync(new URL("../node_modules/@supabase/supabase-js/dist/umd/supabase.js", import.meta.url));
 
 function readBody(req: IncomingMessage, limit = 2_000_000): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -31,6 +36,23 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && (url.pathname === "/privacidade" || url.pathname === "/exclusao-de-dados")) {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(privacyHtml);
+      return;
+    }
+
+    if (req.method === "GET" && (url.pathname === "/painel" || url.pathname === "/painel/")) {
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "same-origin",
+      });
+      res.end(painelHtml);
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/painel/supabase.js") {
+      res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "public, max-age=3600" });
+      res.end(supabaseUmd);
       return;
     }
 

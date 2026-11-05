@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Terrasso</title>
+<style>
+  :root { --bg:#f7f5f2; --card:#fff; --ink:#2b2622; --muted:#7a716a; --line:#e6e0d9; --brand:#8a5a3c; --brand-ink:#fff; --danger:#b3261e; --ok:#2e7d32; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); font-size:15px; }
+  header { background:var(--card); border-bottom:1px solid var(--line); padding:12px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; flex:1; }
+  header .who { color:var(--muted); font-size:13px; }
+  main { max-width:960px; margin:0 auto; padding:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .tabs button { background:var(--card); border:1px solid var(--line); color:var(--ink); }
+  .tabs button.on { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); }
+  button { font:inherit; border:0; border-radius:8px; padding:9px 14px; cursor:pointer; background:var(--brand); color:var(--brand-ink); }
+  button.ghost { background:transparent; color:var(--brand); border:1px solid var(--line); }
+  button.danger { background:transparent; color:var(--danger); border:1px solid var(--line); }
+  button:disabled { opacity:.5; cursor:default; }
+  label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+  input, select, textarea { font:inherit; width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+  textarea { min-height:60px; }
+  .row { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+  .muted { color:var(--muted); }
+  .pill { font-size:12px; padding:2px 8px; border-radius:999px; background:#eee; }
+  .pill.off { background:#f3e3e2; color:var(--danger); }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .msg { padding:10px 12px; border-radius:8px; margin-bottom:12px; display:none; }
+  .msg.err { display:block; background:#fbe9e7; color:var(--danger); }
+  .msg.ok { display:block; background:#e8f5e9; color:var(--ok); }
+  .checks { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:6px; }
+  .checks label { display:flex; gap:8px; align-items:center; color:var(--ink); font-size:14px; margin:0; }
+  .checks input { width:auto; }
+  .day { display:grid; grid-template-columns: 110px 1fr; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); align-items:start; }
+  .slot { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+  .slot input { width:auto; }
+  .login { max-width:380px; margin:48px auto; }
+  .hidden { display:none !important; }
+  @media (max-width:600px) { .day { grid-template-columns: 1fr; } td, th { padding:8px 4px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Terrasso · Painel</h1>
+  <span class="who" id="who"></span>
+  <button class="ghost hidden" id="btnSair">Sair</button>
+</header>
+
+<main>
+  <div id="msg" class="msg"></div>
+
+  <!-- Login -->
+  <section id="vLogin" class="card login hidden">
+    <h2 style="margin-top:0">Entrar</h2>
+    <label for="email">E-mail</label>
+    <input id="email" type="email" autocomplete="username">
+    <label for="senha">Senha</label>
+    <input id="senha" type="password" autocomplete="current-password">
+    <div class="actions">
+      <button id="btnEntrar">Entrar</button>
+      <button class="ghost" id="btnCriar">Criar meu acesso</button>
+    </div>
+    <p class="muted" style="font-size:13px">Primeira vez? Digite seu e-mail, escolha uma senha (mínimo 8 caracteres) e clique em "Criar meu acesso".</p>
+  </section>
+
+  <!-- Sem permissão -->
+  <section id="vSemAcesso" class="card hidden">
+    <h2 style="margin-top:0">Acesso aguardando liberação</h2>
+    <p>Seu login foi criado, mas ainda não está ligado a um salão. Avise o administrador para liberar o e-mail <b id="emailPend"></b>.</p>
+  </section>
+
+  <!-- App -->
+  <section id="vApp" class="hidden">
+    <nav class="tabs">
+      <button data-tab="servicos" class="on">Serviços</button>
+      <button data-tab="profissionais">Profissionais</button>
+      <button data-tab="horarios">Horários</button>
+    </nav>
+
+    <!-- Serviços -->
+    <div id="tab-servicos">
+      <div class="card">
+        <h2 style="margin-top:0" id="fsTitulo">Novo serviço</h2>
+        <input type="hidden" id="sId">
+        <div class="row">
+          <div><label for="sNome">Nome</label><input id="sNome" placeholder="Ex.: Corte feminino"></div>
+          <div><label for="sCat">Categoria</label><input id="sCat" placeholder="Ex.: Cabelo"></div>
+          <div><label for="sDur">Duração (minutos)</label><input id="sDur" type="number" min="5" step="5" placeholder="60"></div>
+          <div><label for="sPreco">Preço (R$)</label><input id="sPreco" inputmode="decimal" placeholder="120,00"></div>
+        </div>
+        <label for="sDesc">Descrição para a recepcionista IA (opcional)</label>
+        <textarea id="sDesc" placeholder="Ex.: Inclui lavagem e finalização. Não inclui escova."></textarea>
+        <label class="checks"><span><input type="checkbox" id="sAtivo" checked> Ativo (aparece para as clientes)</span></label>
+        <div class="actions">
+          <button id="sSalvar">Salvar serviço</button>
+          <button class="ghost" id="sLimpar">Limpar</button>
+        </div>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Serviço</th><th>Duração</th><th>Preço</th><th></th></tr></thead><tbody id="sLista"></tbody></table>
+      </div>
+    </div>
+
+    <!-- Profissionais -->
+    <div id="tab-profissionais" class="hidden">
+      <div class="card">
+        <h2 style="margin-top:0" id="fpTitulo">Novo profissional</h2>
+        <input type="hidden" id="pId">
+        <div class="row">
+          <div><label for="pNome">Nome</label><input id="pNome" placeholder="Ex.: Ana"></div>
+          <div><label for="pCor">Cor na agenda</label><input id="pCor" type="color" value="#8a5a3c"></div>
+        </div>
+        <label>Serviços que faz</label>
+        <div class="checks" id="pServicos"></div>
+        <label class="checks"><span><input type="checkbox" id="pAtivo" checked> Ativo</span></label>
+        <div class="actions">
+          <button id="pSalvar">Salvar profissional</button>
+          <button class="ghost" id="pLimpar">Limpar</button>
+        </div>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Profissional</th><th>Serviços</th><th></th></tr></thead><tbody id="pLista"></tbody></table>
+      </div>
+    </div>
+
+    <!-- Horários -->
+    <div id="tab-horarios" class="hidden">
+      <div class="card">
+        <label for="hProf">Profissional</label>
+        <select id="hProf"></select>
+        <div id="hDias" style="margin-top:12px"></div>
+        <div class="actions">
+          <button id="hSalvar">Salvar horários</button>
+        </div>
+        <p class="muted" style="font-size:13px">Use dois intervalos no mesmo dia para marcar o almoço. Exemplo: 09:00–12:00 e 13:00–19:00.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="/painel/supabase.js"></script>
+<script>
+const SUPABASE_URL = "https://mfxkiszyrnxomvfwbnkj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_apq4DYqUCLSr82maiLjIiQ_PmknYK9b";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+const $ = (id) => document.getElementById(id);
+let tenantId = null, servicos = [], profissionais = [], vinculos = [];
+
+function aviso(texto, tipo) {
+  const m = $("msg"); m.textContent = texto; m.className = "msg " + (tipo || "ok");
+  if (tipo !== "err") setTimeout(() => { m.className = "msg"; }, 3500);
+}
+function erro(e) { console.error(e); aviso("Algo deu errado: " + (e.message || e), "err"); }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function reais(c) { return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+function paraCentavos(t) {
+  const n = Number(String(t).replace(/\s|R\$/g, "").replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? Math.round(n * 100) : NaN;
+}
+function mostrar(v) { for (const id of ["vLogin","vSemAcesso","vApp"]) $(id).classList.toggle("hidden", id !== v); }
+
+// ---------- Login ----------
+$("btnEntrar").onclick = async () => {
+  const { error } = await sb.auth.signInWithPassword({ email: $("email").value.trim(), password: $("senha").value });
+  if (error) return aviso(error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : error.message, "err");
+  iniciar();
+};
+$("btnCriar").onclick = async () => {
+  const email = $("email").value.trim(), password = $("senha").value;
+  if (!email || password.length < 8) return aviso("Informe o e-mail e uma senha com pelo menos 8 caracteres.", "err");
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) return erro(error);
+  if (!data.session) return aviso("Acesso criado. Avise o administrador para liberar e depois clique em Entrar.");
+  iniciar();
+};
+$("btnSair").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+async function iniciar() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) { mostrar("vLogin"); $("btnSair").classList.add("hidden"); $("who").textContent = ""; return; }
+  $("btnSair").classList.remove("hidden");
+  $("who").textContent = user.email;
+  const { data: staff, error } = await sb.from("staff_members").select("tenant_id, full_name, role").eq("user_id", user.id).eq("active", true).limit(1);
+  if (error) return erro(error);
+  if (!staff.length) { $("emailPend").textContent = user.email; mostrar("vSemAcesso"); return; }
+  tenantId = staff[0].tenant_id;
+  $("who").textContent = staff[0].full_name + " · " + user.email;
+  mostrar("vApp");
+  await carregar();
+}
+
+// ---------- Abas ----------
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
+  for (const t of ["servicos","profissionais","horarios"]) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
+  if (b.dataset.tab === "horarios") desenharHorarios();
+});
+
+async function carregar() {
+  const [s, p, v] = await Promise.all([
+    sb.from("services").select("*").eq("tenant_id", tenantId).order("name"),
+    sb.from("professionals").select("*").eq("tenant_id", tenantId).order("name"),
+    sb.from("professional_services").select("professional_id, service_id").eq("tenant_id", tenantId),
+  ]);
+  for (const r of [s, p, v]) if (r.error) return erro(r.error);
+  servicos = s.data; profissionais = p.data; vinculos = v.data;
+  desenharServicos(); desenharProfissionais(); desenharSelectHorarios();
+}
+
+// ---------- Serviços ----------
+function desenharServicos() {
+  $("sLista").innerHTML = servicos.length ? servicos.map(s => `
+    <tr>
+      <td><b>${esc(s.name)}</b>${s.category ? ` <span class="muted">· ${esc(s.category)}</span>` : ""}
+        ${s.active ? "" : ' <span class="pill off">inativo</span>'}</td>
+      <td>${s.duration_min} min</td>
+      <td>${reais(s.price_cents)}</td>
+      <td><button class="ghost" data-edit-s="${s.id}">Editar</button></td>
+    </tr>`).join("") : '<tr><td colspan="4" class="muted">Nenhum serviço ainda. Cadastre o primeiro acima.</td></tr>';
+  document.querySelectorAll("[data-edit-s]").forEach(b => b.onclick = () => editarServico(b.dataset.editS));
+}
+function limparServico() {
+  for (const id of ["sId","sNome","sCat","sDur","sPreco","sDesc"]) $(id).value = "";
+  $("sAtivo").checked = true; $("fsTitulo").textContent = "Novo serviço";
+}
+function editarServico(id) {
+  const s = servicos.find(x => x.id === id); if (!s) return;
+  $("sId").value = s.id; $("sNome").value = s.name; $("sCat").value = s.category || "";
+  $("sDur").value = s.duration_min; $("sPreco").value = (s.price_cents / 100).toFixed(2).replace(".", ",");
+  $("sDesc").value = s.description || ""; $("sAtivo").checked = s.active;
+  $("fsTitulo").textContent = "Editar serviço"; window.scrollTo({ top: 0, behavior: "smooth" });
+}
+$("sLimpar").onclick = limparServico;
+$("sSalvar").onclick = async () => {
+  const row = {
+    tenant_id: tenantId, name: $("sNome").value.trim(), category: $("sCat").value.trim() || null,
+    duration_min: parseInt($("sDur").value, 10), price_cents: paraCentavos($("sPreco").value),
+    description: $("sDesc").value.trim() || null, active: $("sAtivo").checked,
+  };
+  if (!row.name) return aviso("Informe o nome do serviço.", "err");
+  if (!(row.duration_min > 0)) return aviso("Informe a duração em minutos.", "err");
+  if (!(row.price_cents >= 0)) return aviso("Informe o preço, por exemplo 120,00.", "err");
+  const id = $("sId").value;
+  const { error } = id ? await sb.from("services").update(row).eq("id", id) : await sb.from("services").insert(row);
+  if (error) return erro(error);
+  aviso("Serviço salvo."); limparServico(); carregar();
+};
+
+// ---------- Profissionais ----------
+function desenharProfissionais() {
+  const marcados = new Set(($("pId").value ? vinculos.filter(v => v.professional_id === $("pId").value) : []).map(v => v.service_id));
+  $("pServicos").innerHTML = servicos.filter(s => s.active).map(s =>
+    `<label><input type="checkbox" value="${s.id}" ${marcados.has(s.id) ? "checked" : ""}> ${esc(s.name)}</label>`).join("")
+    || '<span class="muted">Cadastre os serviços primeiro.</span>';
+  $("pLista").innerHTML = profissionais.length ? profissionais.map(p => {
+    const nomes = vinculos.filter(v => v.professional_id === p.id).map(v => servicos.find(s => s.id === v.service_id)?.name).filter(Boolean);
+    return `<tr>
+      <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(p.color || "#ccc")}"></span>
+        <b>${esc(p.name)}</b>${p.active ? "" : ' <span class="pill off">inativo</span>'}</td>
+      <td class="muted">${nomes.length ? esc(nomes.join(", ")) : "nenhum"}</td>
+      <td><button class="ghost" data-edit-p="${p.id}">Editar</button></td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="3" class="muted">Nenhum profissional ainda.</td></tr>';
+  document.querySelectorAll("[data-edit-p]").forEach(b => b.onclick = () => editarProfissional(b.dataset.editP));
+}
+function limparProfissional() {
+  $("pId").value = ""; $("pNome").value = ""; $("pCor").value = "#8a5a3c"; $("pAtivo").checked = true;
+  $("fpTitulo").textContent = "Novo profissional"; desenharProfissionais();
+}
+function editarProfissional(id) {
+  const p = profissionais.find(x => x.id === id); if (!p) return;
+  $("pId").value = p.id; $("pNome").value = p.name; $("pCor").value = p.color || "#8a5a3c"; $("pAtivo").checked = p.active;
+  $("fpTitulo").textContent = "Editar profissional"; desenharProfissionais(); window.scrollTo({ top: 0, behavior: "smooth" });
+}
+$("pLimpar").onclick = limparProfissional;
+$("pSalvar").onclick = async () => {
+  const row = { tenant_id: tenantId, name: $("pNome").value.trim(), color: $("pCor").value, active: $("pAtivo").checked };
+  if (!row.name) return aviso("Informe o nome do profissional.", "err");
+  let id = $("pId").value;
+  if (id) {
+    const { error } = await sb.from("professionals").update(row).eq("id", id); if (error) return erro(error);
+  } else {
+    const { data, error } = await sb.from("professionals").insert(row).select("id").single(); if (error) return erro(error);
+    id = data.id;
+  }
+  const escolhidos = [...$("pServicos").querySelectorAll("input:checked")].map(i => i.value);
+  const atuais = vinculos.filter(v => v.professional_id === id).map(v => v.service_id);
+  const remover = atuais.filter(s => !escolhidos.includes(s));
+  const incluir = escolhidos.filter(s => !atuais.includes(s));
+  if (remover.length) { const { error } = await sb.from("professional_services").delete().eq("professional_id", id).in("service_id", remover); if (error) return erro(error); }
+  if (incluir.length) { const { error } = await sb.from("professional_services").insert(incluir.map(s => ({ tenant_id: tenantId, professional_id: id, service_id: s }))); if (error) return erro(error); }
+  aviso("Profissional salvo."); $("pId").value = ""; await carregar(); limparProfissional();
+};
+
+// ---------- Horários ----------
+let escala = [];
+function desenharSelectHorarios() {
+  const atual = $("hProf").value;
+  $("hProf").innerHTML = profissionais.filter(p => p.active).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("")
+    || '<option value="">Cadastre um profissional primeiro</option>';
+  if (atual) $("hProf").value = atual;
+}
+$("hProf").onchange = desenharHorarios;
+async function desenharHorarios() {
+  const prof = $("hProf").value;
+  if (!prof) { $("hDias").innerHTML = ""; return; }
+  const { data, error } = await sb.from("work_schedules").select("weekday, start_time, end_time").eq("professional_id", prof).order("start_time");
+  if (error) return erro(error);
+  escala = data.map(r => ({ weekday: r.weekday, start: r.start_time.slice(0,5), end: r.end_time.slice(0,5) }));
+  renderDias();
+}
+function renderDias() {
+  $("hDias").innerHTML = [1,2,3,4,5,6,0].map(d => {
+    const slots = escala.map((s, i) => ({ ...s, i })).filter(s => s.weekday === d);
+    return `<div class="day"><b>${DIAS[d]}</b><div>
+      ${slots.map(s => `<div class="slot">
+        <input type="time" value="${s.start}" data-i="${s.i}" data-k="start"> até
+        <input type="time" value="${s.end}" data-i="${s.i}" data-k="end">
+        <button class="danger" data-rm="${s.i}">Remover</button></div>`).join("") || '<span class="muted">Folga</span>'}
+      <div><button class="ghost" data-add="${d}">+ intervalo</button></div></div></div>`;
+  }).join("");
+  $("hDias").querySelectorAll("input[type=time]").forEach(inp => inp.onchange = () => { escala[inp.dataset.i][inp.dataset.k] = inp.value; });
+  $("hDias").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { escala.splice(Number(b.dataset.rm), 1); renderDias(); });
+  $("hDias").querySelectorAll("[data-add]").forEach(b => b.onclick = () => { escala.push({ weekday: Number(b.dataset.add), start: "09:00", end: "18:00" }); renderDias(); });
+}
+$("hSalvar").onclick = async () => {
+  const prof = $("hProf").value; if (!prof) return;
+  for (const s of escala) if (!s.start || !s.end || s.end <= s.start) return aviso(`Confira o horário de ${DIAS[s.weekday]}: o fim precisa ser depois do início.`, "err");
+  const { error: e1 } = await sb.from("work_schedules").delete().eq("professional_id", prof);
+  if (e1) return erro(e1);
+  if (escala.length) {
+    const { error: e2 } = await sb.from("work_schedules").insert(escala.map(s => ({ tenant_id: tenantId, professional_id: prof, weekday: s.weekday, start_time: s.start, end_time: s.end })));
+    if (e2) return erro(e2);
+  }
+  aviso("Horários salvos."); desenharHorarios();
+};
+
+iniciar();
+</script>
+</body>
+</html>
