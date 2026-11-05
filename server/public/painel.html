@@ -11,7 +11,7 @@
   header { background:var(--card); border-bottom:1px solid var(--line); padding:12px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   header h1 { font-size:18px; margin:0; flex:1; }
   header .who { color:var(--muted); font-size:13px; }
-  main { max-width:960px; margin:0 auto; padding:16px; }
+  main { max-width:1200px; margin:0 auto; padding:16px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
   .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
   .tabs button { background:var(--card); border:1px solid var(--line); color:var(--ink); }
@@ -64,6 +64,17 @@
   .agora { position:absolute; left:0; right:0; border-top:2px solid var(--danger); z-index:2; pointer-events:none; }
   .st { font-size:11px; padding:1px 6px; border-radius:999px; background:#eee; }
   .st.confirmed { background:#e8eaf6; } .st.checked_in { background:#ffe7a3; } .st.in_service { background:#cfe3ff; } .st.done { background:#c8e6c9; } .st.no_show, .st.cancelled { background:#f3e3e2; color:var(--danger); }
+  .row.itens { grid-template-columns: 130px minmax(200px,2fr) minmax(150px,1.3fr) 80px 130px 130px; }
+  .row.pags { grid-template-columns: minmax(150px,1fr) minmax(130px,1fr) minmax(110px,1fr) 2fr; }
+  .row.periodo { grid-template-columns: 160px 160px auto; align-items:end; }
+  @media (max-width:900px) { .row.itens, .row.pags, .row.periodo { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); } }
+  .tabela-wrap { overflow-x:auto; }
+  input[type=color] { height:40px; padding:3px; }
+  @media (max-width:700px) { .card { overflow-x:auto; } }
+  .ap-bt { position:absolute; top:3px; right:4px; display:flex; gap:4px; }
+  .ap-bt button { font-size:11px; padding:2px 7px; border-radius:6px; border:1px solid rgba(0,0,0,.15); }
+  .ap-bt .feito { background:#b9e3b5; color:#1b4d1b; } .ap-bt .canc { background:#f6c343; color:#4a3500; }
+  .estrela { font-size:15px; line-height:1; }
   @media (max-width:600px) { .day { grid-template-columns: 1fr; } td, th { padding:8px 4px; } }
 </style>
 </head>
@@ -102,7 +113,9 @@
   <section id="vApp" class="hidden">
     <nav class="tabs">
       <button data-tab="agenda" class="on">Agenda</button>
+      <button data-tab="comandas">Comandas</button>
       <button data-tab="caixa">Caixa</button>
+      <button data-tab="clientes">Clientes</button>
       <button data-tab="produtos">Produtos</button>
       <button data-tab="servicos">Serviços</button>
       <button data-tab="profissionais">Profissionais</button>
@@ -158,12 +171,12 @@
 
       <div class="card">
         <div class="grade-wrap"><div class="grade" id="agGrade"></div></div>
-        <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. Clique num horário para mudar a situação. Áreas listradas ficam fora do horário de trabalho. A agenda se atualiza sozinha a cada minuto.</p>
+        <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. "Feito" abre a comanda da cliente para lançar no caixa; "Cancelado" libera o horário e conta na classificação da cliente. Clique no horário para ver mais opções. Áreas listradas ficam fora do horário de trabalho. A agenda se atualiza sozinha a cada minuto.</p>
       </div>
     </div>
 
-    <!-- Caixa -->
-    <div id="tab-caixa" class="hidden">
+    <!-- Comandas -->
+    <div id="tab-comandas" class="hidden">
       <div class="card">
         <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
           <b>Comandas abertas</b>
@@ -189,7 +202,7 @@
         </div>
         <table style="margin-top:8px"><thead><tr><th>Item</th><th>Qtd</th><th>Valor</th><th></th></tr></thead><tbody id="kItens"></tbody></table>
         <div id="kAddItem">
-          <div class="row">
+          <div class="row itens">
             <div><label for="iTipo">Tipo</label><select id="iTipo"><option value="servico">Serviço</option><option value="produto">Produto</option></select></div>
             <div><label for="iItem">Item</label><select id="iItem"></select></div>
             <div id="iProfBox"><label for="iProf">Profissional</label><select id="iProf"></select></div>
@@ -202,10 +215,11 @@
         <h3 style="margin:18px 0 4px;font-size:15px">Pagamentos</h3>
         <table><tbody id="kPags"></tbody></table>
         <div id="kAddPag">
-          <div class="row">
+          <div class="row pags">
             <div><label for="gMetodo">Forma</label><select id="gMetodo"></select></div>
             <div><label for="gValor">Valor (R$)</label><input id="gValor" inputmode="decimal"></div>
             <div id="gParcBox" class="hidden"><label for="gParc">Parcelas</label><select id="gParc"><option>1</option><option>2</option><option>3</option></select></div>
+            <div></div>
           </div>
           <div class="actions"><button class="ghost" id="gAdd">+ Registrar pagamento</button></div>
         </div>
@@ -216,13 +230,51 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- Caixa: relatório de faturamento -->
+    <div id="tab-caixa" class="hidden">
       <div class="card">
-        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
-          <b>Caixa do dia</b>
-          <input type="date" id="kData" style="width:auto">
+        <h2 style="margin-top:0">Faturamento</h2>
+        <div class="row periodo">
+          <div><label for="fDe">De</label><input type="date" id="fDe"></div>
+          <div><label for="fAte">Até</label><input type="date" id="fAte"></div>
+          <div class="actions" style="margin:0">
+            <button class="ghost" id="fHoje">Hoje</button>
+            <button class="ghost" id="fMes">Este mês</button>
+            <button class="ghost" id="fMesAnt">Mês passado</button>
+            <button class="ghost" id="fCsv">Baixar planilha</button>
+          </div>
         </div>
         <div class="kpis" id="kResumo"></div>
-        <table style="margin-top:8px"><thead><tr><th>Cliente</th><th>Fechada</th><th>Total</th><th></th></tr></thead><tbody id="kFechadas"></tbody></table>
+      </div>
+      <div class="card tabela-wrap">
+        <table><thead><tr><th>Data</th><th>Cliente</th><th>Produto / serviço</th><th>Valor</th><th>Desconto</th><th>Forma</th><th></th></tr></thead><tbody id="kFechadas"></tbody></table>
+      </div>
+    </div>
+
+    <!-- Clientes -->
+    <div id="tab-clientes" class="hidden">
+      <div class="card">
+        <h2 style="margin-top:0">Categorias de cliente</h2>
+        <p class="muted" style="font-size:13px;margin-top:0">A categoria é automática. Cada cliente soma pontos nos últimos 12 meses: <b>+1 por visita</b> (comanda fechada), <b>−1 por cancelamento</b> e <b>−2 por falta</b>. Ela fica na maior categoria cujo mínimo de pontos alcança.</p>
+        <table><thead><tr><th>Categoria</th><th>A partir de</th><th></th></tr></thead><tbody id="tLista"></tbody></table>
+        <div id="tForm">
+          <input type="hidden" id="tId">
+          <div class="row">
+            <div><label for="tNome">Nome</label><input id="tNome" placeholder="Ex.: Ouro"></div>
+            <div><label for="tCor">Cor da estrela</label><input id="tCor" type="color" value="#e0b100"></div>
+            <div><label for="tMin">Mínimo de pontos</label><input id="tMin" type="number" value="0"></div>
+          </div>
+          <div class="actions"><button id="tSalvar">Salvar categoria</button><button class="ghost" id="tLimpar">Limpar</button></div>
+        </div>
+      </div>
+      <div class="card tabela-wrap">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
+          <b>Clientes</b>
+          <input id="clBusca" placeholder="Buscar por nome ou telefone" style="max-width:280px">
+        </div>
+        <table><thead><tr><th>Cliente</th><th>Categoria</th><th>Pontos</th><th>Visitas</th><th>Cancel.</th><th>Faltas</th><th>Gasto 12 meses</th><th>Última visita</th></tr></thead><tbody id="clLista"></tbody></table>
       </div>
     </div>
 
@@ -409,9 +461,11 @@ async function iniciar() {
 // ---------- Abas ----------
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
-  for (const t of ["agenda","caixa","produtos","servicos","profissionais","horarios","conversas","perfil"]) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
+  for (const t of ["agenda","comandas","caixa","clientes","produtos","servicos","profissionais","horarios","conversas","perfil"]) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
   if (b.dataset.tab === "agenda") carregarAgenda();
-  if (b.dataset.tab === "caixa") carregarCaixa();
+  if (b.dataset.tab === "comandas") carregarComandas();
+  if (b.dataset.tab === "caixa") carregarComandas();
+  if (b.dataset.tab === "clientes") carregarClientes();
   if (b.dataset.tab === "produtos") desenharProdutos();
   if (b.dataset.tab === "horarios") desenharHorarios();
   if (b.dataset.tab === "conversas") carregarConversas();
@@ -685,6 +739,12 @@ async function carregarAgenda(silencioso) {
   ]);
   for (const r of [a, e, b]) if (r.error) return silencioso ? console.error(r.error) : erro(r.error);
   agenda = { data, ini, fim, ags: a.data.map(x => ({ ...x, ...lerFaixa(x.period) })), escalas: e.data, bloqueios: b.data.map(x => ({ ...x, ...lerFaixa(x.period) })) };
+  const ids = [...new Set(agenda.ags.map(x => x.client_id))];
+  if (!categorias.length) await carregarCategorias();
+  if (ids.length) {
+    const st = await sb.from("client_stats").select("*").in("client_id", ids);
+    if (!st.error) for (const x of st.data) clientStats[x.client_id] = x;
+  }
   $("agDiaNome").textContent = DIAS[diaSemana(data)] + (data === hojeLocal() ? " · hoje" : "");
   desenharKpis(); desenharGrade();
   if (agSel) { const x = agenda.ags.find(y => y.id === agSel); x ? abrirAgendamento(x.id) : $("agDetalhe").classList.add("hidden"); }
@@ -742,7 +802,8 @@ function desenharGrade() {
       .sort((x, y) => x.ini - y.ini).map(a => {
         const ini = Math.max(de, minutoNoDia(a.ini, agenda.ini)), fim = Math.min(ate, minutoNoDia(a.fim, agenda.ini));
         return `<div class="ap ${a.status} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" style="top:${top(ini)}px;height:${Math.max(18, (fim - ini) * PX - 2)}px;border-left-color:${esc(p.color || "#8a5a3c")}">
-          <b>${hhmm(minutoNoDia(a.ini, agenda.ini))} ${esc(a.clients?.full_name || "Cliente")}</b><br>
+          ${["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status) ? `<span class="ap-bt"><button class="feito" data-feito="${a.id}" title="Lançar na comanda">Feito</button><button class="canc" data-canc="${a.id}">Cancelado</button></span>` : ""}
+          <b>${hhmm(minutoNoDia(a.ini, agenda.ini))} ${esc(a.clients?.full_name || "Cliente")}</b> ${estrela(a.client_id)}<br>
           ${esc(a.services?.name || "")} <span class="st ${a.status}">${STATUS[a.status]}</span>${a.source === "whatsapp_ai" ? " 💬" : ""}</div>`;
       }).join("");
     return `<div class="col" style="height:${altura}px">${cels.join("")}${bloq}${ags}${linhaAgora}</div>`;
@@ -752,6 +813,8 @@ function desenharGrade() {
   $("agGrade").innerHTML = `<div></div>` + profs.map(p => `<div class="gh"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(p.color || "#ccc")}"></span> ${esc(p.name)}</div>`).join("")
     + `<div class="horas" style="height:${altura}px">${horas.join("")}</div>` + colunas.join("");
   $("agGrade").querySelectorAll("[data-ag]").forEach(el => el.onclick = () => abrirAgendamento(el.dataset.ag));
+  $("agGrade").querySelectorAll("[data-feito]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); comandaDoAgendamento(agenda.ags.find(x => x.id === el.dataset.feito)); });
+  $("agGrade").querySelectorAll("[data-canc]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); mudarStatus(agenda.ags.find(x => x.id === el.dataset.canc), "cancelled"); });
   $("agGrade").querySelectorAll("[data-livre]").forEach(el => el.onclick = () => { const [p, m] = el.dataset.livre.split("|"); novoHorario(p, hhmm(Number(m))); });
 }
 
@@ -770,20 +833,22 @@ function abrirAgendamento(id) {
   agSel = id; $("agNovo").classList.add("hidden");
   const p = profissionais.find(x => x.id === a.professional_id);
   const ini = minutoNoDia(a.ini, agenda.ini), fim = minutoNoDia(a.fim, agenda.ini);
-  $("dTitulo").innerHTML = `${esc(a.clients?.full_name || "Cliente")} <span class="st ${a.status}">${STATUS[a.status]}</span>`;
+  const cat = categoriaDe(clientStats[a.client_id]?.points);
+  $("dTitulo").innerHTML = `${esc(a.clients?.full_name || "Cliente")} ${estrela(a.client_id)} <span class="muted" style="font-weight:400;font-size:13px">${esc(cat?.name || "")}</span> <span class="st ${a.status}">${STATUS[a.status]}</span>`;
   $("dInfo").innerHTML = `${esc(a.services?.name || "")} com ${esc(p?.name || "")} · ${hhmm(ini)} às ${hhmm(fim)} · ${reais(a.price_cents)}<br>
     WhatsApp ${esc(a.clients?.phone_e164 || "")} · marcado ${a.source === "whatsapp_ai" ? "pela IA no WhatsApp" : a.source === "avec_import" ? "no AVEC" : "pela recepção"}
     ${a.notes ? `<br>Obs.: ${esc(a.notes)}` : ""}`;
   $("dAcoes").innerHTML = (PROXIMOS[a.status] || []).map(([st, t]) =>
     `<button class="${st === "cancelled" || st === "no_show" ? "danger" : st === "confirmed" && a.status !== "scheduled" ? "ghost" : ""}" data-st="${st}">${t}</button>`).join("");
   if (!["cancelled", "no_show"].includes(a.status)) $("dAcoes").insertAdjacentHTML("beforeend", `<button class="ghost" id="dComanda">Comanda</button>`);
+  if ($("dComanda")) $("dComanda").textContent = "Feito: lançar na comanda";
   $("dAcoes").querySelectorAll("[data-st]").forEach(b => b.onclick = () => mudarStatus(a, b.dataset.st));
   if ($("dComanda")) $("dComanda").onclick = () => comandaDoAgendamento(a);
   $("agDetalhe").classList.remove("hidden");
   desenharGrade();
 }
 async function mudarStatus(a, st) {
-  if (st === "cancelled" && !confirm("Cancelar este horário? O espaço fica livre na agenda.")) return;
+  if (st === "cancelled" && !confirm(`Cancelar o horário de ${a.clients?.full_name || "cliente"}? O espaço fica livre na agenda e o cancelamento conta na classificação da cliente.`)) return;
   if (st === "no_show" && !confirm("Marcar que a cliente faltou?")) return;
   const { error } = await sb.from("appointments").update({ status: st, updated_at: new Date().toISOString() }).eq("id", a.id);
   if (error) return error.code === "23P01" ? aviso("Esse horário já foi ocupado por outra cliente. Marque um novo horário.", "err") : erro(error);
@@ -923,11 +988,10 @@ async function comandaDoAgendamento(a) {
     if (["scheduled", "confirmed"].includes(a.status)) await sb.from("appointments").update({ status: "checked_in", updated_at: new Date().toISOString() }).eq("id", a.id);
   }
   comandaAberta = cid;
-  irParaAba("caixa");
+  irParaAba("comandas");
 }
 
-async function carregarCaixa() {
-  if (!$("kData").value) $("kData").value = hojeLocal();
+async function carregarComandas() {
   const { data, error } = await sb.from("comandas")
     .select("id, status, opened_at, closed_at, client_id, clients(full_name, phone_e164), comanda_items(quantity, unit_price_cents, discount_cents), payments(amount_cents)")
     .eq("tenant_id", tenantId).eq("status", "open").order("opened_at");
@@ -942,7 +1006,6 @@ async function carregarCaixa() {
     : '<tr><td colspan="5" class="muted">Nenhuma comanda aberta. Abra pela Agenda (botão Comanda) ou em "+ Nova comanda".</td></tr>';
   $("kLista").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.k; abrirComanda(); });
   if (comandaAberta) abrirComanda(); else $("kDet").classList.add("hidden");
-  carregarResumo();
 }
 
 async function abrirComanda() {
@@ -960,13 +1023,15 @@ async function abrirComanda() {
   $("kItens").innerHTML = kItens.length ? kItens.map(x => `<tr>
       <td><b>${esc(x.description)}</b>${x.professionals ? ` <span class="muted">· ${esc(x.professionals.name)}</span>` : ""}${x.product_id ? ' <span class="pill">produto</span>' : ""}
         ${x.discount_cents ? `<br><span class="muted">desconto de ${reais(x.discount_cents)}</span>` : ""}</td>
-      <td>${x.quantity}</td><td>${reais(totalItem(x))}</td>
+      <td>${x.quantity}</td><td>${x.discount_cents ? `<s class="muted" style="font-size:12px">${reais(x.quantity * x.unit_price_cents)}</s><br>` : ""}${reais(totalItem(x))}</td>
       <td>${aberta ? `<button class="danger" data-rmi="${x.id}">Remover</button>` : ""}</td></tr>`).join("")
     : '<tr><td colspan="4" class="muted">Sem itens ainda.</td></tr>';
   $("kPags").innerHTML = kPags.map(g => `<tr><td>${METODOS[g.method]}${g.installments > 1 ? ` em ${g.installments}x` : ""}</td><td class="muted">${quando(g.paid_at)}</td><td>${reais(g.amount_cents)}</td>
       <td>${aberta ? `<button class="danger" data-rmp="${g.id}">Remover</button>` : ""}</td></tr>`).join("") || '<tr><td class="muted">Nenhum pagamento ainda.</td></tr>';
   const total = kItens.reduce((t, x) => t + totalItem(x), 0), pago = kPags.reduce((t, g) => t + g.amount_cents, 0);
-  $("kTotais").innerHTML = `<div class="kpi"><b>${reais(total)}</b>Total</div><div class="kpi"><b>${reais(pago)}</b>Pago</div>`
+  const descontos = kItens.reduce((t, x) => t + x.discount_cents, 0);
+  $("kTotais").innerHTML = (descontos ? `<div class="kpi"><b>${reais(total + descontos)}</b>Subtotal</div><div class="kpi"><b>− ${reais(descontos)}</b>Descontos</div>` : "")
+    + `<div class="kpi"><b>${reais(total)}</b>Total</div><div class="kpi"><b>${reais(pago)}</b>Pago</div>`
     + (pago > total ? `<div class="kpi"><b>${reais(pago - total)}</b>Troco</div>` : `<div class="kpi"><b>${reais(total - pago)}</b>Falta</div>`);
   for (const id of ["kAddItem", "kAddPag", "kAcoes"]) $(id).classList.toggle("hidden", !aberta);
   $("gValor").value = total > pago ? ((total - pago) / 100).toFixed(2).replace(".", ",") : "";
@@ -974,11 +1039,11 @@ async function abrirComanda() {
   preencherItens();
   $("kItens").querySelectorAll("[data-rmi]").forEach(b => b.onclick = async () => {
     if (!confirm("Remover este item da comanda?")) return;
-    const { error } = await sb.from("comanda_items").delete().eq("id", b.dataset.rmi); if (error) return erro(error); carregarCaixa();
+    const { error } = await sb.from("comanda_items").delete().eq("id", b.dataset.rmi); if (error) return erro(error); carregarComandas();
   });
   $("kPags").querySelectorAll("[data-rmp]").forEach(b => b.onclick = async () => {
     if (!confirm("Remover este pagamento?")) return;
-    const { error } = await sb.from("payments").delete().eq("id", b.dataset.rmp); if (error) return erro(error); carregarCaixa();
+    const { error } = await sb.from("payments").delete().eq("id", b.dataset.rmp); if (error) return erro(error); carregarComandas();
   });
 }
 
@@ -1019,7 +1084,7 @@ $("iAdd").onclick = async () => {
   });
   if (error) return erro(error);
   $("iQtd").value = 1; $("iDesc").value = "";
-  aviso("Item adicionado."); carregarCaixa();
+  aviso("Item adicionado."); carregarComandas();
 };
 $("gAdd").onclick = async () => {
   const valor = paraCentavos($("gValor").value), metodo = $("gMetodo").value;
@@ -1029,13 +1094,13 @@ $("gAdd").onclick = async () => {
     installments: metodo === "credit" ? parseInt($("gParc").value, 10) : 1, received_by: usuarioId,
   });
   if (error) return erro(error);
-  aviso(`Pagamento em ${METODOS[metodo]} registrado.`); carregarCaixa();
+  aviso(`Pagamento em ${METODOS[metodo]} registrado.`); carregarComandas();
 };
 $("kFechar").onclick = async () => {
   const { error } = await sb.rpc("close_comanda", { p_comanda: comandaAberta });
   if (error) return aviso(error.message, "err");
   aviso("Comanda fechada. Atendimentos marcados como finalizados e estoque atualizado.");
-  comandaAberta = null; await carregar(); carregarCaixa();
+  comandaAberta = null; await carregar(); carregarComandas(); clientStats = {};
 };
 $("kCancelar").onclick = async () => {
   if (kPags.length) return aviso("Remova os pagamentos antes de cancelar a comanda.", "err");
@@ -1044,10 +1109,10 @@ $("kCancelar").onclick = async () => {
   if (error) return erro(error);
   // libera os atendimentos para entrarem em outra comanda
   await sb.from("comanda_items").update({ appointment_id: null }).eq("comanda_id", comandaAberta);
-  aviso("Comanda cancelada."); comandaAberta = null; carregarCaixa();
+  aviso("Comanda cancelada."); comandaAberta = null; carregarComandas();
 };
 $("kFecharDet").onclick = () => { comandaAberta = null; $("kDet").classList.add("hidden"); };
-$("kAtualizar").onclick = carregarCaixa;
+$("kAtualizar").onclick = carregarComandas;
 $("kNovaBtn").onclick = () => $("kNova").classList.toggle("hidden");
 $("kCancelarNova").onclick = () => $("kNova").classList.add("hidden");
 $("kCriar").onclick = async () => {
@@ -1058,29 +1123,117 @@ $("kCriar").onclick = async () => {
   const n = await sb.from("comandas").insert({ tenant_id: tenantId, client_id: clientId, opened_by: usuarioId }).select("id").single();
   if (n.error) return erro(n.error);
   $("kTel").value = ""; $("kNome").value = ""; $("kNova").classList.add("hidden");
-  comandaAberta = n.data.id; carregarCaixa();
+  comandaAberta = n.data.id; carregarComandas();
 };
-$("kData").onchange = carregarResumo;
-async function carregarResumo() {
-  const data = $("kData").value || hojeLocal();
-  const ini = localParaUtc(data, "00:00").toISOString(), fim = localParaUtc(somarDias(data, 1), "00:00").toISOString();
+// ---------- Caixa: relatório de faturamento ----------
+let relatorio = [];
+function formaDe(pags) {
+  const v = [...new Set(pags.map(g => METODOS[g.method] + (g.installments > 1 ? ` ${g.installments}x` : "")))];
+  return v.join(" + ") || "—";
+}
+function inicioMes(data, delta) { const [y, m] = data.split("-").map(Number); return new Date(Date.UTC(y, m - 1 + delta, 1)).toISOString().slice(0, 10); }
+$("fHoje").onclick = () => { $("fDe").value = $("fAte").value = hojeLocal(); carregarCaixa(); };
+$("fMes").onclick = () => { $("fDe").value = inicioMes(hojeLocal(), 0); $("fAte").value = hojeLocal(); carregarCaixa(); };
+$("fMesAnt").onclick = () => { const i = inicioMes(hojeLocal(), -1); $("fDe").value = i; $("fAte").value = somarDias(inicioMes(hojeLocal(), 0), -1); carregarCaixa(); };
+$("fDe").onchange = $("fAte").onchange = () => carregarCaixa();
+async function carregarCaixa() {
+  if (!$("fDe").value) $("fDe").value = hojeLocal();
+  if (!$("fAte").value || $("fAte").value < $("fDe").value) $("fAte").value = $("fDe").value;
+  const ini = localParaUtc($("fDe").value, "00:00").toISOString(), fim = localParaUtc(somarDias($("fAte").value, 1), "00:00").toISOString();
   const { data: fechadas, error } = await sb.from("comandas")
-    .select("id, closed_at, clients(full_name), comanda_items(quantity, unit_price_cents, discount_cents, product_id), payments(method, amount_cents)")
+    .select("id, closed_at, clients(full_name), comanda_items(description, quantity, unit_price_cents, discount_cents, product_id, professionals(name)), payments(method, amount_cents, installments)")
     .eq("tenant_id", tenantId).eq("status", "closed").gte("closed_at", ini).lt("closed_at", fim).order("closed_at", { ascending: false });
   if (error) return erro(error);
-  const porMetodo = {}; let total = 0, servs = 0, prods = 0;
+  let total = 0, servs = 0, prods = 0, desc = 0;
+  relatorio = [];
   for (const c of fechadas) {
-    for (const i of c.comanda_items) { const v = totalItem(i); total += v; i.product_id ? prods += v : servs += v; }
-    for (const g of c.payments) porMetodo[g.method] = (porMetodo[g.method] || 0) + g.amount_cents;
+    const forma = formaDe(c.payments);
+    for (const i of c.comanda_items) {
+      const v = totalItem(i); total += v; desc += i.discount_cents; i.product_id ? prods += v : servs += v;
+      relatorio.push({ comanda: c.id, data: c.closed_at, cliente: c.clients?.full_name || "Cliente", item: i.description + (i.quantity > 1 ? ` (${i.quantity}x)` : ""),
+        tipo: i.product_id ? "Produto" : "Serviço", prof: i.professionals?.name || "", valor: v, desconto: i.discount_cents, forma });
+    }
   }
   $("kResumo").innerHTML = `<div class="kpi"><b>${reais(total)}</b>Faturado</div><div class="kpi"><b>${fechadas.length}</b>Comandas</div>`
     + `<div class="kpi"><b>${reais(fechadas.length ? Math.round(total / fechadas.length) : 0)}</b>Ticket médio</div>`
     + `<div class="kpi"><b>${reais(servs)}</b>Serviços</div><div class="kpi"><b>${reais(prods)}</b>Produtos</div>`
-    + Object.entries(porMetodo).map(([m, v]) => `<div class="kpi"><b>${reais(v)}</b>${METODOS[m]}</div>`).join("");
-  $("kFechadas").innerHTML = fechadas.map(c => `<tr><td>${esc(c.clients?.full_name || "Cliente")}</td><td class="muted">${quando(c.closed_at)}</td>
-      <td>${reais(c.comanda_items.reduce((t, i) => t + totalItem(i), 0))}</td><td><button class="ghost" data-kv="${c.id}">Ver</button></td></tr>`).join("")
-    || '<tr><td colspan="4" class="muted">Nenhuma comanda fechada neste dia.</td></tr>';
-  $("kFechadas").querySelectorAll("[data-kv]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.kv; abrirComanda(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+    + `<div class="kpi"><b>${reais(desc)}</b>Descontos</div>`;
+  $("kFechadas").innerHTML = relatorio.map(r => `<tr><td class="muted">${quando(r.data)}</td><td>${esc(r.cliente)}</td>
+      <td>${esc(r.item)} <span class="muted" style="font-size:12px">· ${r.tipo}${r.prof ? " · " + esc(r.prof) : ""}</span></td>
+      <td>${reais(r.valor)}</td><td>${r.desconto ? reais(r.desconto) : "—"}</td><td>${esc(r.forma)}</td>
+      <td><button class="ghost" data-kv="${r.comanda}">Ver</button></td></tr>`).join("")
+    || '<tr><td colspan="7" class="muted">Nenhuma comanda fechada no período.</td></tr>';
+  $("kFechadas").querySelectorAll("[data-kv]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.kv; irParaAba("comandas"); window.scrollTo({ top: 0 }); });
+}
+$("fCsv").onclick = () => {
+  if (!relatorio.length) return aviso("Não há faturamento no período para baixar.", "err");
+  const n = (c) => (c / 100).toFixed(2).replace(".", ",");
+  const linhas = [["Data", "Cliente", "Item", "Tipo", "Profissional", "Valor", "Desconto", "Forma"]]
+    .concat(relatorio.map(r => [quando(r.data), r.cliente, r.item, r.tipo, r.prof, n(r.valor), n(r.desconto), r.forma]));
+  const csv = "﻿" + linhas.map(l => l.map(x => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `faturamento_${$("fDe").value}_a_${$("fAte").value}.csv`; a.click();
+};
+
+// ---------- Clientes e categorias ----------
+let categorias = [], clientStats = {};
+function categoriaDe(pontos) {
+  const ord = [...categorias].sort((a, b) => b.min_points - a.min_points);
+  return ord.find(c => (pontos ?? 0) >= c.min_points) || ord[ord.length - 1] || null;
+}
+function estrela(clientId) {
+  const st = clientStats[clientId], c = categoriaDe(st?.points ?? 0);
+  return c ? `<span class="estrela" style="color:${esc(c.color)}" title="${esc(c.name)} · ${st?.points ?? 0} pontos">★</span>` : "";
+}
+async function carregarCategorias() {
+  const { data, error } = await sb.from("client_tiers").select("*").eq("tenant_id", tenantId).order("min_points");
+  if (error) return erro(error);
+  categorias = data;
+  const pode = podeDesconto();
+  $("tForm").classList.toggle("hidden", !pode);
+  $("tLista").innerHTML = categorias.map(c => `<tr><td><span class="estrela" style="color:${esc(c.color)}">★</span> <b>${esc(c.name)}</b></td>
+      <td>${c.min_points} pontos</td><td>${pode ? `<span class="actions" style="margin:0"><button class="ghost" data-te="${c.id}">Editar</button><button class="danger" data-tr="${c.id}">Remover</button></span>` : ""}</td></tr>`).join("")
+    || '<tr><td colspan="3" class="muted">Nenhuma categoria cadastrada.</td></tr>';
+  $("tLista").querySelectorAll("[data-te]").forEach(b => b.onclick = () => {
+    const c = categorias.find(x => x.id === b.dataset.te); $("tId").value = c.id; $("tNome").value = c.name; $("tCor").value = c.color; $("tMin").value = c.min_points;
+  });
+  $("tLista").querySelectorAll("[data-tr]").forEach(b => b.onclick = async () => {
+    if (!confirm("Remover esta categoria?")) return;
+    const { error } = await sb.from("client_tiers").delete().eq("id", b.dataset.tr); if (error) return erro(error);
+    carregarClientes();
+  });
+}
+$("tLimpar").onclick = () => { $("tId").value = ""; $("tNome").value = ""; $("tCor").value = "#e0b100"; $("tMin").value = 0; };
+$("tSalvar").onclick = async () => {
+  const row = { tenant_id: tenantId, name: $("tNome").value.trim(), color: $("tCor").value, min_points: parseInt($("tMin").value, 10) || 0 };
+  if (!row.name) return aviso("Informe o nome da categoria.", "err");
+  const id = $("tId").value;
+  const { error } = id ? await sb.from("client_tiers").update(row).eq("id", id) : await sb.from("client_tiers").insert(row);
+  if (error) return error.code === "23505" ? aviso("Já existe uma categoria com esse nome.", "err") : erro(error);
+  aviso("Categoria salva."); $("tLimpar").onclick(); carregarClientes();
+};
+let listaClientes = [];
+async function carregarClientes() {
+  await carregarCategorias();
+  const [c, s] = await Promise.all([
+    sb.from("clients").select("id, full_name, phone_e164").eq("tenant_id", tenantId).order("full_name").limit(1000),
+    sb.from("client_stats").select("*").eq("tenant_id", tenantId).limit(1000),
+  ]);
+  for (const r of [c, s]) if (r.error) return erro(r.error);
+  for (const x of s.data) clientStats[x.client_id] = x;
+  listaClientes = c.data; desenharClientes();
+}
+$("clBusca").oninput = desenharClientes;
+function desenharClientes() {
+  const q = $("clBusca").value.trim().toLowerCase(), qd = q.replace(/\D/g, "");
+  const lista = listaClientes.filter(c => !q || (c.full_name || "").toLowerCase().includes(q) || (qd && c.phone_e164.includes(qd)))
+    .sort((a, b) => (clientStats[b.id]?.points ?? 0) - (clientStats[a.id]?.points ?? 0));
+  $("clLista").innerHTML = lista.map(c => { const st = clientStats[c.id] || {}, cat = categoriaDe(st.points);
+    return `<tr><td><b>${esc(c.full_name || "Sem nome")}</b><br><span class="muted">${esc(c.phone_e164)}</span></td>
+      <td>${estrela(c.id)} ${esc(cat?.name || "")}</td><td>${st.points ?? 0}</td><td>${st.visits_12m ?? 0}</td><td>${st.cancels_12m ?? 0}</td><td>${st.no_shows_12m ?? 0}</td>
+      <td>${reais(st.spent_12m_cents ?? 0)}</td><td class="muted">${st.last_visit ? quando(st.last_visit) : "—"}</td></tr>`; }).join("")
+    || '<tr><td colspan="8" class="muted">Nenhuma cliente encontrada.</td></tr>';
 }
 
 // ---------- Produtos ----------
