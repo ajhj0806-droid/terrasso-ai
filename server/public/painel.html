@@ -502,7 +502,7 @@ document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
   for (const t of ["agenda","comandas","caixa","clientes","produtos","servicos","profissionais","horarios","conversas","perfil"]) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
   if (b.dataset.tab === "agenda") carregarAgenda();
-  if (b.dataset.tab === "comandas") carregarComandas();
+  if (b.dataset.tab === "comandas") { if (!manterComanda) comandaAberta = null; manterComanda = false; carregarComandas(); }
   if (b.dataset.tab === "caixa") carregarComandas();
   if (b.dataset.tab === "clientes") carregarClientes();
   if (b.dataset.tab === "produtos") desenharProdutos();
@@ -1007,7 +1007,8 @@ const totalItem = (i) => i.quantity * i.unit_price_cents - i.discount_cents;
 $("gMetodo").innerHTML = Object.entries(METODOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 $("gMetodo").onchange = () => $("gParcBox").classList.toggle("hidden", $("gMetodo").value !== "credit");
 
-function irParaAba(t) { document.querySelector(`.tabs button[data-tab="${t}"]`).click(); }
+let manterComanda = false;
+function irParaAba(t) { if (t === "comandas") manterComanda = true; document.querySelector(`.tabs button[data-tab="${t}"]`).click(); }
 
 async function comandaDoAgendamento(a) {
   // já está numa comanda? abre ela
@@ -1044,10 +1045,10 @@ async function carregarComandas() {
   $("kLista").innerHTML = comandas.length ? comandas.map(c => `<tr>
       <td><b>${esc(c.clients?.full_name || "Cliente")}</b><br><span class="muted">${esc(c.clients?.phone_e164 || "")}</span></td>
       <td class="muted">${quando(c.opened_at)}</td><td>${reais(tot(c))}</td>
-      <td>${tot(c) - pago(c) > 0 ? `<span class="pill off">${reais(tot(c) - pago(c))}</span>` : '<span class="pill">pago</span>'}</td>
+      <td>${!c.comanda_items.length ? '<span class="pill">vazia</span>' : tot(c) - pago(c) > 0 ? `<span class="pill off">${reais(tot(c) - pago(c))}</span>` : '<span class="pill">pago</span>'}</td>
       <td><button class="ghost" data-k="${c.id}">Abrir</button></td></tr>`).join("")
     : '<tr><td colspan="5" class="muted">Nenhuma comanda aberta. Abra pela Agenda (botão Comanda) ou em "+ Nova comanda".</td></tr>';
-  $("kLista").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.k; abrirComanda(); });
+  $("kLista").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.k; abrirComanda().then(() => $("kDet").scrollIntoView({ behavior: "smooth" })); });
   if (comandaAberta) abrirComanda(); else $("kDet").classList.add("hidden");
 }
 
