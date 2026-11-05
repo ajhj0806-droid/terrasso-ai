@@ -83,6 +83,7 @@
       <button data-tab="profissionais">Profissionais</button>
       <button data-tab="horarios">Horários</button>
       <button data-tab="conversas">Conversas</button>
+      <button data-tab="perfil">Perfil da IA</button>
     </nav>
 
     <!-- Serviços -->
@@ -164,6 +165,24 @@
         <div id="cMsgs"></div>
       </div>
     </div>
+    <!-- Perfil da IA -->
+    <div id="tab-perfil" class="hidden">
+      <div class="card">
+        <h2 style="margin-top:0">Perfil da recepcionista IA</h2>
+        <p class="muted" style="font-size:13px">O que você escrever aqui vale na próxima mensagem que a IA responder. Escreva como se estivesse explicando para uma recepcionista nova.</p>
+        <label for="aNome">Nome da assistente</label>
+        <input id="aNome" placeholder="Ex.: Lia">
+        <label for="aTom">Jeito de falar</label>
+        <textarea id="aTom" placeholder="Ex.: Acolhedora e elegante, trata a cliente pelo nome, mensagens curtas, no máximo um emoji."></textarea>
+        <label for="aPol">Políticas do salão</label>
+        <textarea id="aPol" style="min-height:110px" placeholder="Ex.: Tolerância de 15 min de atraso. Cancelamento com 24h de antecedência. Aceitamos Pix, débito e crédito em até 3x."></textarea>
+        <label for="aFaq">Informações e perguntas frequentes</label>
+        <textarea id="aFaq" style="min-height:140px" placeholder="Ex.: Endereço e ponto de referência, estacionamento, horário de funcionamento, se atende criança, cuidados antes e depois de procedimentos..."></textarea>
+        <label for="aDif">Diferenciais do salão</label>
+        <textarea id="aDif" placeholder="Ex.: Produtos veganos, café especial, equipe com formação internacional..."></textarea>
+        <div class="actions"><button id="aSalvar">Salvar perfil</button></div>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -222,9 +241,10 @@ async function iniciar() {
 // ---------- Abas ----------
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
-  for (const t of ["servicos","profissionais","horarios","conversas"]) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
+  for (const t of ["servicos","profissionais","horarios","conversas","perfil"]) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
   if (b.dataset.tab === "horarios") desenharHorarios();
   if (b.dataset.tab === "conversas") carregarConversas();
+  if (b.dataset.tab === "perfil") carregarPerfil();
 });
 
 async function carregar() {
@@ -421,6 +441,24 @@ $("cDevolver").onclick = async () => {
   if (error) return erro(error);
   aviso("Conversa devolvida para a IA. Ela responde a próxima mensagem da cliente.");
   carregarConversas();
+};
+
+// ---------- Perfil da IA ----------
+const CAMPOS = { aNome: "nome_assistente", aTom: "tom_de_voz", aPol: "politicas", aFaq: "faq", aDif: "diferenciais" };
+let settingsAtuais = {};
+async function carregarPerfil() {
+  const { data, error } = await sb.from("tenants").select("settings").eq("id", tenantId).single();
+  if (error) return erro(error);
+  settingsAtuais = data.settings || {};
+  for (const [id, k] of Object.entries(CAMPOS)) $(id).value = settingsAtuais[k] || "";
+}
+$("aSalvar").onclick = async () => {
+  const novo = { ...settingsAtuais };
+  for (const [id, k] of Object.entries(CAMPOS)) { const v = $(id).value.trim(); if (v) novo[k] = v; else delete novo[k]; }
+  const { data, error } = await sb.from("tenants").update({ settings: novo }).eq("id", tenantId).select("id");
+  if (error) return erro(error);
+  if (!data.length) return aviso("Só o dono do salão pode alterar o perfil da IA.", "err");
+  settingsAtuais = novo; aviso("Perfil salvo. A IA já usa na próxima resposta.");
 };
 
 iniciar();

@@ -21,10 +21,12 @@ export interface TenantInfo {
 function stableSystem(t: TenantInfo): string {
   const s = t.settings ?? {};
   return [
-    `Você é a recepcionista virtual do ${t.name}, um salão de beleza e clínica de estética, atendendo clientes pelo WhatsApp.`,
+    `Você é ${s.nome_assistente ? `${s.nome_assistente}, ` : ""}a recepcionista virtual do ${t.name}, um salão de beleza e clínica de estética, atendendo clientes pelo WhatsApp.`,
     t.unitAddress ? `Endereço: ${t.unitAddress}${t.unitName ? ` (${t.unitName})` : ""}.` : "",
     s.tom_de_voz ? `Tom de voz: ${s.tom_de_voz}` : "Tom: acolhedor, simpático e direto, em português do Brasil. Mensagens curtas, como numa conversa de WhatsApp. No máximo um emoji por mensagem.",
     s.politicas ? `Políticas do salão:\n${s.politicas}` : "",
+    s.faq ? `Informações e perguntas frequentes (use só o que estiver aqui; se não souber, diga que vai confirmar com a equipe):\n${s.faq}` : "",
+    s.diferenciais ? `Diferenciais do salão (cite com naturalidade quando ajudar, sem exagerar):\n${s.diferenciais}` : "",
     "",
     "O que você faz: tira dúvidas sobre serviços e preços, agenda, remarca e cancela horários, e passa para uma pessoa da equipe quando precisa.",
     "",
