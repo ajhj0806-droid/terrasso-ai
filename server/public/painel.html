@@ -1715,7 +1715,7 @@ const FUNCOES = { owner: "Dono", manager: "Gerente", reception: "Recepção", pr
 let convites = [];
 async function carregarEquipe(silencioso) {
   const [m, c] = await Promise.all([
-    sb.from("staff_members").select("id, user_id, full_name, email, role, active").eq("tenant_id", tenantId).order("full_name"),
+    sb.from("staff_members").select("user_id, full_name, email, role, active").eq("tenant_id", tenantId).order("full_name"),
     ["owner", "manager"].includes(meuPapel) ? sb.from("staff_invites").select("*").eq("tenant_id", tenantId).is("accepted_at", null).order("created_at") : Promise.resolve({ data: [] }),
   ]);
   for (const r of [m, c]) if (r.error) return silencioso ? console.error(r.error) : erro(r.error);
@@ -1729,22 +1729,22 @@ function desenharEquipe() {
     const mexe = gere && e.role !== "owner" && e.user_id !== usuarioId && !(meuPapel === "manager" && e.role === "manager");
     return `<tr>
       <td><b>${esc(e.full_name)}</b>${e.user_id === usuarioId ? ' <span class="muted">(você)</span>' : ""}<br><span class="muted">${esc(e.email || "")}</span></td>
-      <td>${mexe ? `<select data-func="${e.id}" style="width:auto">${opcoes(e.role)}</select>` : FUNCOES[e.role]}</td>
+      <td>${mexe ? `<select data-func="${e.user_id}" style="width:auto">${opcoes(e.role)}</select>` : FUNCOES[e.role]}</td>
       <td>${e.active ? '<span class="pill">com acesso</span>' : '<span class="pill off">sem acesso</span>'}</td>
-      <td>${mexe ? `<button class="${e.active ? "danger" : "ghost"}" data-ativo="${e.id}">${e.active ? "Tirar acesso" : "Devolver acesso"}</button>` : ""}</td></tr>`;
+      <td>${mexe ? `<button class="${e.active ? "danger" : "ghost"}" data-ativo="${e.user_id}">${e.active ? "Tirar acesso" : "Devolver acesso"}</button>` : ""}</td></tr>`;
   }).join("") + convites.map(i => `<tr>
       <td><b>${esc(i.full_name)}</b><br><span class="muted">${esc(i.email)}</span></td>
       <td>${FUNCOES[i.role]}</td><td><span class="pill">convite enviado</span><br><span class="muted" style="font-size:12px">ainda não criou o acesso</span></td>
       <td><button class="danger" data-cconv="${i.id}">Cancelar convite</button></td></tr>`).join("");
   $("eLista").querySelectorAll("[data-func]").forEach(sel => sel.onchange = async () => {
-    const { error } = await sb.from("staff_members").update({ role: sel.value }).eq("id", sel.dataset.func);
+    const { error } = await sb.from("staff_members").update({ role: sel.value }).eq("tenant_id", tenantId).eq("user_id", sel.dataset.func);
     if (error) return erro(error);
     aviso("Função alterada. Vale no próximo login da pessoa."); carregarEquipe();
   });
   $("eLista").querySelectorAll("[data-ativo]").forEach(b => b.onclick = async () => {
-    const e = equipe.find(x => x.id === b.dataset.ativo); if (!e) return;
+    const e = equipe.find(x => x.user_id === b.dataset.ativo); if (!e) return;
     if (e.active && !confirm(`Tirar o acesso de ${e.full_name} ao painel?`)) return;
-    const { error } = await sb.from("staff_members").update({ active: !e.active }).eq("id", e.id);
+    const { error } = await sb.from("staff_members").update({ active: !e.active }).eq("tenant_id", tenantId).eq("user_id", e.user_id);
     if (error) return erro(error);
     aviso(e.active ? "Acesso retirado." : "Acesso devolvido."); carregarEquipe();
   });
