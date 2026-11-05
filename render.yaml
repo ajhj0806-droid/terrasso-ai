@@ -3,7 +3,7 @@ services:
     name: terrasso-api
     runtime: node
     region: oregon          # perto da Supabase (us-west-2)
-    plan: free              # piloto; trocar para starter antes de abrir para clientes
+    plan: starter           # 0.5c-512mb, US$ 7/mês, não dorme (assinado em 2026-11-05)
     rootDir: server
     buildCommand: npm ci && npm run build
     startCommand: npm start
