@@ -175,6 +175,19 @@
       </div>
     </div>
 
+    <!-- Categorias de serviços e produtos (aparece dentro de Serviços ou Produtos) -->
+    <div class="card hidden" id="catCard">
+      <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
+        <b>Categorias de serviços e produtos</b>
+        <button class="ghost" id="catFechar">Fechar</button>
+      </div>
+      <table><tbody id="catLista"></tbody></table>
+      <div class="row" style="margin-top:8px">
+        <div><label for="catNome">Nova categoria</label><input id="catNome" placeholder="Ex.: Unhas"></div>
+        <div style="display:flex;align-items:end"><button id="catAdd">Adicionar</button></div>
+      </div>
+    </div>
+
     <!-- Comandas -->
     <div id="tab-comandas" class="hidden">
       <div class="card">
@@ -255,10 +268,31 @@
 
     <!-- Clientes -->
     <div id="tab-clientes" class="hidden">
-      <div class="card">
-        <h2 style="margin-top:0">Categorias de cliente</h2>
-        <p class="muted" style="font-size:13px;margin-top:0">A categoria é automática. Cada cliente soma pontos nos últimos 12 meses: <b>+1 por visita</b> (comanda fechada), <b>−1 por cancelamento</b> e <b>−2 por falta</b>. Ela fica na maior categoria cujo mínimo de pontos alcança.</p>
-        <table><thead><tr><th>Categoria</th><th>A partir de</th><th></th></tr></thead><tbody id="tLista"></tbody></table>
+      <div class="card hidden" id="clForm">
+        <h2 style="margin-top:0" id="clFormTit">Novo cliente</h2>
+        <input type="hidden" id="clId">
+        <div class="row">
+          <div><label for="clNome">Nome</label><input id="clNome" placeholder="Nome e sobrenome"></div>
+          <div><label for="clTel">WhatsApp</label><input id="clTel" inputmode="tel" placeholder="41 99999-9999"></div>
+          <div><label for="clEmail">E-mail (opcional)</label><input id="clEmail" type="email"></div>
+          <div><label for="clNasc">Aniversário (opcional)</label><input id="clNasc" type="date"></div>
+        </div>
+        <label for="clObs">Observações (opcional)</label>
+        <textarea id="clObs" placeholder="Ex.: alergia a amônia, prefere atendimento com a Ana"></textarea>
+        <div class="actions">
+          <button id="clSalvar">Salvar cliente</button>
+          <button class="ghost" id="clCancelar">Fechar</button>
+          <button class="danger hidden" id="clExcluir">Excluir cliente</button>
+        </div>
+      </div>
+
+      <div class="card hidden" id="tCard">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
+          <h2 style="margin:0">Classificação de clientes</h2>
+          <button class="ghost" id="tFechar">Fechar</button>
+        </div>
+        <p class="muted" style="font-size:13px">A classificação é automática. Cada cliente soma pontos nos últimos 12 meses: <b>+1 por visita</b> (comanda fechada), <b>−1 por cancelamento</b> e <b>−2 por falta</b>. Ela fica na maior classificação cujo mínimo de pontos alcança.</p>
+        <table><thead><tr><th>Classificação</th><th>A partir de</th><th></th></tr></thead><tbody id="tLista"></tbody></table>
         <div id="tForm">
           <input type="hidden" id="tId">
           <div class="row">
@@ -266,15 +300,20 @@
             <div><label for="tCor">Cor da estrela</label><input id="tCor" type="color" value="#e0b100"></div>
             <div><label for="tMin">Mínimo de pontos</label><input id="tMin" type="number" value="0"></div>
           </div>
-          <div class="actions"><button id="tSalvar">Salvar categoria</button><button class="ghost" id="tLimpar">Limpar</button></div>
+          <div class="actions"><button id="tSalvar">Salvar classificação</button><button class="ghost" id="tLimpar">Limpar</button></div>
         </div>
       </div>
+
       <div class="card tabela-wrap">
         <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
           <b>Clientes</b>
-          <input id="clBusca" placeholder="Buscar por nome ou telefone" style="max-width:280px">
+          <span class="actions" style="margin:0;align-items:center">
+            <button class="ghost" id="tAbrir">Classificação</button>
+            <button id="clNovo">+ Novo cliente</button>
+            <input id="clBusca" placeholder="Buscar por nome ou telefone" style="max-width:240px">
+          </span>
         </div>
-        <table><thead><tr><th>Cliente</th><th>Categoria</th><th>Pontos</th><th>Visitas</th><th>Cancel.</th><th>Faltas</th><th>Gasto 12 meses</th><th>Última visita</th></tr></thead><tbody id="clLista"></tbody></table>
+        <table><thead><tr><th>Cliente</th><th>Classificação</th><th>Pontos</th><th>Visitas</th><th>Cancel.</th><th>Faltas</th><th>Gasto 12 meses</th><th>Última visita</th><th></th></tr></thead><tbody id="clLista"></tbody></table>
       </div>
     </div>
 
@@ -285,7 +324,7 @@
         <input type="hidden" id="prId">
         <div class="row">
           <div><label for="prNome">Nome</label><input id="prNome" placeholder="Ex.: Shampoo reconstrutor 300 ml"></div>
-          <div><label for="prCat">Categoria</label><input id="prCat" placeholder="Ex.: Cabelo"></div>
+          <div><label for="prCat">Categoria <a href="#" class="gerCat" style="font-size:12px;color:var(--brand)">gerenciar</a></label><select id="prCat"></select></div>
           <div><label for="prPreco">Preço de venda (R$)</label><input id="prPreco" inputmode="decimal" placeholder="89,90"></div>
           <div><label for="prCusto">Custo (R$, opcional)</label><input id="prCusto" inputmode="decimal"></div>
           <div id="prEstBox"><label for="prEst">Estoque atual</label><input id="prEst" type="number" min="0" value="0"></div>
@@ -309,7 +348,7 @@
         <input type="hidden" id="sId">
         <div class="row">
           <div><label for="sNome">Nome</label><input id="sNome" placeholder="Ex.: Corte feminino"></div>
-          <div><label for="sCat">Categoria</label><input id="sCat" placeholder="Ex.: Cabelo"></div>
+          <div><label for="sCat">Categoria <a href="#" class="gerCat" style="font-size:12px;color:var(--brand)">gerenciar</a></label><select id="sCat"></select></div>
           <div><label for="sDur">Duração (minutos)</label><input id="sDur" type="number" min="5" step="5" placeholder="60"></div>
           <div><label for="sPreco">Preço (R$)</label><input id="sPreco" inputmode="decimal" placeholder="120,00"></div>
         </div>
@@ -409,7 +448,7 @@ const SUPABASE_KEY = "sb_publishable_apq4DYqUCLSr82maiLjIiQ_PmknYK9b";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const $ = (id) => document.getElementById(id);
-let meuPapel = null, produtos = [], tenantId = null, usuarioId = null, TZ = "America/Sao_Paulo", servicos = [], profissionais = [], vinculos = [];
+let cats = [], meuPapel = null, produtos = [], tenantId = null, usuarioId = null, TZ = "America/Sao_Paulo", servicos = [], profissionais = [], vinculos = [];
 
 function aviso(texto, tipo) {
   const m = $("msg"); m.textContent = texto; m.className = "msg " + (tipo || "ok");
@@ -473,14 +512,18 @@ document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
 });
 
 async function carregar() {
-  const [s, p, v, pr] = await Promise.all([
+  const [s, p, v, pr, ct] = await Promise.all([
     sb.from("services").select("*").eq("tenant_id", tenantId).order("name"),
     sb.from("professionals").select("*").eq("tenant_id", tenantId).order("name"),
     sb.from("professional_services").select("professional_id, service_id").eq("tenant_id", tenantId),
     sb.from("products").select("*").eq("tenant_id", tenantId).order("name"),
+    sb.from("categories").select("id, name").eq("tenant_id", tenantId).order("name"),
   ]);
-  for (const r of [s, p, v, pr]) if (r.error) return erro(r.error);
+  for (const r of [s, p, v, pr, ct]) if (r.error) return erro(r.error);
+  cats = ct.data;
+  if (!$("sId").value) opcoesCategoria("sCat", $("sCat").value); if (!$("prId").value) opcoesCategoria("prCat", $("prCat").value);
   servicos = s.data; profissionais = p.data; vinculos = v.data; produtos = pr.data;
+  desenharCategorias();
   desenharProdutos();
   desenharServicos(); desenharProfissionais(); desenharSelectHorarios();
 }
@@ -498,12 +541,12 @@ function desenharServicos() {
   document.querySelectorAll("[data-edit-s]").forEach(b => b.onclick = () => editarServico(b.dataset.editS));
 }
 function limparServico() {
-  for (const id of ["sId","sNome","sCat","sDur","sPreco","sDesc"]) $(id).value = "";
+  for (const id of ["sId","sNome","sDur","sPreco","sDesc"]) $(id).value = ""; opcoesCategoria("sCat", "");
   $("sAtivo").checked = true; $("fsTitulo").textContent = "Novo serviço";
 }
 function editarServico(id) {
   const s = servicos.find(x => x.id === id); if (!s) return;
-  $("sId").value = s.id; $("sNome").value = s.name; $("sCat").value = s.category || "";
+  $("sId").value = s.id; $("sNome").value = s.name; opcoesCategoria("sCat", s.category);
   $("sDur").value = s.duration_min; $("sPreco").value = (s.price_cents / 100).toFixed(2).replace(".", ",");
   $("sDesc").value = s.description || ""; $("sAtivo").checked = s.active;
   $("fsTitulo").textContent = "Editar serviço"; window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1194,12 +1237,12 @@ async function carregarCategorias() {
   $("tForm").classList.toggle("hidden", !pode);
   $("tLista").innerHTML = categorias.map(c => `<tr><td><span class="estrela" style="color:${esc(c.color)}">★</span> <b>${esc(c.name)}</b></td>
       <td>${c.min_points} pontos</td><td>${pode ? `<span class="actions" style="margin:0"><button class="ghost" data-te="${c.id}">Editar</button><button class="danger" data-tr="${c.id}">Remover</button></span>` : ""}</td></tr>`).join("")
-    || '<tr><td colspan="3" class="muted">Nenhuma categoria cadastrada.</td></tr>';
+    || '<tr><td colspan="3" class="muted">Nenhuma classificação cadastrada.</td></tr>';
   $("tLista").querySelectorAll("[data-te]").forEach(b => b.onclick = () => {
     const c = categorias.find(x => x.id === b.dataset.te); $("tId").value = c.id; $("tNome").value = c.name; $("tCor").value = c.color; $("tMin").value = c.min_points;
   });
   $("tLista").querySelectorAll("[data-tr]").forEach(b => b.onclick = async () => {
-    if (!confirm("Remover esta categoria?")) return;
+    if (!confirm("Remover esta classificação?")) return;
     const { error } = await sb.from("client_tiers").delete().eq("id", b.dataset.tr); if (error) return erro(error);
     carregarClientes();
   });
@@ -1207,17 +1250,17 @@ async function carregarCategorias() {
 $("tLimpar").onclick = () => { $("tId").value = ""; $("tNome").value = ""; $("tCor").value = "#e0b100"; $("tMin").value = 0; };
 $("tSalvar").onclick = async () => {
   const row = { tenant_id: tenantId, name: $("tNome").value.trim(), color: $("tCor").value, min_points: parseInt($("tMin").value, 10) || 0 };
-  if (!row.name) return aviso("Informe o nome da categoria.", "err");
+  if (!row.name) return aviso("Informe o nome da classificação.", "err");
   const id = $("tId").value;
   const { error } = id ? await sb.from("client_tiers").update(row).eq("id", id) : await sb.from("client_tiers").insert(row);
-  if (error) return error.code === "23505" ? aviso("Já existe uma categoria com esse nome.", "err") : erro(error);
-  aviso("Categoria salva."); $("tLimpar").onclick(); carregarClientes();
+  if (error) return error.code === "23505" ? aviso("Já existe uma classificação com esse nome.", "err") : erro(error);
+  aviso("Classificação salva."); $("tLimpar").onclick(); carregarClientes();
 };
 let listaClientes = [];
 async function carregarClientes() {
   await carregarCategorias();
   const [c, s] = await Promise.all([
-    sb.from("clients").select("id, full_name, phone_e164").eq("tenant_id", tenantId).order("full_name").limit(1000),
+    sb.from("clients").select("id, full_name, phone_e164, email, birth_date, notes").eq("tenant_id", tenantId).order("full_name").limit(1000),
     sb.from("client_stats").select("*").eq("tenant_id", tenantId).limit(1000),
   ]);
   for (const r of [c, s]) if (r.error) return erro(r.error);
@@ -1225,6 +1268,42 @@ async function carregarClientes() {
   listaClientes = c.data; desenharClientes();
 }
 $("clBusca").oninput = desenharClientes;
+$("tAbrir").onclick = () => { $("tCard").classList.toggle("hidden"); };
+$("tFechar").onclick = () => $("tCard").classList.add("hidden");
+$("clNovo").onclick = () => abrirCliente(null);
+$("clCancelar").onclick = () => $("clForm").classList.add("hidden");
+function abrirCliente(id) {
+  const c = id ? listaClientes.find(x => x.id === id) : null;
+  $("clId").value = c?.id || ""; $("clNome").value = c?.full_name || "";
+  $("clTel").value = c ? c.phone_e164.replace(/^\+55/, "") : ""; $("clEmail").value = c?.email || "";
+  $("clNasc").value = c?.birth_date || ""; $("clObs").value = c?.notes || "";
+  $("clFormTit").textContent = c ? "Editar cliente" : "Novo cliente";
+  $("clExcluir").classList.toggle("hidden", !c);
+  $("clForm").classList.remove("hidden"); window.scrollTo({ top: 0, behavior: "smooth" }); $("clNome").focus();
+}
+$("clSalvar").onclick = async () => {
+  const tel = normalizarTel($("clTel").value), id = $("clId").value;
+  const row = { tenant_id: tenantId, full_name: $("clNome").value.trim(), phone_e164: tel, email: $("clEmail").value.trim() || null,
+    birth_date: $("clNasc").value || null, notes: $("clObs").value.trim() || null };
+  if (!row.full_name) return aviso("Informe o nome do cliente.", "err");
+  if (!tel) return aviso("Informe o WhatsApp com DDD, por exemplo 41 99999-9999.", "err");
+  const dup = await sb.from("clients").select("id, full_name").eq("tenant_id", tenantId).in("phone_e164", variantesTel(tel)).neq("id", id || "00000000-0000-0000-0000-000000000000").limit(1);
+  if (dup.error) return erro(dup.error);
+  if (dup.data.length) return aviso(`Esse WhatsApp já está cadastrado para ${dup.data[0].full_name || "outro cliente"}.`, "err");
+  const { error } = id ? await sb.from("clients").update(row).eq("id", id) : await sb.from("clients").insert(row);
+  if (error) return erro(error);
+  aviso("Cliente salvo."); $("clForm").classList.add("hidden"); carregarClientes();
+};
+$("clExcluir").onclick = async () => {
+  const id = $("clId").value, c = listaClientes.find(x => x.id === id); if (!c) return;
+  if (!confirm(`Excluir ${c.full_name || "este cliente"}? Isso não pode ser desfeito.`)) return;
+  const { error } = await sb.from("clients").delete().eq("id", id);
+  if (error) return error.code === "23503"
+    ? aviso("Este cliente tem horários ou comandas registrados, então não pode ser excluído (o histórico do caixa precisa ficar). Edite os dados se precisar.", "err")
+    : erro(error);
+  aviso("Cliente excluído."); $("clForm").classList.add("hidden"); carregarClientes();
+};
+
 function desenharClientes() {
   const q = $("clBusca").value.trim().toLowerCase(), qd = q.replace(/\D/g, "");
   const lista = listaClientes.filter(c => !q || (c.full_name || "").toLowerCase().includes(q) || (qd && c.phone_e164.includes(qd)))
@@ -1232,9 +1311,56 @@ function desenharClientes() {
   $("clLista").innerHTML = lista.map(c => { const st = clientStats[c.id] || {}, cat = categoriaDe(st.points);
     return `<tr><td><b>${esc(c.full_name || "Sem nome")}</b><br><span class="muted">${esc(c.phone_e164)}</span></td>
       <td>${estrela(c.id)} ${esc(cat?.name || "")}</td><td>${st.points ?? 0}</td><td>${st.visits_12m ?? 0}</td><td>${st.cancels_12m ?? 0}</td><td>${st.no_shows_12m ?? 0}</td>
-      <td>${reais(st.spent_12m_cents ?? 0)}</td><td class="muted">${st.last_visit ? quando(st.last_visit) : "—"}</td></tr>`; }).join("")
-    || '<tr><td colspan="8" class="muted">Nenhuma cliente encontrada.</td></tr>';
+      <td>${reais(st.spent_12m_cents ?? 0)}</td><td class="muted">${st.last_visit ? quando(st.last_visit) : "—"}</td>
+      <td><button class="ghost" data-cle="${c.id}">Editar</button></td></tr>`; }).join("")
+    || '<tr><td colspan="9" class="muted">Nenhum cliente encontrado.</td></tr>';
+  $("clLista").querySelectorAll("[data-cle]").forEach(b => b.onclick = () => abrirCliente(b.dataset.cle));
 }
+
+
+// ---------- Categorias de serviços e produtos ----------
+function opcoesCategoria(selId, atual) {
+  const nomes = cats.map(c => c.name);
+  if (atual && !nomes.includes(atual)) nomes.push(atual);
+  $(selId).innerHTML = `<option value="">Sem categoria</option>` + nomes.map(n => `<option>${esc(n)}</option>`).join("");
+  $(selId).value = atual || "";
+}
+function desenharCategorias() {
+  const uso = (n) => servicos.filter(s => s.category === n).length + produtos.filter(p => p.category === n).length;
+  $("catLista").innerHTML = cats.map(c => `<tr><td><b>${esc(c.name)}</b> <span class="muted" style="font-size:12px">${uso(c.name)} itens</span></td>
+      <td style="text-align:right"><span class="actions" style="margin:0;justify-content:flex-end"><button class="ghost" data-cren="${c.id}">Renomear</button><button class="danger" data-crm="${c.id}">Excluir</button></span></td></tr>`).join("")
+    || '<tr><td class="muted">Nenhuma categoria ainda.</td></tr>';
+  $("catLista").querySelectorAll("[data-cren]").forEach(b => b.onclick = async () => {
+    const c = cats.find(x => x.id === b.dataset.cren), novo = (prompt("Novo nome da categoria:", c.name) || "").trim();
+    if (!novo || novo === c.name) return;
+    const r = await sb.from("categories").update({ name: novo }).eq("id", c.id);
+    if (r.error) return r.error.code === "23505" ? aviso("Já existe uma categoria com esse nome.", "err") : erro(r.error);
+    await sb.from("services").update({ category: novo }).eq("tenant_id", tenantId).eq("category", c.name);
+    await sb.from("products").update({ category: novo }).eq("tenant_id", tenantId).eq("category", c.name);
+    aviso("Categoria renomeada."); carregar();
+  });
+  $("catLista").querySelectorAll("[data-crm]").forEach(b => b.onclick = async () => {
+    const c = cats.find(x => x.id === b.dataset.crm), n = uso(c.name);
+    if (!confirm(n ? `${n} serviços/produtos usam "${c.name}" e ficarão sem categoria. Excluir mesmo assim?` : `Excluir a categoria "${c.name}"?`)) return;
+    if (n) {
+      await sb.from("services").update({ category: null }).eq("tenant_id", tenantId).eq("category", c.name);
+      await sb.from("products").update({ category: null }).eq("tenant_id", tenantId).eq("category", c.name);
+    }
+    const r = await sb.from("categories").delete().eq("id", c.id); if (r.error) return erro(r.error);
+    aviso("Categoria excluída."); carregar();
+  });
+}
+document.querySelectorAll(".gerCat").forEach(a => a.onclick = (ev) => {
+  ev.preventDefault();
+  const card = $("catCard"); a.closest(".card").after(card); card.classList.remove("hidden"); $("catNome").focus();
+});
+$("catFechar").onclick = () => $("catCard").classList.add("hidden");
+$("catAdd").onclick = async () => {
+  const nome = $("catNome").value.trim(); if (!nome) return aviso("Digite o nome da categoria.", "err");
+  const r = await sb.from("categories").insert({ tenant_id: tenantId, name: nome });
+  if (r.error) return r.error.code === "23505" ? aviso("Essa categoria já existe.", "err") : erro(r.error);
+  $("catNome").value = ""; aviso("Categoria criada."); carregar();
+};
 
 // ---------- Produtos ----------
 function desenharProdutos() {
@@ -1248,13 +1374,13 @@ function desenharProdutos() {
   $("prLista").querySelectorAll("[data-ent]").forEach(b => b.onclick = () => entradaEstoque(b.dataset.ent));
 }
 function limparProduto() {
-  for (const id of ["prId", "prNome", "prCat", "prPreco", "prCusto"]) $(id).value = "";
+  for (const id of ["prId", "prNome", "prPreco", "prCusto"]) $(id).value = ""; opcoesCategoria("prCat", "");
   $("prEst").value = 0; $("prMin").value = 2; $("prAtivo").checked = true;
   $("prEstBox").classList.remove("hidden"); $("fprTitulo").textContent = "Novo produto";
 }
 function editarProduto(id) {
   const p = produtos.find(x => x.id === id); if (!p) return;
-  $("prId").value = p.id; $("prNome").value = p.name; $("prCat").value = p.category || "";
+  $("prId").value = p.id; $("prNome").value = p.name; opcoesCategoria("prCat", p.category);
   $("prPreco").value = (p.price_cents / 100).toFixed(2).replace(".", ",");
   $("prCusto").value = p.cost_cents != null ? (p.cost_cents / 100).toFixed(2).replace(".", ",") : "";
   $("prMin").value = p.min_stock; $("prAtivo").checked = p.active;
