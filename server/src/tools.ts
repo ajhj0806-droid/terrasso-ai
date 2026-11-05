@@ -100,8 +100,19 @@ export const toolDefs: Anthropic.Beta.Messages.BetaTool[] = [
     strict: true,
   },
   {
+    name: "avisar_equipe",
+    description: "Registra um pedido para a equipe decidir depois (ex.: desconto, encaixe fora do horário, preferência especial) SEM tirar você da conversa. Você continua atendendo normalmente.",
+    input_schema: {
+      type: "object",
+      properties: { pedido: { type: "string" } },
+      required: ["pedido"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
     name: "chamar_atendente",
-    description: "Passa a conversa para uma pessoa da equipe e deixa a IA em silêncio. Use para reclamação, pedido de desconto, dúvida de saúde/contraindicação, pagamento, algo que você não consegue resolver, ou quando o cliente pedir uma pessoa.",
+    description: "Passa a conversa inteira para uma pessoa da equipe e deixa a IA em silêncio. Use só para reclamação, dúvida de saúde/contraindicação, pagamento, algo que você não consegue resolver, ou quando o cliente pedir para falar com uma pessoa.",
     input_schema: {
       type: "object",
       properties: { motivo: { type: "string" } },
@@ -120,6 +131,7 @@ const schemas = {
   remarcar_agendamento: z.object({ agendamento_id: z.uuid(), data: z.iso.date(), hora: z.string().regex(/^\d\d:\d\d$/), profissional_id: z.uuid().nullable() }),
   cancelar_agendamento: z.object({ agendamento_id: z.uuid() }),
   salvar_nome: z.object({ nome: z.string().min(2).max(120) }),
+  avisar_equipe: z.object({ pedido: z.string().max(500) }),
   chamar_atendente: z.object({ motivo: z.string().max(500) }),
 };
 
@@ -139,6 +151,7 @@ export async function runTool(name: string, input: unknown, ctx: Ctx): Promise<R
     case "remarcar_agendamento": return reschedule(ctx, args);
     case "cancelar_agendamento": return cancel(ctx, args.agendamento_id);
     case "salvar_nome": return saveName(ctx, args.nome);
+    case "avisar_equipe": return notifyTeam(ctx, args.pedido);
     case "chamar_atendente": return handoff(ctx, args.motivo);
   }
   return { ok: false, erro: "não implementado" };
@@ -337,6 +350,15 @@ async function saveName(ctx: Ctx, name: string): Promise<Result> {
     .eq("tenant_id", ctx.tenantId).eq("id", ctx.clientId);
   if (error) throw error;
   return { ok: true };
+}
+
+async function notifyTeam(ctx: Ctx, request: string): Promise<Result> {
+  const { error } = await db.from("conversations").update({
+    handoff_reason: request, handoff_at: new Date().toISOString(),
+  }).eq("tenant_id", ctx.tenantId).eq("id", ctx.conversationId);
+  if (error) throw error;
+  await audit(ctx.tenantId, "ai", "conversation.team_request", "conversations", ctx.conversationId, { request });
+  return { ok: true, instrucao: "diga ao cliente que a equipe vai analisar o pedido e retornar; continue o atendimento normalmente" };
 }
 
 async function handoff(ctx: Ctx, reason: string): Promise<Result> {

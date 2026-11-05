@@ -155,7 +155,10 @@
       <div class="card hidden" id="cDetalhe">
         <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
           <b id="cTitulo"></b>
-          <button id="cDevolver">Devolver para a IA</button>
+          <span class="actions" style="margin:0">
+            <button class="ghost" id="cResolver">Pedido resolvido</button>
+            <button id="cDevolver">Devolver para a IA</button>
+          </span>
         </div>
         <p class="muted" id="cMotivo"></p>
         <div id="cMsgs"></div>
@@ -376,7 +379,8 @@ async function carregarConversas() {
     const pausada = c.ai_paused || c.assigned_user_id;
     return `<tr>
       <td><b>${esc(c.clients?.full_name || "Sem nome")}</b><br><span class="muted">${esc(c.clients?.phone_e164 || "")}</span></td>
-      <td>${pausada ? '<span class="pill off">aguardando equipe</span>' : '<span class="pill">IA atendendo</span>'}</td>
+      <td>${pausada ? '<span class="pill off">aguardando equipe</span>' : '<span class="pill">IA atendendo</span>'}
+        ${!pausada && c.handoff_reason ? '<br><span class="pill off" style="margin-top:4px;display:inline-block">pedido para a equipe</span>' : ""}</td>
       <td class="muted">${quando(c.last_inbound_at)}</td>
       <td><button class="ghost" data-abrir="${c.id}">Abrir</button></td></tr>`;
   }).join("") : '<tr><td colspan="4" class="muted">Nenhuma conversa ainda.</td></tr>';
@@ -393,7 +397,9 @@ async function abrirConversa(id) {
   $("cDetalhe").classList.remove("hidden");
   $("cTitulo").textContent = (c.clients?.full_name || "Sem nome") + " · " + (c.clients?.phone_e164 || "");
   $("cDevolver").classList.toggle("hidden", !pausada);
-  $("cMotivo").textContent = pausada ? "A IA passou esta conversa para a equipe" + (c.handoff_reason ? ": " + c.handoff_reason : ".") : "A IA está respondendo esta cliente.";
+  $("cResolver").classList.toggle("hidden", pausada || !c.handoff_reason);
+  $("cMotivo").textContent = pausada ? "A IA passou esta conversa para a equipe" + (c.handoff_reason ? ": " + c.handoff_reason : ".")
+    : c.handoff_reason ? "A IA continua atendendo. Pedido para a equipe decidir: " + c.handoff_reason : "A IA está respondendo esta cliente.";
   const quem = { client: "Cliente", ai: "IA", staff: "Equipe", system: "Sistema" };
   $("cMsgs").innerHTML = data.reverse().map(m => `
     <div style="margin:8px 0;display:flex;justify-content:${m.direction === "inbound" ? "flex-start" : "flex-end"}">
@@ -403,6 +409,12 @@ async function abrirConversa(id) {
       </div></div>`).join("") || '<p class="muted">Sem mensagens.</p>';
 }
 $("cAtualizar").onclick = carregarConversas;
+$("cResolver").onclick = async () => {
+  if (!conversaAberta) return;
+  const { error } = await sb.from("conversations").update({ handoff_reason: null, handoff_at: null }).eq("id", conversaAberta);
+  if (error) return erro(error);
+  aviso("Pedido marcado como resolvido."); carregarConversas();
+};
 $("cDevolver").onclick = async () => {
   if (!conversaAberta) return;
   const { error } = await sb.from("conversations").update({ ai_paused: false, assigned_user_id: null, handoff_reason: null, handoff_at: null }).eq("id", conversaAberta);
