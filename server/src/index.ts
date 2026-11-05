@@ -5,6 +5,8 @@ import { handleWebhook } from "./inbound.js";
 import { pendingJobs } from "./queue.js";
 import { privacyHtml } from "./pages/privacidade.js";
 import { readFileSync } from "node:fs";
+import { staffReply, HttpError } from "./staff.js";
+import { startReminders } from "./reminders.js";
 
 // Painel do gestor: página estática; os dados vêm da Supabase com login e RLS
 const painelHtml = readFileSync(new URL("../public/painel.html", import.meta.url), "utf8");
@@ -81,6 +83,21 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/conversas/responder") {
+      let body: unknown;
+      try { body = JSON.parse((await readBody(req, 50_000)).toString("utf8")); } catch { body = null; }
+      try {
+        const out = await staffReply(req.headers.authorization, body);
+        res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify(out));
+      } catch (e: any) {
+        const status = e instanceof HttpError ? e.status : 502;
+        if (!(e instanceof HttpError)) console.error("responder", e);
+        res.writeHead(status, { "Content-Type": "application/json" })
+          .end(JSON.stringify({ erro: e instanceof HttpError ? e.message : "O WhatsApp recusou o envio. Tente de novo em instantes." }));
+      }
+      return;
+    }
+
     res.writeHead(404).end();
   } catch (e) {
     console.error(e);
@@ -89,3 +106,4 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(config.port, () => console.log(`Terrasso.AI ouvindo na porta ${config.port}`));
+startReminders();

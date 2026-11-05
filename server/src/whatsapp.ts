@@ -37,6 +37,24 @@ export async function sendText(phoneNumberId: string, toE164: string, text: stri
   return json?.messages?.[0]?.id ?? null;
 }
 
+/** Envia um modelo aprovado pela Meta (funciona fora da janela de 24h). */
+export async function sendTemplate(
+  phoneNumberId: string, toE164: string, name: string, language: string,
+  bodyParams: string[], buttonPayloads: string[] = [],
+): Promise<string | null> {
+  const components: any[] = [{ type: "body", parameters: bodyParams.map((text) => ({ type: "text", text })) }];
+  buttonPayloads.forEach((payload, index) => components.push({
+    type: "button", sub_type: "quick_reply", index: String(index), parameters: [{ type: "payload", payload }],
+  }));
+  const json = await graph(`${phoneNumberId}/messages`, {
+    messaging_product: "whatsapp",
+    to: toE164.replace(/^\+/, ""),
+    type: "template",
+    template: { name, language: { code: language }, components },
+  });
+  return json?.messages?.[0]?.id ?? null;
+}
+
 /** Marca como lida e mostra "digitando..." enquanto a IA pensa. */
 export async function markReadTyping(phoneNumberId: string, waMessageId: string): Promise<void> {
   await graph(`${phoneNumberId}/messages`, {

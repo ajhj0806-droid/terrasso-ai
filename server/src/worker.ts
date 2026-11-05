@@ -5,13 +5,13 @@ import { markReadTyping, sendText } from "./whatsapp.js";
 
 export async function processConversation(conversationId: string, phoneNumberId: string, lastWaMessageId: string) {
   const { data: conv, error } = await db.from("conversations")
-    .select("id, tenant_id, client_id, assigned_user_id, ai_paused, last_inbound_at, clients(full_name, phone_e164), tenants(name, timezone, settings)")
+    .select("id, tenant_id, client_id, assigned_user_id, ai_paused, last_inbound_at, clients(full_name, phone_e164), tenants(name, timezone, settings, ai_enabled)")
     .eq("id", conversationId).single();
   if (error) throw error;
   const c: any = conv;
 
-  // Humano assumiu ou IA foi pausada: silêncio total
-  if (c.assigned_user_id || c.ai_paused) return;
+  // Humano assumiu, IA pausada nesta conversa ou Kiara desligada no salão: silêncio total
+  if (c.assigned_user_id || c.ai_paused || c.tenants.ai_enabled === false) return;
 
   // Janela de 24h: texto livre só se o cliente escreveu nas últimas 24h
   if (!c.last_inbound_at || Date.now() - new Date(c.last_inbound_at).getTime() > 23.5 * 3600_000) return;
@@ -41,9 +41,10 @@ export async function processConversation(conversationId: string, phoneNumberId:
   if (!result.text) return;
 
   // Alguém da equipe pode ter assumido enquanto a IA pensava
-  const { data: again } = await db.from("conversations").select("assigned_user_id")
+  const { data: again } = await db.from("conversations").select("assigned_user_id, ai_paused, tenants(ai_enabled)")
     .eq("id", conversationId).single();
-  if (again?.assigned_user_id) return;
+  const ag: any = again;
+  if (ag?.assigned_user_id || ag?.ai_paused || ag?.tenants?.ai_enabled === false) return;
 
   const waId = await sendText(phoneNumberId, c.clients.phone_e164, result.text);
   await db.from("messages").insert({
@@ -55,6 +56,7 @@ export async function processConversation(conversationId: string, phoneNumberId:
     body: result.text,
     status: "sent",
   });
+  await db.from("conversations").update({ last_outbound_at: new Date().toISOString() }).eq("id", conversationId);
   if (result.handedOff) {
     await audit(c.tenant_id, "ai", "conversation.handoff_notified", "conversations", conversationId);
   }

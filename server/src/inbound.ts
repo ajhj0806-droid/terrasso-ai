@@ -3,6 +3,7 @@
 import { db, audit } from "./db.js";
 import { schedule } from "./queue.js";
 import { processConversation } from "./worker.js";
+import { sendText } from "./whatsapp.js";
 
 interface WaNumber { id: string; tenant_id: string; phone_number_id: string }
 const numberCache = new Map<string, WaNumber | null>();
@@ -108,6 +109,32 @@ async function handleMessage(number: WaNumber, contacts: any[], msg: any) {
   await db.from("conversations").update({ last_inbound_at: sentAt })
     .eq("tenant_id", number.tenant_id).eq("id", conv.id);
 
+  // Botão "Confirmar" do lembrete: confirma direto, sem passar pela IA
+  const payload: string | undefined = msg.button?.payload ?? msg.interactive?.button_reply?.id;
+  if (payload?.startsWith("confirmar:")) {
+    const done = await confirmFromReminder(number, clientId, conv.id, payload.slice(10), phone);
+    if (done) return;
+  }
+
   // Espera o cliente terminar de digitar (várias mensagens curtas viram uma resposta só)
   schedule(conv.id, () => processConversation(conv.id, number.phone_number_id, msg.id));
+}
+
+async function confirmFromReminder(number: WaNumber, clientId: string, conversationId: string, appointmentId: string, phone: string) {
+  const { data: ap } = await db.from("appointments").select("id, status")
+    .eq("tenant_id", number.tenant_id).eq("client_id", clientId).eq("id", appointmentId).maybeSingle();
+  if (!ap) return false;
+  if (ap.status === "scheduled") {
+    await db.from("appointments").update({ status: "confirmed", updated_at: new Date().toISOString() }).eq("id", ap.id);
+    await audit(number.tenant_id, "system", "appointment.confirm", "appointments", ap.id, { via: "lembrete" });
+  }
+  if (!["scheduled", "confirmed"].includes(ap.status)) return false; // cancelado etc.: deixa a IA conversar
+  const text = "Obrigada! Seu horário está confirmado. Até amanhã 😊";
+  const waId = await sendText(number.phone_number_id, phone, text);
+  await db.from("messages").insert({
+    tenant_id: number.tenant_id, conversation_id: conversationId, direction: "outbound", author: "system",
+    wa_message_id: waId, body: text, status: "sent",
+  });
+  await db.from("conversations").update({ last_outbound_at: new Date().toISOString() }).eq("id", conversationId);
+  return true;
 }

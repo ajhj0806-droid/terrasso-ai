@@ -75,6 +75,15 @@
   .ap-bt button { font-size:11px; padding:2px 7px; border-radius:6px; border:1px solid rgba(0,0,0,.15); }
   .ap-bt .feito { background:#b9e3b5; color:#1b4d1b; } .ap-bt .canc { background:#f6c343; color:#4a3500; }
   .estrela { font-size:15px; line-height:1; }
+  #btnKiara { font-size:13px; padding:7px 12px; border-radius:999px; }
+  #btnKiara.on { background:#e8f5e9; color:var(--ok); border:1px solid #b9dcbb; }
+  #btnKiara.off { background:#fbe9e7; color:var(--danger); border:1px solid #f0c4bf; }
+  .badge { display:inline-block; min-width:18px; padding:0 5px; margin-left:6px; border-radius:999px; background:var(--danger); color:#fff; font-size:11px; line-height:18px; text-align:center; }
+  .bloq { cursor:pointer; z-index:1; }
+  .ap[draggable=true] { cursor:grab; }
+  .cel.alvo { background:#e8dccf; outline:2px dashed var(--brand); }
+  .resp { margin-top:12px; border-top:1px solid var(--line); padding-top:12px; }
+  #cMsgs { max-height:420px; overflow-y:auto; }
   @media (max-width:600px) { .day { grid-template-columns: 1fr; } td, th { padding:8px 4px; } }
 </style>
 </head>
@@ -82,6 +91,7 @@
 
 <header>
   <h1>Terrasso · Painel</h1>
+  <button class="hidden" id="btnKiara" title="Liga ou desliga as respostas automáticas no WhatsApp"></button>
   <span class="who" id="who"></span>
   <button class="ghost hidden" id="btnSair">Sair</button>
 </header>
@@ -120,8 +130,9 @@
       <button data-tab="servicos">Serviços</button>
       <button data-tab="profissionais">Profissionais</button>
       <button data-tab="horarios">Horários</button>
-      <button data-tab="conversas">Conversas</button>
+      <button data-tab="conversas">Conversas<span class="badge hidden" id="cBadge"></span></button>
       <button data-tab="perfil">Perfil da IA</button>
+      <button data-tab="equipe">Equipe</button>
     </nav>
 
     <!-- Agenda do dia -->
@@ -133,16 +144,19 @@
           <button class="ghost" id="agDepois" aria-label="Próximo dia">›</button>
           <button class="ghost" id="agHoje">Hoje</button>
           <b id="agDiaNome" style="flex:1"></b>
+          <button class="ghost" id="agBloqBtn">Bloquear horário</button>
           <button id="agNovoBtn">+ Novo horário</button>
         </div>
         <div class="kpis" id="agKpis"></div>
       </div>
 
       <div class="card hidden" id="agNovo">
-        <h2 style="margin-top:0">Novo horário</h2>
-        <div class="row">
-          <div><label for="nTel">WhatsApp da cliente</label><input id="nTel" inputmode="tel" placeholder="41 99999-9999"></div>
-          <div><label for="nNome">Nome da cliente</label><input id="nNome" placeholder="Nome e sobrenome"></div>
+        <h2 style="margin-top:0" id="nTitulo">Novo horário</h2>
+        <div id="nClienteBox">
+          <div class="row">
+            <div><label for="nTel">WhatsApp da cliente</label><input id="nTel" inputmode="tel" placeholder="41 99999-9999"></div>
+            <div><label for="nNome">Nome da cliente</label><input id="nNome" placeholder="Nome e sobrenome"></div>
+          </div>
         </div>
         <p class="muted" id="nClienteInfo" style="font-size:13px;margin:6px 0 0"></p>
         <div class="row">
@@ -160,6 +174,26 @@
         </div>
       </div>
 
+      <div class="card hidden" id="agBloq">
+        <h2 style="margin-top:0">Bloquear horário</h2>
+        <p class="muted" style="font-size:13px;margin-top:0">Para folga, férias, curso ou compromisso. A Kiara não oferece horários bloqueados.</p>
+        <div class="row">
+          <div><label for="bProf">Profissional</label><select id="bProf"></select></div>
+          <div><label for="bMotivo">Motivo</label><input id="bMotivo" list="bMotivos" placeholder="Folga"><datalist id="bMotivos"><option>Folga</option><option>Férias</option><option>Curso</option><option>Consulta médica</option><option>Almoço</option></datalist></div>
+          <div><label for="bDe">De</label><input id="bDe" type="date"></div>
+          <div><label for="bAte">Até</label><input id="bAte" type="date"></div>
+        </div>
+        <label class="checks"><span><input type="checkbox" id="bDia" checked> Dia inteiro</span></label>
+        <div class="row hidden" id="bHoras">
+          <div><label for="bHIni">Das</label><input id="bHIni" type="time" step="300" value="12:00"></div>
+          <div><label for="bHFim">Até as</label><input id="bHFim" type="time" step="300" value="13:00"></div>
+        </div>
+        <div class="actions">
+          <button id="bSalvar">Bloquear</button>
+          <button class="ghost" id="bFechar">Fechar</button>
+        </div>
+      </div>
+
       <div class="card hidden" id="agDetalhe">
         <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center">
           <b id="dTitulo"></b>
@@ -171,7 +205,7 @@
 
       <div class="card">
         <div class="grade-wrap"><div class="grade" id="agGrade"></div></div>
-        <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. "Feito" abre a comanda da cliente para lançar no caixa; "Cancelado" libera o horário e conta na classificação da cliente. Clique no horário para ver mais opções. Áreas listradas ficam fora do horário de trabalho. A agenda se atualiza sozinha a cada minuto.</p>
+        <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. Arraste um horário para remarcar. Clique num bloqueio cinza para removê-lo. "Feito" abre a comanda da cliente para lançar no caixa; "Cancelado" libera o horário e conta na classificação da cliente. Clique no horário para ver mais opções. Áreas listradas ficam fora do horário de trabalho. A agenda se atualiza sozinha a cada minuto.</p>
       </div>
     </div>
 
@@ -413,11 +447,19 @@
           <b id="cTitulo"></b>
           <span class="actions" style="margin:0">
             <button class="ghost" id="cResolver">Pedido resolvido</button>
-            <button id="cDevolver">Devolver para a IA</button>
+            <button class="ghost" id="cAssumir">Assumir conversa</button>
+            <button id="cDevolver">Devolver para a Kiara</button>
           </span>
         </div>
         <p class="muted" id="cMotivo"></p>
         <div id="cMsgs"></div>
+        <div class="resp">
+          <label for="cResp">Responder pelo WhatsApp</label>
+          <textarea id="cResp" placeholder="Escreva a mensagem para a cliente"></textarea>
+          <p class="muted" id="cJanela" style="font-size:12px;margin:6px 0 0"></p>
+          <div class="actions"><button id="cEnviar">Enviar pelo WhatsApp</button></div>
+          <p class="muted" style="font-size:12px;margin-bottom:0">Ao responder, você assume a conversa e a Kiara para de responder nela até você devolver.</p>
+        </div>
       </div>
     </div>
     <!-- Perfil da IA -->
@@ -435,7 +477,28 @@
         <textarea id="aFaq" style="min-height:140px" placeholder="Ex.: Endereço e ponto de referência, estacionamento, horário de funcionamento, se atende criança, cuidados antes e depois de procedimentos..."></textarea>
         <label for="aDif">Diferenciais do salão</label>
         <textarea id="aDif" placeholder="Ex.: Produtos veganos, café especial, equipe com formação internacional..."></textarea>
+        <label class="checks" style="margin-top:14px"><span><input type="checkbox" id="aLembrete"> Mandar lembrete no WhatsApp na véspera, com botões "Confirmar" e "Preciso remarcar"</span></label>
+        <p class="muted" style="font-size:12px;margin:4px 0 0">Só funciona depois que o modelo de mensagem for aprovado pela Meta e houver forma de pagamento na conta do WhatsApp.</p>
         <div class="actions"><button id="aSalvar">Salvar perfil</button></div>
+      </div>
+    </div>
+    <!-- Equipe -->
+    <div id="tab-equipe" class="hidden">
+      <div class="card" id="eConvite">
+        <h2 style="margin-top:0">Convidar pessoa da equipe</h2>
+        <div class="row">
+          <div><label for="eNome">Nome</label><input id="eNome" placeholder="Ex.: Júlia"></div>
+          <div><label for="eEmail">E-mail</label><input id="eEmail" type="email" placeholder="julia@email.com"></div>
+          <div><label for="eFuncao">Função</label><select id="eFuncao">
+            <option value="reception">Recepção</option><option value="professional">Profissional</option><option value="manager">Gerente</option>
+          </select></div>
+        </div>
+        <div class="actions"><button id="eConvidar">Convidar</button></div>
+        <p class="muted" style="font-size:13px;margin-bottom:0">Depois de convidar, peça para a pessoa abrir este painel, digitar o mesmo e-mail, escolher uma senha e clicar em "Criar meu acesso". Ela entra já com a função escolhida.<br>
+        <b>Recepção</b> vê Agenda, Comandas, Clientes, Produtos e Conversas. <b>Profissional</b> vê Agenda e Clientes. <b>Gerente</b> vê tudo e pode dar desconto.</p>
+      </div>
+      <div class="card tabela-wrap">
+        <table><thead><tr><th>Pessoa</th><th>Função</th><th>Situação</th><th></th></tr></thead><tbody id="eLista"></tbody></table>
       </div>
     </div>
   </section>
@@ -448,7 +511,7 @@ const SUPABASE_KEY = "sb_publishable_apq4DYqUCLSr82maiLjIiQ_PmknYK9b";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const $ = (id) => document.getElementById(id);
-let cats = [], meuPapel = null, produtos = [], tenantId = null, usuarioId = null, TZ = "America/Sao_Paulo", servicos = [], profissionais = [], vinculos = [];
+let kiaraLigada = true, equipe = [], cats = [], meuPapel = null, produtos = [], tenantId = null, usuarioId = null, TZ = "America/Sao_Paulo", servicos = [], profissionais = [], vinculos = [];
 
 function aviso(texto, tipo) {
   const m = $("msg"); m.textContent = texto; m.className = "msg " + (tipo || "ok");
@@ -484,14 +547,25 @@ async function iniciar() {
   if (!user) { mostrar("vLogin"); $("btnSair").classList.add("hidden"); $("who").textContent = ""; return; }
   $("btnSair").classList.remove("hidden");
   $("who").textContent = user.email;
-  const { data: staff, error } = await sb.from("staff_members").select("tenant_id, full_name, role").eq("user_id", user.id).eq("active", true).limit(1);
+  const buscar = () => sb.from("staff_members").select("tenant_id, full_name, role").eq("user_id", user.id).eq("active", true).limit(1);
+  let { data: staff, error } = await buscar();
   if (error) return erro(error);
+  if (!staff.length) {
+    // foi convidada? o convite vira acesso agora
+    const c = await sb.rpc("claim_invites");
+    if (!c.error && c.data > 0) ({ data: staff, error } = await buscar());
+    if (error) return erro(error);
+  }
   if (!staff.length) { $("emailPend").textContent = user.email; mostrar("vSemAcesso"); return; }
   tenantId = staff[0].tenant_id; usuarioId = user.id; meuPapel = staff[0].role;
-  const { data: t } = await sb.from("tenants").select("timezone").eq("id", tenantId).single();
+  const { data: t } = await sb.from("tenants").select("timezone, ai_enabled").eq("id", tenantId).single();
   if (t?.timezone) TZ = t.timezone;
+  kiaraLigada = t?.ai_enabled !== false; desenharKiara();
   $("who").textContent = staff[0].full_name + " · " + user.email;
+  aplicarPermissoes();
   mostrar("vApp");
+  carregarEquipe(true);
+  vigiarConversas();
   await carregar();
   if (!$("agData").value) $("agData").value = hojeLocal();
   carregarAgenda();
@@ -500,16 +574,46 @@ async function iniciar() {
 // ---------- Abas ----------
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
-  for (const t of ["agenda","comandas","caixa","clientes","produtos","servicos","profissionais","horarios","conversas","perfil"]) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
+  for (const t of TODAS_ABAS) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
   if (b.dataset.tab === "agenda") carregarAgenda();
   if (b.dataset.tab === "comandas") { if (!manterComanda) comandaAberta = null; manterComanda = false; carregarComandas(); }
-  if (b.dataset.tab === "caixa") carregarComandas();
+  if (b.dataset.tab === "caixa") carregarCaixa();
   if (b.dataset.tab === "clientes") carregarClientes();
   if (b.dataset.tab === "produtos") desenharProdutos();
   if (b.dataset.tab === "horarios") desenharHorarios();
   if (b.dataset.tab === "conversas") carregarConversas();
   if (b.dataset.tab === "perfil") carregarPerfil();
+  if (b.dataset.tab === "equipe") carregarEquipe();
 });
+
+const TODAS_ABAS = ["agenda","comandas","caixa","clientes","produtos","servicos","profissionais","horarios","conversas","perfil","equipe"];
+const ABAS_POR_FUNCAO = {
+  reception: ["agenda", "comandas", "clientes", "produtos", "conversas"],
+  professional: ["agenda", "clientes"],
+};
+const podeVer = (t) => !ABAS_POR_FUNCAO[meuPapel] || ABAS_POR_FUNCAO[meuPapel].includes(t);
+function aplicarPermissoes() {
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("hidden", !podeVer(b.dataset.tab)));
+  $("eConvite").classList.toggle("hidden", !["owner", "manager"].includes(meuPapel));
+}
+
+// ---------- Kiara: liga/desliga geral ----------
+function desenharKiara() {
+  const b = $("btnKiara"); b.classList.remove("hidden");
+  b.className = kiaraLigada ? "on" : "off";
+  b.textContent = kiaraLigada ? "● Kiara ligada" : "● Kiara desligada";
+}
+$("btnKiara").onclick = async () => {
+  const novo = !kiaraLigada;
+  if (!novo && !confirm("Desligar a Kiara? Ela para de responder todas as clientes no WhatsApp até alguém ligar de novo. As mensagens chegam na aba Conversas para a equipe responder.")) return;
+  if (novo && !confirm("Ligar a Kiara? Ela volta a responder as clientes (menos as conversas que alguém da equipe assumiu).")) return;
+  const { error } = await sb.rpc("set_ai_enabled", { p_tenant: tenantId, p_enabled: novo });
+  if (error) return erro(error);
+  kiaraLigada = novo; desenharKiara();
+  aviso(novo ? "Kiara ligada. Ela responde a próxima mensagem das clientes." : "Kiara desligada. A equipe responde pela aba Conversas.");
+  if (!$("tab-conversas").classList.contains("hidden")) carregarConversas();
+  vigiarConversas();
+};
 
 async function carregar() {
   const [s, p, v, pr, ct] = await Promise.all([
@@ -661,7 +765,7 @@ let conversas = [], conversaAberta = null;
 function quando(t) { return t ? new Date(t).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : ""; }
 async function carregarConversas() {
   const { data, error } = await sb.from("conversations")
-    .select("id, ai_paused, assigned_user_id, handoff_reason, handoff_at, last_inbound_at, clients(full_name, phone_e164)")
+    .select("id, ai_paused, assigned_user_id, handoff_reason, handoff_at, last_inbound_at, last_outbound_at, clients(full_name, phone_e164)")
     .eq("tenant_id", tenantId).order("last_inbound_at", { ascending: false, nullsFirst: false }).limit(100);
   if (error) return erro(error);
   conversas = data;
@@ -669,7 +773,8 @@ async function carregarConversas() {
     const pausada = c.ai_paused || c.assigned_user_id;
     return `<tr>
       <td><b>${esc(c.clients?.full_name || "Sem nome")}</b><br><span class="muted">${esc(c.clients?.phone_e164 || "")}</span></td>
-      <td>${pausada ? '<span class="pill off">aguardando equipe</span>' : '<span class="pill">IA atendendo</span>'}
+      <td>${situacaoConversa(c)}
+        ${esperando(c) ? '<br><span class="pill off" style="margin-top:4px;display:inline-block">esperando resposta</span>' : ""}
         ${!pausada && c.handoff_reason ? '<br><span class="pill off" style="margin-top:4px;display:inline-block">pedido para a equipe</span>' : ""}</td>
       <td class="muted">${quando(c.last_inbound_at)}</td>
       <td><button class="ghost" data-abrir="${c.id}">Abrir</button></td></tr>`;
@@ -677,6 +782,19 @@ async function carregarConversas() {
   document.querySelectorAll("[data-abrir]").forEach(b => b.onclick = () => abrirConversa(b.dataset.abrir));
   if (conversaAberta) abrirConversa(conversaAberta);
 }
+function nomeEquipe(uid) { return uid === usuarioId ? "você" : equipe.find(e => e.user_id === uid)?.full_name || "a equipe"; }
+function situacaoConversa(c) {
+  if (c.assigned_user_id) return `<span class="pill off">com ${esc(nomeEquipe(c.assigned_user_id))}</span>`;
+  if (c.ai_paused) return '<span class="pill off">aguardando equipe</span>';
+  if (!kiaraLigada) return '<span class="pill off">Kiara desligada</span>';
+  return '<span class="pill">Kiara atendendo</span>';
+}
+// cliente escreveu por último e quem responde é a equipe
+function esperando(c) {
+  const humano = c.ai_paused || c.assigned_user_id || !kiaraLigada;
+  return humano && c.last_inbound_at && (!c.last_outbound_at || new Date(c.last_inbound_at) > new Date(c.last_outbound_at));
+}
+function dentroDaJanela(c) { return c.last_inbound_at && Date.now() - new Date(c.last_inbound_at).getTime() < 24 * 3600_000; }
 async function abrirConversa(id) {
   const c = conversas.find(x => x.id === id); if (!c) return;
   conversaAberta = id;
@@ -687,8 +805,14 @@ async function abrirConversa(id) {
   $("cDetalhe").classList.remove("hidden");
   $("cTitulo").textContent = (c.clients?.full_name || "Sem nome") + " · " + (c.clients?.phone_e164 || "");
   $("cDevolver").classList.toggle("hidden", !pausada);
+  $("cAssumir").classList.toggle("hidden", c.assigned_user_id === usuarioId);
   $("cResolver").classList.toggle("hidden", pausada || !c.handoff_reason);
-  $("cMotivo").textContent = pausada ? "A IA passou esta conversa para a equipe" + (c.handoff_reason ? ": " + c.handoff_reason : ".")
+  const janela = dentroDaJanela(c);
+  $("cEnviar").disabled = !janela; $("cResp").disabled = !janela;
+  $("cJanela").textContent = janela ? "" : "Já passaram 24 horas desde a última mensagem da cliente. O WhatsApp só deixa responder depois que ela escrever de novo.";
+  $("cMotivo").textContent = c.assigned_user_id ? `Conversa com ${nomeEquipe(c.assigned_user_id)}. A Kiara não responde aqui até devolver.` + (c.handoff_reason ? " Motivo: " + c.handoff_reason : "")
+    : pausada ? "A Kiara passou esta conversa para a equipe" + (c.handoff_reason ? ": " + c.handoff_reason : ".")
+    : !kiaraLigada ? "A Kiara está desligada no salão. Responda por aqui."
     : c.handoff_reason ? "A IA continua atendendo. Pedido para a equipe decidir: " + c.handoff_reason : "A IA está respondendo esta cliente.";
   const quem = { client: "Cliente", ai: "IA", staff: "Equipe", system: "Sistema" };
   $("cMsgs").innerHTML = data.reverse().map(m => `
@@ -697,7 +821,63 @@ async function abrirConversa(id) {
         <div class="muted" style="font-size:12px">${quem[m.author] || ""} · ${quando(m.created_at)}</div>
         <div style="white-space:pre-wrap">${esc(m.body || "(mídia)")}</div>
       </div></div>`).join("") || '<p class="muted">Sem mensagens.</p>';
+  $("cMsgs").scrollTop = $("cMsgs").scrollHeight;
 }
+$("cAssumir").onclick = async () => {
+  if (!conversaAberta) return;
+  const { error } = await sb.from("conversations").update({ assigned_user_id: usuarioId, ai_paused: true }).eq("id", conversaAberta);
+  if (error) return erro(error);
+  aviso("Você assumiu a conversa. A Kiara não responde nela até você devolver.");
+  carregarConversas();
+};
+$("cEnviar").onclick = async () => {
+  const texto = $("cResp").value.trim();
+  if (!conversaAberta || !texto) return aviso("Escreva a mensagem.", "err");
+  $("cEnviar").disabled = true;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const r = await fetch("/api/conversas/responder", {
+      method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + (session?.access_token || "") },
+      body: JSON.stringify({ conversation_id: conversaAberta, text: texto }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return aviso(j.erro || "Não consegui enviar. Tente de novo.", "err");
+    $("cResp").value = ""; aviso("Mensagem enviada.");
+    carregarConversas(); vigiarConversas();
+  } catch (e) { erro(e); } finally { $("cEnviar").disabled = false; }
+};
+
+// ---------- Aviso de conversa esperando a equipe ----------
+let ultimoPendente = 0, somCtx = null;
+function bip() {
+  try {
+    somCtx = somCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = somCtx.createOscillator(), g = somCtx.createGain();
+    o.frequency.value = 880; g.gain.value = 0.08; o.connect(g); g.connect(somCtx.destination);
+    o.start(); o.stop(somCtx.currentTime + 0.25);
+  } catch {}
+}
+async function vigiarConversas() {
+  if (!tenantId || !podeVer("conversas")) return;
+  const { data, error } = await sb.from("conversations")
+    .select("id, ai_paused, assigned_user_id, handoff_reason, last_inbound_at, last_outbound_at")
+    .eq("tenant_id", tenantId).order("last_inbound_at", { ascending: false, nullsFirst: false }).limit(200);
+  if (error) return console.error(error);
+  const n = data.filter(c => esperando(c) || (c.handoff_reason && !c.ai_paused && !c.assigned_user_id)).length;
+  $("cBadge").textContent = n; $("cBadge").classList.toggle("hidden", !n);
+  document.title = (n ? `(${n}) ` : "") + "Painel Terrasso";
+  if (n > ultimoPendente) {
+    bip();
+    if ("Notification" in window && Notification.permission === "granted" && document.hidden)
+      new Notification("Terrasso", { body: n === 1 ? "Uma cliente está esperando resposta da equipe." : `${n} clientes esperando resposta da equipe.` });
+    if (!$("tab-conversas").classList.contains("hidden")) carregarConversas();
+  }
+  ultimoPendente = n;
+}
+setInterval(() => vigiarConversas(), 20000);
+document.addEventListener("click", () => {
+  if ("Notification" in window && Notification.permission === "default" && tenantId) Notification.requestPermission();
+}, { once: true });
 $("cAtualizar").onclick = carregarConversas;
 $("cResolver").onclick = async () => {
   if (!conversaAberta) return;
@@ -709,8 +889,8 @@ $("cDevolver").onclick = async () => {
   if (!conversaAberta) return;
   const { error } = await sb.from("conversations").update({ ai_paused: false, assigned_user_id: null, handoff_reason: null, handoff_at: null }).eq("id", conversaAberta);
   if (error) return erro(error);
-  aviso("Conversa devolvida para a IA. Ela responde a próxima mensagem da cliente.");
-  carregarConversas();
+  aviso(kiaraLigada ? "Conversa devolvida para a Kiara. Ela responde a próxima mensagem da cliente." : "Conversa devolvida. A Kiara está desligada no salão; ela responde quando for ligada.");
+  carregarConversas(); vigiarConversas();
 };
 
 // ---------- Perfil da IA ----------
@@ -721,10 +901,12 @@ async function carregarPerfil() {
   if (error) return erro(error);
   settingsAtuais = data.settings || {};
   for (const [id, k] of Object.entries(CAMPOS)) $(id).value = settingsAtuais[k] || "";
+  $("aLembrete").checked = settingsAtuais.lembrete_vespera === true;
 }
 $("aSalvar").onclick = async () => {
   const novo = { ...settingsAtuais };
   for (const [id, k] of Object.entries(CAMPOS)) { const v = $(id).value.trim(); if (v) novo[k] = v; else delete novo[k]; }
+  novo.lembrete_vespera = $("aLembrete").checked;
   const { data, error } = await sb.from("tenants").update({ settings: novo }).eq("id", tenantId).select("id");
   if (error) return erro(error);
   if (!data.length) return aviso("Só o dono do salão pode alterar o perfil da IA.", "err");
@@ -778,7 +960,7 @@ async function carregarAgenda(silencioso) {
     sb.from("appointments").select("id, period, status, price_cents, source, notes, client_id, professional_id, service_id, clients(full_name, phone_e164), services(name)")
       .eq("tenant_id", tenantId).overlaps("period", faixa(ini, fim)),
     sb.from("work_schedules").select("professional_id, weekday, start_time, end_time").eq("tenant_id", tenantId),
-    sb.from("blocks").select("professional_id, period, reason").eq("tenant_id", tenantId).overlaps("period", faixa(ini, fim)),
+    sb.from("blocks").select("id, professional_id, period, reason").eq("tenant_id", tenantId).overlaps("period", faixa(ini, fim)),
   ]);
   for (const r of [a, e, b]) if (r.error) return silencioso ? console.error(r.error) : erro(r.error);
   agenda = { data, ini, fim, ags: a.data.map(x => ({ ...x, ...lerFaixa(x.period) })), escalas: e.data, bloqueios: b.data.map(x => ({ ...x, ...lerFaixa(x.period) })) };
@@ -839,12 +1021,13 @@ function desenharGrade() {
     }
     const bloq = agenda.bloqueios.filter(b => b.professional_id === p.id).map(b => {
       const a = Math.max(de, minutoNoDia(b.ini, agenda.ini)), z = Math.min(ate, minutoNoDia(b.fim, agenda.ini));
-      return `<div class="bloq" style="top:${top(a)}px;height:${(z - a) * PX}px">${esc(b.reason || "Bloqueado")}</div>`;
+      return `<div class="bloq" data-bloq="${b.id}" title="Clique para remover o bloqueio" style="top:${top(a)}px;height:${(z - a) * PX}px">${esc(b.reason || "Bloqueado")}</div>`;
     }).join("");
     const ags = agenda.ags.filter(a => a.professional_id === p.id && a.status !== "cancelled")
       .sort((x, y) => x.ini - y.ini).map(a => {
         const ini = Math.max(de, minutoNoDia(a.ini, agenda.ini)), fim = Math.min(ate, minutoNoDia(a.fim, agenda.ini));
-        return `<div class="ap ${a.status} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" style="top:${top(ini)}px;height:${Math.max(18, (fim - ini) * PX - 2)}px;border-left-color:${esc(p.color || "#8a5a3c")}">
+        const arrasta = ["scheduled", "confirmed"].includes(a.status);
+        return `<div class="ap ${a.status} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" ${arrasta ? 'draggable="true"' : ""} style="top:${top(ini)}px;height:${Math.max(18, (fim - ini) * PX - 2)}px;border-left-color:${esc(p.color || "#8a5a3c")}">
           ${["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status) ? `<span class="ap-bt"><button class="feito" data-feito="${a.id}" title="Lançar na comanda">Feito</button><button class="canc" data-canc="${a.id}">Cancelado</button></span>` : ""}
           <b>${hhmm(minutoNoDia(a.ini, agenda.ini))} ${esc(a.clients?.full_name || "Cliente")}</b> ${estrela(a.client_id)}<br>
           ${esc(a.services?.name || "")} <span class="st ${a.status}">${STATUS[a.status]}</span>${a.source === "whatsapp_ai" ? " 💬" : ""}</div>`;
@@ -858,8 +1041,85 @@ function desenharGrade() {
   $("agGrade").querySelectorAll("[data-ag]").forEach(el => el.onclick = () => abrirAgendamento(el.dataset.ag));
   $("agGrade").querySelectorAll("[data-feito]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); comandaDoAgendamento(agenda.ags.find(x => x.id === el.dataset.feito)); });
   $("agGrade").querySelectorAll("[data-canc]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); mudarStatus(agenda.ags.find(x => x.id === el.dataset.canc), "cancelled"); });
-  $("agGrade").querySelectorAll("[data-livre]").forEach(el => el.onclick = () => { const [p, m] = el.dataset.livre.split("|"); novoHorario(p, hhmm(Number(m))); });
+  $("agGrade").querySelectorAll("[data-livre]").forEach(el => {
+    el.onclick = () => { const [p, m] = el.dataset.livre.split("|"); novoHorario(p, hhmm(Number(m))); };
+    el.ondragover = (ev) => { ev.preventDefault(); el.classList.add("alvo"); };
+    el.ondragleave = () => el.classList.remove("alvo");
+    el.ondrop = (ev) => {
+      ev.preventDefault(); el.classList.remove("alvo");
+      const id = ev.dataTransfer.getData("text/plain"), [p, m] = el.dataset.livre.split("|");
+      if (id) moverHorario(id, p, agenda.data, hhmm(Number(m)));
+    };
+  });
+  $("agGrade").querySelectorAll("[draggable=true]").forEach(el => el.ondragstart = (ev) => { ev.dataTransfer.setData("text/plain", el.dataset.ag); ev.dataTransfer.effectAllowed = "move"; });
+  $("agGrade").querySelectorAll("[data-bloq]").forEach(el => el.onclick = async (ev) => {
+    ev.stopPropagation();
+    const b = agenda.bloqueios.find(x => x.id === el.dataset.bloq); if (!b) return;
+    const p = profissionais.find(x => x.id === b.professional_id);
+    if (!confirm(`Remover o bloqueio "${b.reason || "Bloqueado"}" de ${p?.name || ""}? O horário volta a ficar livre para marcar.`)) return;
+    const { error } = await sb.from("blocks").delete().eq("id", b.id);
+    if (error) return erro(error);
+    aviso("Bloqueio removido."); carregarAgenda();
+  });
 }
+
+// ---------- Remarcar ----------
+function bloqueado(profId, ini, fim) { return agenda.bloqueios.some(b => b.professional_id === profId && b.ini < fim && b.fim > ini); }
+async function moverHorario(id, profId, data, hora) {
+  const a = agenda.ags.find(x => x.id === id); if (!a) return;
+  const dur = a.fim - a.ini, ini = localParaUtc(data, hora), fim = new Date(ini.getTime() + dur);
+  const prof = profissionais.find(p => p.id === profId);
+  if (ini.getTime() === a.ini.getTime() && profId === a.professional_id) return;
+  const fazem = vinculos.filter(v => v.service_id === a.service_id).map(v => v.professional_id);
+  const aviso1 = fazem.length && !fazem.includes(profId) ? `\n\nAtenção: ${prof?.name} não está cadastrada para ${a.services?.name}.` : "";
+  const aviso2 = data === agenda.data && bloqueado(profId, ini, fim) ? `\n\nAtenção: esse horário está bloqueado para ${prof?.name}.` : "";
+  if (!confirm(`Remarcar ${a.clients?.full_name || "cliente"} para ${data.split("-").reverse().join("/")} às ${hora} com ${prof?.name}?${aviso1}${aviso2}`)) return;
+  const { error } = await sb.from("appointments").update({ professional_id: profId, period: faixa(ini, fim), reminder_sent_at: null, updated_at: new Date().toISOString() }).eq("id", id);
+  if (error) return error.code === "23P01" ? aviso(`${prof?.name} já tem atendimento nesse horário.`, "err") : erro(error);
+  aviso(`Remarcado para ${hora} com ${prof?.name}. Avise a cliente pelo WhatsApp.`);
+  carregarAgenda();
+}
+
+// ---------- Bloquear horário ----------
+$("agBloqBtn").onclick = () => {
+  agSel = null; $("agDetalhe").classList.add("hidden"); $("agNovo").classList.add("hidden");
+  $("bProf").innerHTML = '<option value="">Todos os profissionais</option>' + profissionais.filter(p => p.active).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+  $("bDe").value = $("bAte").value = agenda.data || hojeLocal();
+  $("agBloq").classList.remove("hidden"); $("bMotivo").focus();
+};
+$("bFechar").onclick = () => $("agBloq").classList.add("hidden");
+$("bDia").onchange = () => $("bHoras").classList.toggle("hidden", $("bDia").checked);
+$("bSalvar").onclick = async () => {
+  const de = $("bDe").value, ate = $("bAte").value, motivo = $("bMotivo").value.trim() || "Bloqueado";
+  const profs = $("bProf").value ? [$("bProf").value] : profissionais.filter(p => p.active).map(p => p.id);
+  if (!de || !ate || ate < de) return aviso("Confira as datas: o fim precisa ser no mesmo dia ou depois do início.", "err");
+  if (!profs.length) return aviso("Cadastre os profissionais primeiro.", "err");
+  const faixas = [];
+  if ($("bDia").checked) faixas.push([localParaUtc(de, "00:00"), localParaUtc(somarDias(ate, 1), "00:00")]);
+  else {
+    const hi = $("bHIni").value, hf = $("bHFim").value;
+    if (!hi || !hf || hf <= hi) return aviso("Confira as horas: o fim precisa ser depois do início.", "err");
+    for (let d = de; d <= ate; d = somarDias(d, 1)) faixas.push([localParaUtc(d, hi), localParaUtc(d, hf)]);
+  }
+  // atendimentos já marcados no período
+  let marcados = 0;
+  for (const [i, f] of faixas) {
+    const r = await sb.from("appointments").select("id").eq("tenant_id", tenantId).in("professional_id", profs)
+      .in("status", ["scheduled", "confirmed", "checked_in", "in_service"]).overlaps("period", faixa(i, f));
+    if (r.error) return erro(r.error);
+    marcados += r.data.length;
+  }
+  if (marcados && !confirm(`Já existem ${marcados} atendimento(s) marcado(s) nesse período. Eles continuam na agenda; remarque ou cancele depois. Bloquear mesmo assim?`)) return;
+  const linhas = profs.flatMap(p => faixas.map(([i, f]) => ({ tenant_id: tenantId, professional_id: p, period: faixa(i, f), reason: motivo, created_by: usuarioId })));
+  $("bSalvar").disabled = true;
+  try {
+    const { error } = await sb.from("blocks").insert(linhas);
+    if (error) return erro(error);
+    aviso(`Bloqueado: ${motivo}, ${de.split("-").reverse().join("/")}${ate !== de ? " a " + ate.split("-").reverse().join("/") : ""}.`);
+    $("agBloq").classList.add("hidden"); $("bMotivo").value = "";
+    carregarAgenda();
+  } finally { $("bSalvar").disabled = false; }
+};
 
 // ---------- Detalhe e mudança de situação ----------
 const PROXIMOS = {
@@ -885,6 +1145,10 @@ function abrirAgendamento(id) {
     `<button class="${st === "cancelled" || st === "no_show" ? "danger" : st === "confirmed" && a.status !== "scheduled" ? "ghost" : ""}" data-st="${st}">${t}</button>`).join("");
   if (!["cancelled", "no_show"].includes(a.status)) $("dAcoes").insertAdjacentHTML("beforeend", `<button class="ghost" id="dComanda">Comanda</button>`);
   if ($("dComanda")) $("dComanda").textContent = "Feito: lançar na comanda";
+  if (["scheduled", "confirmed"].includes(a.status)) {
+    $("dAcoes").insertAdjacentHTML("beforeend", `<button class="ghost" id="dRemarcar">Remarcar</button>`);
+    $("dRemarcar").onclick = () => remarcar(a);
+  }
   $("dAcoes").querySelectorAll("[data-st]").forEach(b => b.onclick = () => mudarStatus(a, b.dataset.st));
   if ($("dComanda")) $("dComanda").onclick = () => comandaDoAgendamento(a);
   $("agDetalhe").classList.remove("hidden");
@@ -901,7 +1165,7 @@ async function mudarStatus(a, st) {
 $("dFechar").onclick = () => { agSel = null; $("agDetalhe").classList.add("hidden"); desenharGrade(); };
 
 // ---------- Marcar novo horário ----------
-let clienteAchado = null;
+let clienteAchado = null, remarcando = null;
 function normalizarTel(t) {
   let d = String(t).replace(/\D/g, "");
   if (!d) return null;
@@ -939,7 +1203,9 @@ $("nServ").onchange = () => {
   preencherProfs($("nProf").value);
 };
 function novoHorario(profId, hora) {
-  agSel = null; $("agDetalhe").classList.add("hidden");
+  agSel = null; $("agDetalhe").classList.add("hidden"); $("agBloq").classList.add("hidden");
+  remarcando = null; $("nTitulo").textContent = "Novo horário"; $("nSalvar").textContent = "Marcar horário";
+  $("nClienteBox").classList.remove("hidden"); $("nClienteInfo").textContent = "";
   const ativos = servicos.filter(s => s.active);
   if (!ativos.length) return aviso("Cadastre os serviços primeiro, na aba Serviços.", "err");
   $("nServ").innerHTML = ativos.map(s => `<option value="${s.id}">${esc(s.name)} · ${s.duration_min} min</option>`).join("");
@@ -950,14 +1216,26 @@ function novoHorario(profId, hora) {
   $("agNovo").classList.remove("hidden");
   $("nTel").focus(); desenharGrade();
 }
+function remarcar(a) {
+  novoHorario(a.professional_id, hhmm(minutoNoDia(a.ini, agenda.ini)));
+  remarcando = a;
+  $("nTitulo").textContent = "Remarcar horário de " + (a.clients?.full_name || "cliente");
+  $("nSalvar").textContent = "Salvar novo horário";
+  $("nClienteBox").classList.add("hidden");
+  $("nClienteInfo").textContent = "Escolha o novo dia, hora ou profissional.";
+  if (servicos.some(s => s.id === a.service_id)) { $("nServ").value = a.service_id; preencherProfs(a.professional_id); }
+  $("nPreco").value = (a.price_cents / 100).toFixed(2).replace(".", ",");
+  $("nObs").value = a.notes || "";
+  $("nData").focus();
+}
 $("agNovoBtn").onclick = () => novoHorario(null, null);
 $("nFechar").onclick = () => $("agNovo").classList.add("hidden");
 $("nSalvar").onclick = async () => {
   const tel = normalizarTel($("nTel").value), nome = $("nNome").value.trim();
   const s = servicos.find(x => x.id === $("nServ").value), profId = $("nProf").value;
   const data = $("nData").value, hora = $("nHora").value, preco = paraCentavos($("nPreco").value);
-  if (!tel) return aviso("Informe o WhatsApp da cliente com DDD, por exemplo 41 99999-9999.", "err");
-  if (!nome && !clienteAchado) return aviso("Informe o nome da cliente.", "err");
+  if (!tel && !remarcando) return aviso("Informe o WhatsApp da cliente com DDD, por exemplo 41 99999-9999.", "err");
+  if (!nome && !clienteAchado && !remarcando) return aviso("Informe o nome da cliente.", "err");
   if (!s || !profId) return aviso("Escolha o serviço e o profissional.", "err");
   if (!data || !hora) return aviso("Escolha a data e a hora.", "err");
   if (!(preco >= 0)) return aviso("Confira o preço, por exemplo 120,00.", "err");
@@ -967,8 +1245,21 @@ $("nSalvar").onclick = async () => {
     .some(x => minIni >= hm(x.start_time) && minFim <= hm(x.end_time));
   const prof = profissionais.find(p => p.id === profId);
   if (!dentro && !confirm(`${hora} fica fora do horário de trabalho de ${prof?.name}. Marcar mesmo assim?`)) return;
+  if (data === agenda.data && bloqueado(profId, ini, fim) && !confirm(`Esse horário está bloqueado para ${prof?.name}. Marcar mesmo assim?`)) return;
   $("nSalvar").disabled = true;
   try {
+    if (remarcando) {
+      const { error } = await sb.from("appointments").update({
+        service_id: s.id, professional_id: profId, period: faixa(ini, fim), price_cents: preco,
+        notes: $("nObs").value.trim() || null, reminder_sent_at: null, updated_at: new Date().toISOString(),
+      }).eq("id", remarcando.id);
+      if (error) return error.code === "23P01" ? aviso(`${prof?.name} já tem atendimento nesse horário. Escolha outro horário.`, "err") : erro(error);
+      aviso(`Remarcado: ${s.name} com ${prof?.name}, ${data.split("-").reverse().join("/")} às ${hora}. Avise a cliente pelo WhatsApp.`);
+      agSel = remarcando.id; remarcando = null; $("nObs").value = "";
+      $("agNovo").classList.add("hidden");
+      if (data !== agenda.data) $("agData").value = data;
+      return carregarAgenda();
+    }
     let clientId;
     try { clientId = await acharOuCriarCliente(tel, nome); } catch (e) { return erro(e); }
     const { error } = await sb.from("appointments").insert({
@@ -1418,6 +1709,64 @@ async function entradaEstoque(id) {
   if (error) return erro(error);
   aviso(`Estoque de ${p.name}: ${p.stock_qty + q}.`); carregar();
 }
+
+// ---------- Equipe ----------
+const FUNCOES = { owner: "Dono", manager: "Gerente", reception: "Recepção", professional: "Profissional" };
+let convites = [];
+async function carregarEquipe(silencioso) {
+  const [m, c] = await Promise.all([
+    sb.from("staff_members").select("id, user_id, full_name, email, role, active").eq("tenant_id", tenantId).order("full_name"),
+    ["owner", "manager"].includes(meuPapel) ? sb.from("staff_invites").select("*").eq("tenant_id", tenantId).is("accepted_at", null).order("created_at") : Promise.resolve({ data: [] }),
+  ]);
+  for (const r of [m, c]) if (r.error) return silencioso ? console.error(r.error) : erro(r.error);
+  equipe = m.data; convites = c.data;
+  if (!silencioso) desenharEquipe();
+}
+function desenharEquipe() {
+  const gere = ["owner", "manager"].includes(meuPapel);
+  const opcoes = (atual) => ["manager", "reception", "professional"].map(r => `<option value="${r}" ${r === atual ? "selected" : ""}>${FUNCOES[r]}</option>`).join("");
+  $("eLista").innerHTML = equipe.map(e => {
+    const mexe = gere && e.role !== "owner" && e.user_id !== usuarioId && !(meuPapel === "manager" && e.role === "manager");
+    return `<tr>
+      <td><b>${esc(e.full_name)}</b>${e.user_id === usuarioId ? ' <span class="muted">(você)</span>' : ""}<br><span class="muted">${esc(e.email || "")}</span></td>
+      <td>${mexe ? `<select data-func="${e.id}" style="width:auto">${opcoes(e.role)}</select>` : FUNCOES[e.role]}</td>
+      <td>${e.active ? '<span class="pill">com acesso</span>' : '<span class="pill off">sem acesso</span>'}</td>
+      <td>${mexe ? `<button class="${e.active ? "danger" : "ghost"}" data-ativo="${e.id}">${e.active ? "Tirar acesso" : "Devolver acesso"}</button>` : ""}</td></tr>`;
+  }).join("") + convites.map(i => `<tr>
+      <td><b>${esc(i.full_name)}</b><br><span class="muted">${esc(i.email)}</span></td>
+      <td>${FUNCOES[i.role]}</td><td><span class="pill">convite enviado</span><br><span class="muted" style="font-size:12px">ainda não criou o acesso</span></td>
+      <td><button class="danger" data-cconv="${i.id}">Cancelar convite</button></td></tr>`).join("");
+  $("eLista").querySelectorAll("[data-func]").forEach(sel => sel.onchange = async () => {
+    const { error } = await sb.from("staff_members").update({ role: sel.value }).eq("id", sel.dataset.func);
+    if (error) return erro(error);
+    aviso("Função alterada. Vale no próximo login da pessoa."); carregarEquipe();
+  });
+  $("eLista").querySelectorAll("[data-ativo]").forEach(b => b.onclick = async () => {
+    const e = equipe.find(x => x.id === b.dataset.ativo); if (!e) return;
+    if (e.active && !confirm(`Tirar o acesso de ${e.full_name} ao painel?`)) return;
+    const { error } = await sb.from("staff_members").update({ active: !e.active }).eq("id", e.id);
+    if (error) return erro(error);
+    aviso(e.active ? "Acesso retirado." : "Acesso devolvido."); carregarEquipe();
+  });
+  $("eLista").querySelectorAll("[data-cconv]").forEach(b => b.onclick = async () => {
+    if (!confirm("Cancelar este convite?")) return;
+    const { error } = await sb.from("staff_invites").delete().eq("id", b.dataset.cconv);
+    if (error) return erro(error);
+    aviso("Convite cancelado."); carregarEquipe();
+  });
+}
+$("eConvidar").onclick = async () => {
+  const nome = $("eNome").value.trim(), email = $("eEmail").value.trim().toLowerCase(), role = $("eFuncao").value;
+  if (!nome) return aviso("Informe o nome.", "err");
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return aviso("Confira o e-mail.", "err");
+  if (role === "manager" && meuPapel !== "owner") return aviso("Só o dono pode convidar gerente.", "err");
+  if (equipe.some(e => (e.email || "").toLowerCase() === email)) return aviso("Essa pessoa já faz parte da equipe.", "err");
+  const { error } = await sb.from("staff_invites").insert({ tenant_id: tenantId, email, full_name: nome, role, created_by: usuarioId });
+  if (error) return error.code === "23505" ? aviso("Esse e-mail já foi convidado.", "err") : erro(error);
+  $("eNome").value = ""; $("eEmail").value = "";
+  aviso(`Convite criado. Peça para ${nome} abrir o painel e clicar em "Criar meu acesso" com o e-mail ${email}.`);
+  carregarEquipe();
+};
 
 iniciar();
 </script>
