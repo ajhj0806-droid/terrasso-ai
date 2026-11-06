@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#100b1c"><title>K.IA.RA Música</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{background:radial-gradient(ellipse at 72% 40%,#3c4e6355,transparent 45%),radial-gradient(ellipse at 40% 110%,#44305490,transparent 64%),#0d0a1a;color:#fff5eb;font-family:Manrope,Arial,sans-serif}
+#stars{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.wrap{max-width:960px;margin:0 auto;padding:6vh 24px 60px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.brand{font:400 34px 'Cormorant Garamond',serif;letter-spacing:.14em;color:#fff5eb;text-decoration:none}
+.brand sup{font-size:.4em;color:#efd2b9}
+.back{color:#d6c0d8;font-size:12px;text-decoration:none;border:1px solid #e9d9fa30;border-radius:20px;padding:8px 14px}
+.back:hover{background:#a98db52b}
+h1{font:400 clamp(44px,6vw,86px)/.95 'Cormorant Garamond',serif;letter-spacing:-.03em;margin:7vh 0 12px}
+h1 em{color:#eccca8}
+.sub{color:#d9c9d8;font-size:14px;line-height:1.8;margin:0 0 34px;max-width:520px}
+.label{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#c9b3d3;margin:30px 0 12px}
+.styles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.styles button,.moods button{border:1px solid #f2d6b833;border-radius:16px;background:#21112980;color:#e8d4e9;padding:18px 16px;text-align:left;cursor:pointer;font:inherit;transition:.25s}
+.styles button strong{display:block;font:500 26px 'Cormorant Garamond',serif;color:#ffe4bc}
+.styles button span{display:block;font-size:11px;line-height:1.6;color:#c9b3d3;margin-top:6px}
+.styles button[aria-pressed="true"],.moods button[aria-pressed="true"]{border-color:#efd3b2;background:#3a2348cc;box-shadow:0 0 30px #efd3b222}
+.styles button:hover,.moods button:hover{border-color:#efd3b288}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #e7c4a3;outline-offset:3px}
+.moods{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.moods button{text-align:center;font-size:13px;letter-spacing:.06em}
+.player{margin-top:36px;display:flex;flex-wrap:wrap;gap:22px;align-items:center;padding:22px 24px;border:1px solid #e9d9fa25;background:#170e25b3;backdrop-filter:blur(16px);border-radius:22px}
+#play{border:0;border-radius:40px;background:#e9d5c0;color:#37253e;font:600 14px Manrope;padding:16px 28px;cursor:pointer;min-width:190px}
+#play:disabled{opacity:.6;cursor:wait}
+.vol{flex:1;min-width:220px;font-size:11px;color:#c9b3d3;letter-spacing:.1em}
+.vol input{width:100%;accent-color:#dbbbda;margin-top:10px}
+.auto{font-size:12px;color:#d9c9d8;display:flex;gap:10px;align-items:center}
+.auto select{background:#281b37;color:#ead3c3;border:1px solid #bd9ac544;border-radius:14px;padding:7px 10px;font:12px Manrope}
+.now{width:100%;font:italic 20px 'Cormorant Garamond',serif;color:#f0ddda;margin:0}
+.note{font-size:11px;color:#9f8aa8;line-height:1.7;margin-top:26px}
+@media(max-width:720px){.styles{grid-template-columns:1fr 1fr}.moods{grid-template-columns:1fr}#play{width:100%}}
+</style></head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div class="wrap">
+  <div class="top"><a class="brand" href="/">K.IA.RA<sup>✧</sup></a><a class="back" href="/">← Início</a></div>
+  <h1>Música para o <em>seu espaço.</em></h1>
+  <p class="sub">Trilhas instrumentais originais, sem voz, para tocar na recepção e nas salas. Deixe esta página aberta no computador ligado ao som.</p>
+
+  <div class="label">Estilo</div>
+  <div class="styles" id="styles">
+    <button data-style="calma"><strong>Calma</strong><span>Pads suaves e notas espaçadas para relaxar.</span></button>
+    <button data-style="discoteca"><strong>Discoteca</strong><span>Batida dançante e brilho retrô. 112 BPM.</span></button>
+    <button data-style="romantica"><strong>Romântica</strong><span>Piano delicado com harmonias acolhedoras.</span></button>
+    <button data-style="cosmica"><strong>Cósmica</strong><span>Texturas etéreas e notas luminosas.</span></button>
+  </div>
+
+  <div class="label">Momento</div>
+  <div class="moods" id="moods">
+    <button data-scene="0">Sua essência</button>
+    <button data-scene="1">Seu universo</button>
+    <button data-scene="2">Seu momento</button>
+  </div>
+
+  <div class="player">
+    <button id="play" aria-pressed="false">♫ &nbsp; Tocar</button>
+    <label class="vol">VOLUME · <span id="vv">30%</span><input id="vol" type="range" min="0" max="100" value="30" aria-label="Volume"></label>
+    <label class="auto">Trocar o momento a cada
+      <select id="auto"><option value="0">não trocar</option><option value="180000">3 min</option><option value="300000" selected>5 min</option><option value="600000">10 min</option></select>
+    </label>
+    <p class="now" id="now" role="status"></p>
+  </div>
+  <p class="note">A música toca enquanto esta página estiver aberta. O navegador só libera o som depois de um clique em “Tocar”. As preferências ficam salvas neste navegador.</p>
+</div>
+<script src="/kiara/som.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+let prefs;try{prefs=JSON.parse(localStorage.getItem('kiara-musica')||'{}')}catch{prefs={}}
+function save(){try{localStorage.setItem('kiara-musica',JSON.stringify(prefs))}catch{}}
+let scene=[0,1,2].includes(prefs.scene)?prefs.scene:0,autoTimer=null;
+const st=new KiaraSoundtrack(render,msg=>{$('#now').textContent=msg});
+st.style=st.styles[prefs.style]?prefs.style:'calma';
+st.volume=Number.isFinite(prefs.volume)?prefs.volume:.3;st.scene=scene;
+$('#vol').value=Math.round(st.volume*100);$('#vv').textContent=$('#vol').value+'%';
+if(prefs.auto!=null)$('#auto').value=String(prefs.auto);
+function render(){
+  document.querySelectorAll('#styles button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.style===st.style)));
+  document.querySelectorAll('#moods button').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.scene)===scene)));
+  const p=$('#play');p.disabled=st.loading;p.textContent=st.loading?'♫  Preparando…':st.enabled?'Ⅱ  Pausar':'♫  Tocar';p.setAttribute('aria-pressed',String(st.enabled));
+  $('#now').textContent=st.enabled&&!st.loading?'Tocando: '+st.styles[st.style]+' · '+st.titles[scene]:'';
+}
+function setScene(n){scene=n;prefs.scene=n;save();st.sync(scene,false);armAuto()}
+function armAuto(){clearInterval(autoTimer);const ms=Number($('#auto').value);if(ms>0)autoTimer=setInterval(()=>{if(st.enabled)setScene((scene+1)%3)},ms)}
+document.querySelectorAll('#styles button').forEach(b=>b.onclick=async()=>{prefs.style=b.dataset.style;save();if(st.style===b.dataset.style)return;await st.setStyle(b.dataset.style);render()});
+document.querySelectorAll('#moods button').forEach(b=>b.onclick=()=>setScene(Number(b.dataset.scene)));
+$('#play').onclick=()=>{st.sync(scene,false);st.toggle()};
+$('#vol').oninput=e=>{st.setVolume(e.target.value/100);$('#vv').textContent=e.target.value+'%';prefs.volume=st.volume;save()};
+$('#auto').onchange=e=>{prefs.auto=Number(e.target.value);save();armAuto()};
+render();armAuto();
+(()=>{const c=$('#stars'),x=c.getContext('2d');if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;let w,h,p=[];
+function size(){w=innerWidth;h=innerHeight;const d=Math.min(devicePixelRatio||1,1.5);c.width=w*d;c.height=h*d;x.setTransform(d,0,0,d,0,0);p=Array.from({length:Math.min(120,Math.floor(w*h/11000))},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.1+.2,s:Math.random()*.14+.03,a:Math.random()*6.28}))}
+addEventListener('resize',size);size();
+function draw(t){x.clearRect(0,0,w,h);for(const q of p){q.y-=q.s*(st.enabled?2:1);if(q.y<-5)q.y=h+5;q.x+=Math.sin(t*.0001+q.a)*.07;x.fillStyle=`rgba(255,226,207,${.12+(Math.sin(t*.00065+q.a)+1)*.2})`;x.beginPath();x.arc(q.x,q.y,q.r,0,6.283);x.fill()}requestAnimationFrame(draw)}requestAnimationFrame(draw)})();
+</script>
+</body></html>

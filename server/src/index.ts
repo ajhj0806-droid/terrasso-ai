@@ -4,7 +4,9 @@ import { validSignature } from "./whatsapp.js";
 import { handleWebhook } from "./inbound.js";
 import { pendingJobs } from "./queue.js";
 import { privacyHtml } from "./pages/privacidade.js";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, extname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { staffReply, HttpError } from "./staff.js";
 import { startReminders } from "./reminders.js";
 import { startFeedback } from "./feedback.js";
@@ -12,6 +14,25 @@ import { startFeedback } from "./feedback.js";
 // Painel do gestor: página estática; os dados vêm da Supabase com login e RLS
 const painelHtml = readFileSync(new URL("../public/painel.html", import.meta.url), "utf8");
 const supabaseUmd = readFileSync(new URL("../node_modules/@supabase/supabase-js/dist/umd/supabase.js", import.meta.url));
+
+// Portal K.IA.RA (entrada, monitor e música): arquivos estáticos carregados uma vez na memória
+const TIPOS: Record<string, string> = {
+  ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+  ".jpg": "image/jpeg", ".png": "image/png", ".mp3": "audio/mpeg",
+};
+const kiaraDir = fileURLToPath(new URL("../public/kiara/", import.meta.url));
+const kiaraFiles = new Map<string, Buffer>();
+(function carregar(dir: string, prefixo: string) {
+  for (const nome of readdirSync(dir)) {
+    const caminho = join(dir, nome);
+    if (statSync(caminho).isDirectory()) carregar(caminho, `${prefixo}${nome}/`);
+    else if (TIPOS[extname(nome)]) kiaraFiles.set(`${prefixo}${nome}`, readFileSync(caminho));
+  }
+})(kiaraDir, "");
+const KIARA_PAGINAS: Record<string, string> = {
+  "/": "index.html", "/kiara": "index.html", "/kiara/": "index.html",
+  "/kiara/monitor": "monitor.html", "/kiara/musica": "musica.html",
+};
 
 function readBody(req: IncomingMessage, limit = 2_000_000): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -34,6 +55,22 @@ const server = createServer(async (req, res) => {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, pending: pendingJobs() }));
       return;
+    }
+
+    if (req.method === "GET" || req.method === "HEAD") {
+      const pagina = KIARA_PAGINAS[url.pathname];
+      const arquivo = pagina ?? (url.pathname.startsWith("/kiara/") ? url.pathname.slice(7) : null);
+      const dados = arquivo ? kiaraFiles.get(arquivo) : undefined;
+      if (dados && arquivo) {
+        res.writeHead(200, {
+          "Content-Type": TIPOS[extname(arquivo)],
+          "Content-Length": dados.length,
+          "Cache-Control": pagina || arquivo.endsWith(".js") ? "no-cache" : "public, max-age=604800",
+          "Referrer-Policy": "same-origin",
+        });
+        res.end(req.method === "HEAD" ? undefined : dados);
+        return;
+      }
     }
 
     if (req.method === "GET" && (url.pathname === "/privacidade" || url.pathname === "/exclusao-de-dados")) {
