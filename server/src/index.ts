@@ -7,6 +7,7 @@ import { privacyHtml } from "./pages/privacidade.js";
 import { readFileSync } from "node:fs";
 import { staffReply, HttpError } from "./staff.js";
 import { startReminders } from "./reminders.js";
+import { startFeedback } from "./feedback.js";
 
 // Painel do gestor: página estática; os dados vêm da Supabase com login e RLS
 const painelHtml = readFileSync(new URL("../public/painel.html", import.meta.url), "utf8");
@@ -107,3 +108,4 @@ const server = createServer(async (req, res) => {
 
 server.listen(config.port, () => console.log(`Terrasso.AI ouvindo na porta ${config.port}`));
 startReminders();
+startFeedback();

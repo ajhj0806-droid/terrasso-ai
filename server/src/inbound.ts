@@ -4,6 +4,7 @@ import { db, audit } from "./db.js";
 import { schedule } from "./queue.js";
 import { processConversation } from "./worker.js";
 import { sendText } from "./whatsapp.js";
+import { handleFeedbackButton, handleFeedbackComment } from "./feedback.js";
 
 interface WaNumber { id: string; tenant_id: string; phone_number_id: string }
 const numberCache = new Map<string, WaNumber | null>();
@@ -114,6 +115,12 @@ async function handleMessage(number: WaNumber, contacts: any[], msg: any) {
   if (payload?.startsWith("confirmar:")) {
     const done = await confirmFromReminder(number, clientId, conv.id, payload.slice(10), phone);
     if (done) return;
+  }
+  // Pesquisa de avaliação: botão com a nota, e depois o comentário de quem não deu nota máxima
+  if (payload?.startsWith("aval:")) {
+    if (await handleFeedbackButton(number.tenant_id, number.phone_number_id, clientId, conv.id, phone, payload)) return;
+  } else if (msg.type === "text" && await handleFeedbackComment(number.tenant_id, number.phone_number_id, clientId, conv.id, phone, describe(msg))) {
+    return;
   }
 
   // Espera o cliente terminar de digitar (várias mensagens curtas viram uma resposta só)
