@@ -329,8 +329,9 @@
         <table><thead><tr><th>Profissional</th><th>Atendimentos</th><th>Faturado</th><th>Comissão</th><th>Avaliação</th><th>Clientes trazidas</th></tr></thead><tbody id="mPorProf"></tbody></table>
       </div>
       <div class="card tabela-wrap">
-        <b>Atendimentos</b>
-        <table><thead><tr><th>Data</th><th>Cliente</th><th>Serviço</th><th>Profissional</th><th>Valor</th><th>%</th><th>Comissão</th></tr></thead><tbody id="mItens"></tbody></table>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><b>Atendimentos</b>
+          <button class="ghost hidden" id="mPagarTudo">Marcar comissões do período como pagas</button></div>
+        <table><thead><tr><th>Data</th><th>Cliente</th><th>Serviço</th><th>Profissional</th><th>Valor</th><th>%</th><th>Comissão</th><th>Pagamento</th></tr></thead><tbody id="mItens"></tbody></table>
       </div>
       <div class="card tabela-wrap">
         <b>Avaliações das clientes</b>
@@ -1612,10 +1613,11 @@ async function carregarComissoes() {
   $("mTitulo").textContent = ehProf() ? "Meus atendimentos e comissões" : "Comissões";
   if (!$("mProf").options.length) { $("mProf").innerHTML = '<option value="">Todos</option>' + profissionais.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join(""); }
   if (ehProf() && !meus.length) { $("mItens").innerHTML = '<tr><td colspan="7" class="muted">Seu login ainda não está ligado a um profissional. Peça ao administrador.</td></tr>'; return; }
+  $("mPagarTudo").classList.toggle("hidden", !ehAdmin());
   const filtro = ehProf() ? meus : ($("mProf").value ? [$("mProf").value] : null);
   const ini = localParaUtc($("mDe").value, "00:00").toISOString(), fim = localParaUtc(somarDias($("mAte").value, 1), "00:00").toISOString();
   let q = sb.from("comanda_items")
-    .select("id, description, quantity, unit_price_cents, discount_cents, commission_pct, commission_cents, professional_id, comandas!inner(status, closed_at, clients(full_name))")
+    .select("id, description, quantity, unit_price_cents, discount_cents, commission_pct, commission_cents, commission_paid_at, professional_id, comandas!inner(status, closed_at, clients(full_name))")
     .eq("tenant_id", tenantId).not("professional_id", "is", null).is("product_id", null)
     .eq("comandas.status", "closed").gte("comandas.closed_at", ini).lt("comandas.closed_at", fim);
   if (filtro) q = q.in("professional_id", filtro);
@@ -1631,7 +1633,8 @@ async function carregarComissoes() {
   const notas = f.data;
   const media = (l) => l.length ? (l.reduce((s, x) => s + x.rating, 0) / l.length).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + ` (${l.length})` : "—";
   $("mResumo").innerHTML = `<div class="kpi"><b>${comissoes.length}</b>Atendimentos</div><div class="kpi"><b>${reais(tot(comissoes, "valor"))}</b>Faturado em serviços</div>`
-    + `<div class="kpi"><b>${reais(tot(comissoes, "commission_cents"))}</b>Comissão</div><div class="kpi"><b>${media(notas)}</b>Nota média</div>`;
+    + `<div class="kpi"><b>${reais(tot(comissoes, "commission_cents"))}</b>Comissão</div>`
+    + `<div class="kpi"><b>${reais(tot(comissoes.filter(i => !i.commission_paid_at), "commission_cents"))}</b>Comissão a pagar</div><div class="kpi"><b>${media(notas)}</b>Nota média</div>`;
   const ids = [...new Set([...comissoes.map(i => i.professional_id), ...notas.map(n => n.professional_id)])].filter(Boolean);
   $("mPorProfCard").classList.toggle("hidden", ehProf());
   $("mPorProf").innerHTML = ids.map(id => {
@@ -1640,19 +1643,35 @@ async function carregarComissoes() {
       <td><b>${reais(tot(l, "commission_cents"))}</b></td><td>${media(n)}</td><td>${t.data.filter(c => c.referred_by_professional_id === id).length}</td></tr>`;
   }).join("") || '<tr><td colspan="6" class="muted">Nenhum atendimento no período.</td></tr>';
   $("mItens").innerHTML = comissoes.map(i => `<tr><td class="muted">${quando(i.data)}</td><td>${esc(i.cliente)}</td><td>${esc(i.description)}${i.quantity > 1 ? ` (${i.quantity}x)` : ""}</td>
-      <td>${esc(i.prof)}</td><td>${reais(i.valor)}</td><td>${i.commission_pct != null ? Number(i.commission_pct).toLocaleString("pt-BR") + "%" : "—"}</td><td><b>${reais(i.commission_cents || 0)}</b></td></tr>`).join("")
-    || '<tr><td colspan="7" class="muted">Nenhum atendimento em comanda fechada no período.</td></tr>';
+      <td>${esc(i.prof)}</td><td>${reais(i.valor)}</td><td>${i.commission_pct != null ? Number(i.commission_pct).toLocaleString("pt-BR") + "%" : "—"}</td><td><b>${reais(i.commission_cents || 0)}</b></td>
+      <td>${!i.commission_cents ? "" : i.commission_paid_at ? `<span class="pill">Paga ${new Date(i.commission_paid_at).toLocaleDateString("pt-BR")}</span>${ehAdmin() ? ` <button class="ghost" data-mpago="${i.id}" data-v="0" title="Desfazer pagamento">↺</button>` : ""}`
+        : ehAdmin() ? `<button class="ghost" data-mpago="${i.id}" data-v="1">Marcar paga</button>` : '<span class="muted">A receber</span>'}</td></tr>`).join("")
+    || '<tr><td colspan="8" class="muted">Nenhum atendimento em comanda fechada no período.</td></tr>';
+  $("mItens").querySelectorAll("[data-mpago]").forEach(b => b.onclick = () => marcarPago([b.dataset.mpago], b.dataset.v === "1"));
   const rotulo = { 5: "Ótimo", 3: "Bom", 1: "Pode melhorar" };
   $("mAval").innerHTML = notas.map(n => `<tr><td class="muted">${quando(n.created_at)}</td><td>${esc(n.clients?.full_name || "Cliente")}</td>
       <td>${esc(profissionais.find(p => p.id === n.professional_id)?.name || "")}</td>
       <td><span class="pill ${n.rating <= 2 ? "off" : ""}">${rotulo[n.rating] || n.rating}</span></td><td>${esc(n.comment || "")}</td></tr>`).join("")
     || '<tr><td colspan="5" class="muted">Nenhuma avaliação no período.</td></tr>';
 }
+async function marcarPago(ids, pago) {
+  if (!ids.length) return aviso("Não há comissões a pagar no período.", "err");
+  const { error } = await sb.from("comanda_items").update({ commission_paid_at: pago ? new Date().toISOString() : null }).in("id", ids);
+  if (error) return erro(error);
+  aviso(pago ? (ids.length > 1 ? `${ids.length} comissões marcadas como pagas.` : "Comissão marcada como paga.") : "Pagamento desfeito.");
+  carregarComissoes();
+}
+$("mPagarTudo").onclick = () => {
+  const ids = comissoes.filter(i => !i.commission_paid_at && i.commission_cents > 0).map(i => i.id);
+  const total = comissoes.filter(i => ids.includes(i.id)).reduce((s, i) => s + i.commission_cents, 0);
+  if (ids.length && !confirm(`Marcar ${ids.length} comissões (${reais(total)}) como pagas hoje? Elas entram como recebidas no fluxo de cada profissional.`)) return;
+  marcarPago(ids, true);
+};
 $("mCsv").onclick = () => {
   if (!comissoes.length) return aviso("Não há atendimentos no período para baixar.", "err");
   const n = (c) => (c / 100).toFixed(2).replace(".", ",");
-  const linhas = [["Data", "Cliente", "Serviço", "Profissional", "Valor", "Comissão %", "Comissão"]]
-    .concat(comissoes.map(i => [quando(i.data), i.cliente, i.description, i.prof, n(i.valor), i.commission_pct ?? "", n(i.commission_cents || 0)]));
+  const linhas = [["Data", "Cliente", "Serviço", "Profissional", "Valor", "Comissão %", "Comissão", "Paga em"]]
+    .concat(comissoes.map(i => [quando(i.data), i.cliente, i.description, i.prof, n(i.valor), i.commission_pct ?? "", n(i.commission_cents || 0), i.commission_paid_at ? quando(i.commission_paid_at) : ""]));
   const csv = "\ufeff" + linhas.map(l => l.map(x => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));

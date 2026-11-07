@@ -32,6 +32,7 @@ const kiaraFiles = new Map<string, Buffer>();
 const KIARA_PAGINAS: Record<string, string> = {
   "/": "index.html", "/kiara": "index.html", "/kiara/": "index.html",
   "/kiara/monitor": "monitor.html", "/kiara/musica": "musica.html",
+  "/pro": "pro.html", "/pro/": "pro.html", "/profissional": "pro.html",
 };
 
 function readBody(req: IncomingMessage, limit = 2_000_000): Promise<Buffer> {

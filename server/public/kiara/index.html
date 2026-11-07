@@ -21,7 +21,7 @@ body{background:#100b1c;color:#fff5eb;font-family:Manrope,Arial,sans-serif;overf
 h1{font:400 clamp(46px,6.6vw,112px)/.95 'Cormorant Garamond',Georgia,serif;letter-spacing:-.03em;margin:0;max-width:820px}
 h1 em{color:#eccca8}
 .sub{font-size:clamp(13px,1vw,16px);line-height:1.9;color:#d9c9d8;margin:22px 0 0;max-width:460px}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:6vh}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:6vh}
 .card{display:block;text-decoration:none;color:inherit;padding:26px 26px 24px;border:1px solid #f2d6b833;border-radius:22px;background:linear-gradient(135deg,#21112999,#3622435c);backdrop-filter:blur(14px);transition:transform .3s,border-color .3s,background .3s;position:relative;overflow:hidden}
 .card:hover,.card:focus-visible{transform:translateY(-4px);border-color:#f2d6b88a;background:linear-gradient(135deg,#2a1634cc,#43295299)}
 .card:focus-visible{outline:2px solid #e7c4a3;outline-offset:4px}
@@ -35,7 +35,7 @@ h1 em{color:#eccca8}
 footer{margin-top:5vh;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-size:10px;letter-spacing:.12em;color:#b6a0bf}
 footer a{color:#d6c0d8}
 @keyframes drift{from{transform:scale(1.03)}to{transform:scale(1.12) translate(-1.5%,1%)}}
-@media(max-width:860px){.cards{grid-template-columns:1fr}.card p{min-height:0}.frame{inset:12px}.wrap{padding:9vh 22px 40px}.shade{background:linear-gradient(0deg,#0a0618 10%,#100817cc 60%,#10081799)}}
+@media(max-width:1100px){.cards{grid-template-columns:1fr 1fr}}@media(max-width:860px){.cards{grid-template-columns:1fr}.card p{min-height:0}.frame{inset:12px}.wrap{padding:9vh 22px 40px}.shade{background:linear-gradient(0deg,#0a0618 10%,#100817cc 60%,#10081799)}}
 @media(prefers-reduced-motion:reduce){.bg{animation:none}.card{transition:none}}
 </style></head>
 <body>
@@ -45,7 +45,7 @@ footer a{color:#d6c0d8}
   <main class="hero">
     <div class="chapter"><span class="line"></span><span>Um universo dentro de você</span></div>
     <h1>A recepção que <em>encanta</em> antes do primeiro olá.</h1>
-    <p class="sub">Monitor para a TV da recepção, música ambiente para o seu espaço e o sistema de gestão do salão, tudo em um só lugar.</p>
+    <p class="sub">Monitor para a TV da recepção, música ambiente, a área de cada profissional e o sistema de gestão do salão, tudo em um só lugar.</p>
     <nav class="cards" aria-label="Acessos">
       <a class="card" href="/kiara/monitor">
         <div class="ico" aria-hidden="true">⛶</div>
@@ -58,6 +58,12 @@ footer a{color:#d6c0d8}
         <h2>Música</h2>
         <p>Trilhas instrumentais originais em quatro estilos: Calma, Discoteca, Romântica e Cósmica.</p>
         <span class="go">Ouvir →</span>
+      </a>
+      <a class="card" href="/pro">
+        <div class="ico" aria-hidden="true">✦</div>
+        <h2>Profissional</h2>
+        <p>Sua agenda, comissões, fluxo de caixa e avaliações das clientes, no celular.</p>
+        <span class="go">Minha área →</span>
       </a>
       <a class="card login" href="/painel">
         <div class="ico" aria-hidden="true">✧</div>
