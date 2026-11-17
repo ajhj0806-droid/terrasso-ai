@@ -66,7 +66,7 @@ const server = createServer(async (req, res) => {
         res.writeHead(200, {
           "Content-Type": TIPOS[extname(arquivo)],
           "Content-Length": dados.length,
-          "Cache-Control": pagina || arquivo.endsWith(".js") ? "no-cache" : "public, max-age=604800",
+          "Cache-Control": pagina || (arquivo.endsWith(".js") && !arquivo.startsWith("vendor/")) ? "no-cache" : "public, max-age=604800",
           "Referrer-Policy": "same-origin",
         });
         res.end(req.method === "HEAD" ? undefined : dados);
