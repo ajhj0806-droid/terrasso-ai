@@ -76,6 +76,11 @@
   .ap-bt { position:absolute; top:3px; right:4px; display:flex; gap:4px; }
   .ap-bt button { font-size:11px; padding:2px 7px; border-radius:6px; border:1px solid rgba(0,0,0,.15); }
   .ap-bt .feito { background:#b9e3b5; color:#1b4d1b; } .ap-bt .canc { background:#f6c343; color:#4a3500; }
+  .p-sel { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px; }
+  .p-sel-cat { font-size:12px; font-weight:600; color:var(--muted); min-width:90px; }
+  .p-chip { display:inline-flex; align-items:center; gap:4px; background:#f3ebe3; color:var(--ink); border-radius:999px; padding:3px 4px 3px 10px; font-size:13px; }
+  .p-chip button { background:none; border:0; color:var(--muted); padding:0 6px; font-size:15px; line-height:1; cursor:pointer; }
+  .p-chip button:hover { color:var(--danger); }
   .conv-bt { display:flex; gap:6px; flex-wrap:wrap; }
   tr.bloqueada td { opacity:.65; }
   .estrela { font-size:15px; line-height:1; }
@@ -849,9 +854,11 @@ function resumoServicosDoProf() {
   const sel = servicos.filter(s => pMarcados.has(s.id));
   if (!sel.length) { $("pResumoServ").textContent = "Nenhum serviço marcado."; return; }
   const porCat = {};
-  for (const s of sel) (porCat[s.category || "Sem categoria"] ||= []).push(s.name);
-  $("pResumoServ").innerHTML = `<b>${sel.length} serviço${sel.length > 1 ? "s" : ""} marcado${sel.length > 1 ? "s" : ""}:</b> ` +
-    Object.entries(porCat).map(([c, n]) => `${esc(c)} (${n.length})`).join(" · ");
+  for (const s of sel) (porCat[s.category || "Sem categoria"] ||= []).push(s);
+  $("pResumoServ").innerHTML = `<b>${sel.length} serviço${sel.length > 1 ? "s" : ""} marcado${sel.length > 1 ? "s" : ""}:</b>` +
+    Object.entries(porCat).sort((a, b) => a[0].localeCompare(b[0], "pt-BR")).map(([c, l]) => `<div class="p-sel"><span class="p-sel-cat">${esc(c)}</span>` +
+      l.sort((a, b) => a.name.localeCompare(b.name, "pt-BR")).map(x => `<span class="p-chip">${esc(x.name)}${x.active ? "" : " (inativo)"}<button type="button" title="Tirar" data-ptirar="${x.id}">×</button></span>`).join("") + `</div>`).join("");
+  $("pResumoServ").querySelectorAll("[data-ptirar]").forEach(b => b.onclick = () => { pMarcados.delete(b.dataset.ptirar); desenharServicosDoProf(); });
 }
 $("pFiltroCat").onchange = desenharServicosDoProf;
 $("pMarcarCat").onclick = () => { $("pServicos").querySelectorAll("input").forEach(i => pMarcados.add(i.value)); desenharServicosDoProf(); };
