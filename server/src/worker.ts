@@ -5,13 +5,13 @@ import { markReadTyping, sendText } from "./whatsapp.js";
 
 export async function processConversation(conversationId: string, phoneNumberId: string, lastWaMessageId: string) {
   const { data: conv, error } = await db.from("conversations")
-    .select("id, tenant_id, client_id, assigned_user_id, ai_paused, last_inbound_at, clients(full_name, phone_e164), tenants(name, timezone, settings, ai_enabled)")
+    .select("id, tenant_id, client_id, assigned_user_id, ai_paused, last_inbound_at, clients(full_name, phone_e164, blocked_at), tenants(name, timezone, settings, ai_enabled)")
     .eq("id", conversationId).single();
   if (error) throw error;
   const c: any = conv;
 
   // Humano assumiu, IA pausada nesta conversa ou Kiara desligada no salão: silêncio total
-  if (c.assigned_user_id || c.ai_paused || c.tenants.ai_enabled === false) return;
+  if (c.assigned_user_id || c.ai_paused || c.tenants.ai_enabled === false || c.clients?.blocked_at) return;
 
   // Janela de 24h: texto livre só se o cliente escreveu nas últimas 24h
   if (!c.last_inbound_at || Date.now() - new Date(c.last_inbound_at).getTime() > 23.5 * 3600_000) return;

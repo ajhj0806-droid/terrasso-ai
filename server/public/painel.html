@@ -76,6 +76,8 @@
   .ap-bt { position:absolute; top:3px; right:4px; display:flex; gap:4px; }
   .ap-bt button { font-size:11px; padding:2px 7px; border-radius:6px; border:1px solid rgba(0,0,0,.15); }
   .ap-bt .feito { background:#b9e3b5; color:#1b4d1b; } .ap-bt .canc { background:#f6c343; color:#4a3500; }
+  .conv-bt { display:flex; gap:6px; flex-wrap:wrap; }
+  tr.bloqueada td { opacity:.65; }
   .estrela { font-size:15px; line-height:1; }
   #btnKiara { font-size:13px; padding:7px 12px; border-radius:999px; }
   #btnKiara.on { background:#e8f5e9; color:var(--ok); border:1px solid #b9dcbb; }
@@ -891,22 +893,27 @@ let conversas = [], conversaAberta = null;
 function quando(t) { return t ? new Date(t).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : ""; }
 async function carregarConversas() {
   const { data, error } = await sb.from("conversations")
-    .select("id, ai_paused, assigned_user_id, handoff_reason, handoff_at, last_inbound_at, last_outbound_at, clients(full_name, phone_e164)")
+    .select("id, ai_paused, assigned_user_id, handoff_reason, handoff_at, last_inbound_at, last_outbound_at, clients(full_name, phone_e164, blocked_at)")
     .eq("tenant_id", tenantId).order("last_inbound_at", { ascending: false, nullsFirst: false }).limit(100);
   if (error) return erro(error);
   conversas = data;
   $("cLista").innerHTML = conversas.length ? conversas.map(c => {
-    const pausada = c.ai_paused || c.assigned_user_id;
-    return `<tr>
+    const pausada = c.ai_paused || c.assigned_user_id, bloq = !!c.clients?.blocked_at;
+    return `<tr${bloq ? ' class="bloqueada"' : ""}>
       <td><b>${esc(c.clients?.full_name || "Sem nome")}</b><br><span class="muted">${esc(telVisivel(c.clients?.phone_e164))}</span></td>
-      <td>${situacaoConversa(c)}
+      <td>${bloq ? '<span class="pill off">bloqueado</span>' : `${situacaoConversa(c)}
         ${esperando(c) ? '<br><span class="pill off" style="margin-top:4px;display:inline-block">esperando resposta</span>' : ""}
-        ${!pausada && c.handoff_reason ? '<br><span class="pill off" style="margin-top:4px;display:inline-block">pedido para a equipe</span>' : ""}</td>
+        ${!pausada && c.handoff_reason ? '<br><span class="pill off" style="margin-top:4px;display:inline-block">pedido para a equipe</span>' : ""}`}</td>
       <td class="muted">${quando(c.last_inbound_at)}</td>
-      <td><button class="ghost" data-abrir="${c.id}">Abrir</button></td></tr>`;
+      <td><div class="conv-bt"><button class="ghost" data-abrir="${c.id}">Abrir</button>
+        <button class="ghost" data-bloq="${c.id}" data-acao="${bloq ? "desbloquear" : "bloquear"}">${bloq ? "Desbloquear" : "Bloquear"}</button>
+        ${ehAdmin() ? `<button class="danger" data-excluir="${c.id}">Excluir</button>` : ""}</div></td></tr>`;
   }).join("") : '<tr><td colspan="4" class="muted">Nenhuma conversa ainda.</td></tr>';
   document.querySelectorAll("[data-abrir]").forEach(b => b.onclick = () => abrirConversa(b.dataset.abrir));
-  if (conversaAberta) abrirConversa(conversaAberta);
+  document.querySelectorAll("[data-bloq]").forEach(b => b.onclick = () => acaoConversa(b.dataset.bloq, b.dataset.acao));
+  document.querySelectorAll("[data-excluir]").forEach(b => b.onclick = () => acaoConversa(b.dataset.excluir, "excluir"));
+  if (conversaAberta && conversas.some(c => c.id === conversaAberta)) abrirConversa(conversaAberta);
+  else { conversaAberta = null; $("cDetalhe").classList.add("hidden"); }
 }
 function nomeEquipe(uid) { return uid === usuarioId ? "você" : equipe.find(e => e.user_id === uid)?.full_name || "a equipe"; }
 function situacaoConversa(c) {
@@ -933,9 +940,9 @@ async function abrirConversa(id) {
   $("cDevolver").classList.toggle("hidden", !pausada);
   $("cAssumir").classList.toggle("hidden", c.assigned_user_id === usuarioId);
   $("cResolver").classList.toggle("hidden", pausada || !c.handoff_reason);
-  const janela = dentroDaJanela(c);
+  const janela = dentroDaJanela(c) && !c.clients?.blocked_at;
   $("cEnviar").disabled = !janela; $("cResp").disabled = !janela;
-  $("cJanela").textContent = janela ? "" : "Já passaram 24 horas desde a última mensagem da cliente. O WhatsApp só deixa responder depois que ela escrever de novo.";
+  $("cJanela").textContent = janela ? "" : c.clients?.blocked_at ? "Este número está bloqueado. Desbloqueie para responder." : "Já passaram 24 horas desde a última mensagem da cliente. O WhatsApp só deixa responder depois que ela escrever de novo.";
   $("cMotivo").textContent = c.assigned_user_id ? `Conversa com ${nomeEquipe(c.assigned_user_id)}. A Kiara não responde aqui até devolver.` + (c.handoff_reason ? " Motivo: " + c.handoff_reason : "")
     : pausada ? "A Kiara passou esta conversa para a equipe" + (c.handoff_reason ? ": " + c.handoff_reason : ".")
     : !kiaraLigada ? "A Kiara está desligada no salão. Responda por aqui."
@@ -956,6 +963,29 @@ $("cAssumir").onclick = async () => {
   aviso("Você assumiu a conversa. A Kiara não responde nela até você devolver.");
   carregarConversas();
 };
+async function acaoConversa(id, acao) {
+  const c = conversas.find(x => x.id === id); if (!c) return;
+  const quem = c.clients?.full_name || c.clients?.phone_e164 || "esta cliente";
+  const perguntas = {
+    excluir: `Excluir a conversa com ${quem}? Todas as mensagens somem e não dá para desfazer. O cadastro da cliente, agendamentos e comandas continuam. Se ela escrever de novo, começa uma conversa nova.`,
+    bloquear: `Bloquear ${quem}? A Kiara para de responder, as mensagens novas deste número são ignoradas e ele não recebe lembretes nem pesquisa de avaliação. Dá para desbloquear depois.`,
+    desbloquear: `Desbloquear ${quem}? O número volta a ser atendido normalmente (a conversa continua com a equipe até alguém devolver para a Kiara).`,
+  };
+  if (!confirm(perguntas[acao])) return;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const r = await fetch("/api/conversas/acao", {
+      method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + (session?.access_token || "") },
+      body: JSON.stringify({ conversation_id: id, acao }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return aviso(j.erro || "Não deu certo. Tente de novo.", "err");
+    if (acao === "excluir") { if (conversaAberta === id) conversaAberta = null; aviso("Conversa excluída."); }
+    else if (acao === "bloquear") aviso(j.whatsapp ? "Número bloqueado no sistema e no WhatsApp." : "Número bloqueado no sistema. O WhatsApp só aceita bloquear quem escreveu nas últimas 24 horas, então a pessoa ainda consegue mandar mensagem, mas ninguém responde.");
+    else aviso("Número desbloqueado.");
+    carregarConversas(); vigiarConversas();
+  } catch (e) { erro(e); }
+}
 $("cEnviar").onclick = async () => {
   const texto = $("cResp").value.trim();
   if (!conversaAberta || !texto) return aviso("Escreva a mensagem.", "err");
@@ -986,10 +1016,10 @@ function bip() {
 async function vigiarConversas() {
   if (!tenantId || !podeVer("conversas")) return;
   const { data, error } = await sb.from("conversations")
-    .select("id, ai_paused, assigned_user_id, handoff_reason, last_inbound_at, last_outbound_at")
+    .select("id, ai_paused, assigned_user_id, handoff_reason, last_inbound_at, last_outbound_at, clients(blocked_at)")
     .eq("tenant_id", tenantId).order("last_inbound_at", { ascending: false, nullsFirst: false }).limit(200);
   if (error) return console.error(error);
-  const n = data.filter(c => esperando(c) || (c.handoff_reason && !c.ai_paused && !c.assigned_user_id)).length;
+  const n = data.filter(c => !c.clients?.blocked_at).filter(c => esperando(c) || (c.handoff_reason && !c.ai_paused && !c.assigned_user_id)).length;
   $("cBadge").textContent = n; $("cBadge").classList.toggle("hidden", !n);
   document.title = (n ? `(${n}) ` : "") + "Painel Terrasso";
   if (n > ultimoPendente) {

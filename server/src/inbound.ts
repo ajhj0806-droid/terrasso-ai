@@ -33,9 +33,10 @@ function describe(msg: any): string {
   }
 }
 
-async function upsertClient(tenantId: string, phoneE164: string, profileName: string | undefined) {
-  const { data: existing } = await db.from("clients").select("id, full_name")
+async function upsertClient(tenantId: string, phoneE164: string, profileName: string | undefined): Promise<string | null> {
+  const { data: existing } = await db.from("clients").select("id, full_name, blocked_at")
     .eq("tenant_id", tenantId).eq("phone_e164", phoneE164).maybeSingle();
+  if (existing?.blocked_at) return null; // número bloqueado pelo salão: ignora
   if (existing) return existing.id as string;
 
   const { data, error } = await db.from("clients")
@@ -84,6 +85,7 @@ async function handleMessage(number: WaNumber, contacts: any[], msg: any) {
   const phone = `+${msg.from}`;
   const profileName = contacts.find((c) => c.wa_id === msg.from)?.profile?.name;
   const clientId = await upsertClient(number.tenant_id, phone, profileName);
+  if (!clientId) return;
 
   const { data: conv, error: convErr } = await db.from("conversations")
     .upsert({ tenant_id: number.tenant_id, client_id: clientId, wa_number_id: number.id },

@@ -25,6 +25,20 @@ async function graph(path: string, body: unknown): Promise<any> {
   return json;
 }
 
+/** Bloqueia ou desbloqueia o número no WhatsApp Business (a pessoa deixa de conseguir mandar mensagem).
+ *  A Meta só aceita bloquear quem escreveu nas últimas 24 horas. */
+export async function setWhatsAppBlock(phoneNumberId: string, toE164: string, block: boolean): Promise<void> {
+  const res = await fetch(`https://graph.facebook.com/${config.graphVersion}/${phoneNumberId}/block_users`, {
+    method: block ? "POST" : "DELETE",
+    headers: { Authorization: `Bearer ${config.waAccessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ messaging_product: "whatsapp", block_users: [{ user: toE164.replace(/^\+/, "") }] }),
+  });
+  const json: any = await res.json().catch(() => ({}));
+  if (!res.ok || json?.block_users?.failed_users?.length) {
+    throw new Error(`Graph API ${res.status}: ${JSON.stringify(json?.error ?? json?.block_users?.failed_users ?? json)}`);
+  }
+}
+
 /** Envia texto livre. Só funciona dentro da janela de 24h após a última mensagem do cliente. */
 export async function sendText(phoneNumberId: string, toE164: string, text: string): Promise<string | null> {
   const json = await graph(`${phoneNumberId}/messages`, {

@@ -42,13 +42,13 @@ async function remindTenant(t: { id: string; name: string; timezone: string }) {
   if (!num) return;
 
   const { data: aps, error } = await db.from("appointments")
-    .select("id, period, client_id, clients(full_name, phone_e164), services(name)")
+    .select("id, period, client_id, clients(full_name, phone_e164, blocked_at), services(name)")
     .eq("tenant_id", t.id).eq("status", "scheduled").is("reminder_sent_at", null)
     .overlaps("period", toRange(from, to));
   if (error) throw error;
 
   for (const a of (aps ?? []) as any[]) {
-    if (failedToday.get(a.id) === now.date) continue;
+    if (failedToday.get(a.id) === now.date || a.clients?.blocked_at) continue;
     const start = parseRange(a.period).start;
     if (start < from || start >= to) continue;
 

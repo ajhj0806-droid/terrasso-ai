@@ -7,7 +7,7 @@ import { privacyHtml } from "./pages/privacidade.js";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { staffReply, HttpError } from "./staff.js";
+import { staffReply, staffConversationAction, HttpError } from "./staff.js";
 import { startReminders } from "./reminders.js";
 import { startFeedback } from "./feedback.js";
 
@@ -119,6 +119,21 @@ const server = createServer(async (req, res) => {
       let payload: unknown;
       try { payload = JSON.parse(raw.toString("utf8")); } catch { return; }
       handleWebhook(payload).catch((e) => console.error("webhook", e));
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/conversas/acao") {
+      let body: unknown;
+      try { body = JSON.parse((await readBody(req, 10_000)).toString("utf8")); } catch { body = null; }
+      try {
+        const out = await staffConversationAction(req.headers.authorization, body);
+        res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify(out));
+      } catch (e: any) {
+        const status = e instanceof HttpError ? e.status : 500;
+        if (!(e instanceof HttpError)) console.error("conversa acao", e);
+        res.writeHead(status, { "Content-Type": "application/json" })
+          .end(JSON.stringify({ erro: e instanceof HttpError ? e.message : "Não deu certo. Tente de novo em instantes." }));
+      }
       return;
     }
 

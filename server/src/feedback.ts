@@ -31,12 +31,12 @@ async function feedbackTenant(t: { id: string; timezone: string }) {
   if (!num) return;
   const since = new Date(Date.now() - 2 * 86400_000).toISOString();
   const { data: aps, error } = await db.from("appointments")
-    .select("id, period, client_id, professional_id, clients(full_name, phone_e164), services(name), professionals(name)")
+    .select("id, period, client_id, professional_id, clients(full_name, phone_e164, blocked_at), services(name), professionals(name)")
     .eq("tenant_id", t.id).eq("status", "done").is("feedback_sent_at", null).overlaps("period", toRange(new Date(since), new Date())).limit(50);
   if (error) throw error;
   const sentTo = new Set<string>();
   for (const a of (aps ?? []) as any[]) {
-    if (failed.has(a.id) || sentTo.has(a.client_id)) continue; // uma pesquisa por cliente por vez
+    if (failed.has(a.id) || sentTo.has(a.client_id) || a.clients?.blocked_at) continue; // uma pesquisa por cliente por vez
     const fim = parseRange(a.period).end, h = (Date.now() - fim.getTime()) / 3600_000;
     if (h < WAIT_H) continue;
     if (h > MAX_H) { await db.from("appointments").update({ feedback_sent_at: new Date().toISOString() }).eq("id", a.id); continue; } // passou da hora: não manda
