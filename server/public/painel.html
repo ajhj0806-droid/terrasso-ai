@@ -500,14 +500,22 @@
         </div>
       </div>
       <div class="card">
-        <table><thead><tr><th>Serviço</th><th>Duração</th><th>Preço</th><th></th></tr></thead><tbody id="sLista"></tbody></table>
+        <b>Ver serviços</b>
+        <div class="row" style="margin-top:4px">
+          <div><label for="sfCat">Categoria</label><select id="sfCat"></select></div>
+          <div><label for="sfServ">Serviço</label><select id="sfServ"></select></div>
+        </div>
+        <table style="margin-top:10px"><thead><tr><th>Serviço</th><th>Duração</th><th>Preço</th><th></th></tr></thead><tbody id="sLista"></tbody></table>
       </div>
     </div>
 
     <!-- Profissionais -->
     <div id="tab-profissionais" class="hidden">
       <div class="card">
-        <h2 style="margin-top:0" id="fpTitulo">Novo profissional</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <h2 style="margin:0" id="fpTitulo">Novo profissional</h2>
+          <button class="ghost" id="pListar">Listar profissionais</button>
+        </div>
         <input type="hidden" id="pId">
         <div class="row">
           <div><label for="pNome">Nome</label><input id="pNome" placeholder="Ex.: Ana"></div>
@@ -517,14 +525,19 @@
         </div>
         <p class="muted" style="font-size:12px;margin:6px 0 0">O login liga o profissional a uma pessoa da aba Equipe: com ele, o profissional entra no painel e vê só a própria agenda e as próprias comissões.</p>
         <label>Serviços que faz</label>
-        <div class="checks" id="pServicos"></div>
+        <div class="row" style="grid-template-columns:minmax(200px,320px) auto;align-items:end">
+          <div><select id="pFiltroCat"></select></div>
+          <div class="actions hidden" id="pCatBts" style="margin:0"><button class="ghost" id="pMarcarCat">Marcar todos da categoria</button><button class="ghost" id="pDesmarcarCat">Desmarcar todos</button></div>
+        </div>
+        <div class="checks" id="pServicos" style="margin-top:10px"></div>
+        <div class="muted" id="pResumoServ" style="font-size:13px;margin-top:8px"></div>
         <label class="checks"><span><input type="checkbox" id="pAtivo" checked> Ativo</span></label>
         <div class="actions">
           <button id="pSalvar">Salvar profissional</button>
           <button class="ghost" id="pLimpar">Limpar</button>
         </div>
       </div>
-      <div class="card">
+      <div class="card hidden" id="pListaCard">
         <table><thead><tr><th>Profissional</th><th>Comissão</th><th>Serviços</th><th></th></tr></thead><tbody id="pLista"></tbody></table>
       </div>
     </div>
@@ -749,15 +762,38 @@ async function carregar() {
 }
 
 // ---------- Serviços ----------
+// Filtros: categoria ("" = escolher, "*" = todas, "-" = sem categoria) e serviço
+function nomesCategorias(lista) {
+  const n = [...new Set([...cats.map(c => c.name), ...lista.map(x => x.category).filter(Boolean)])];
+  return n.sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+function opcoesFiltroCat(selId, lista, atual, rotulo) {
+  const conta = (c) => lista.filter(x => c === "-" ? !x.category : x.category === c).length;
+  const sem = conta("-");
+  $(selId).innerHTML = `<option value="">${rotulo}</option>` + nomesCategorias(lista).map(c => `<option value="${esc(c)}">${esc(c)} (${conta(c)})</option>`).join("")
+    + (sem ? `<option value="-">Sem categoria (${sem})</option>` : "") + `<option value="*">Todas (${lista.length})</option>`;
+  $(selId).value = [...$(selId).options].some(o => o.value === atual) ? atual : "";
+}
+const naCategoria = (x, cat) => cat === "*" || (cat === "-" ? !x.category : x.category === cat);
 function desenharServicos() {
-  $("sLista").innerHTML = servicos.length ? servicos.map(s => `
+  const cat = $("sfCat").value, serv = $("sfServ").value;
+  opcoesFiltroCat("sfCat", servicos, cat, "Escolha a categoria");
+  const daCat = cat ? servicos.filter(x => naCategoria(x, cat)) : servicos;
+  $("sfServ").innerHTML = '<option value="">Escolha o serviço</option>' + daCat.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join("");
+  $("sfServ").value = daCat.some(x => x.id === serv) ? serv : "";
+  const lista = $("sfServ").value ? servicos.filter(x => x.id === $("sfServ").value) : cat ? daCat : null;
+  if (!lista) {
+    $("sLista").innerHTML = `<tr><td colspan="4" class="muted">${servicos.length ? `Escolha uma categoria ou um serviço para ver a lista (${servicos.length} cadastrados).` : "Nenhum serviço ainda. Cadastre o primeiro acima."}</td></tr>`;
+    return;
+  }
+  $("sLista").innerHTML = lista.length ? lista.map(s => `
     <tr>
       <td><b>${esc(s.name)}</b>${s.category ? ` <span class="muted">· ${esc(s.category)}</span>` : ""}
         ${s.active ? "" : ' <span class="pill off">inativo</span>'}</td>
       <td>${s.duration_min} min</td>
       <td>${reais(s.price_cents)}</td>
       <td><button class="ghost" data-edit-s="${s.id}">Editar</button></td>
-    </tr>`).join("") : '<tr><td colspan="4" class="muted">Nenhum serviço ainda. Cadastre o primeiro acima.</td></tr>';
+    </tr>`).join("") : '<tr><td colspan="4" class="muted">Nenhum serviço nesse filtro.</td></tr>';
   document.querySelectorAll("[data-edit-s]").forEach(b => b.onclick = () => editarServico(b.dataset.editS));
 }
 function limparServico() {
@@ -772,6 +808,8 @@ function editarServico(id) {
   $("fsTitulo").textContent = "Editar serviço"; window.scrollTo({ top: 0, behavior: "smooth" });
 }
 $("sLimpar").onclick = limparServico;
+$("sfCat").onchange = () => { $("sfServ").value = ""; desenharServicos(); };
+$("sfServ").onchange = desenharServicos;
 $("sSalvar").onclick = async () => {
   const row = {
     tenant_id: tenantId, name: $("sNome").value.trim(), category: $("sCat").value.trim() || null,
@@ -788,11 +826,43 @@ $("sSalvar").onclick = async () => {
 };
 
 // ---------- Profissionais ----------
+// Serviços marcados no formulário (vale entre categorias)
+let pMarcados = new Set(), pMarcadosDe = null;
+function carregarMarcados() {
+  const id = $("pId").value || "";
+  if (pMarcadosDe === id) return;
+  pMarcadosDe = id;
+  pMarcados = new Set((id ? vinculos.filter(v => v.professional_id === id) : []).map(v => v.service_id));
+}
+function desenharServicosDoProf() {
+  const ativos = servicos.filter(s => s.active), cat = $("pFiltroCat").value;
+  opcoesFiltroCat("pFiltroCat", ativos, cat, "Escolha a categoria dos serviços");
+  const daCat = $("pFiltroCat").value ? ativos.filter(x => naCategoria(x, $("pFiltroCat").value)) : [];
+  $("pCatBts").classList.toggle("hidden", !daCat.length);
+  $("pServicos").innerHTML = !ativos.length ? '<span class="muted">Cadastre os serviços primeiro.</span>'
+    : !$("pFiltroCat").value ? '<span class="muted">Escolha uma categoria para ver e marcar os serviços.</span>'
+    : daCat.map(s => `<label><input type="checkbox" value="${s.id}" ${pMarcados.has(s.id) ? "checked" : ""}> ${esc(s.name)}</label>`).join("");
+  $("pServicos").querySelectorAll("input").forEach(i => i.onchange = () => { i.checked ? pMarcados.add(i.value) : pMarcados.delete(i.value); resumoServicosDoProf(); });
+  resumoServicosDoProf();
+}
+function resumoServicosDoProf() {
+  const sel = servicos.filter(s => pMarcados.has(s.id));
+  if (!sel.length) { $("pResumoServ").textContent = "Nenhum serviço marcado."; return; }
+  const porCat = {};
+  for (const s of sel) (porCat[s.category || "Sem categoria"] ||= []).push(s.name);
+  $("pResumoServ").innerHTML = `<b>${sel.length} serviço${sel.length > 1 ? "s" : ""} marcado${sel.length > 1 ? "s" : ""}:</b> ` +
+    Object.entries(porCat).map(([c, n]) => `${esc(c)} (${n.length})`).join(" · ");
+}
+$("pFiltroCat").onchange = desenharServicosDoProf;
+$("pMarcarCat").onclick = () => { $("pServicos").querySelectorAll("input").forEach(i => pMarcados.add(i.value)); desenharServicosDoProf(); };
+$("pDesmarcarCat").onclick = () => { $("pServicos").querySelectorAll("input").forEach(i => pMarcados.delete(i.value)); desenharServicosDoProf(); };
+$("pListar").onclick = () => {
+  const ver = $("pListaCard").classList.toggle("hidden") === false;
+  $("pListar").textContent = ver ? "Ocultar lista" : "Listar profissionais";
+};
 function desenharProfissionais() {
-  const marcados = new Set(($("pId").value ? vinculos.filter(v => v.professional_id === $("pId").value) : []).map(v => v.service_id));
-  $("pServicos").innerHTML = servicos.filter(s => s.active).map(s =>
-    `<label><input type="checkbox" value="${s.id}" ${marcados.has(s.id) ? "checked" : ""}> ${esc(s.name)}</label>`).join("")
-    || '<span class="muted">Cadastre os serviços primeiro.</span>';
+  carregarMarcados();
+  desenharServicosDoProf();
   $("pLista").innerHTML = profissionais.length ? profissionais.map(p => {
     const nomes = vinculos.filter(v => v.professional_id === p.id).map(v => servicos.find(s => s.id === v.service_id)?.name).filter(Boolean);
     const login = equipe.find(e => e.user_id === p.user_id);
@@ -814,12 +884,14 @@ function opcoesLogin(atual) {
 }
 function limparProfissional() {
   $("pId").value = ""; $("pNome").value = ""; $("pCor").value = "#8a5a3c"; $("pAtivo").checked = true; $("pComissao").value = ""; opcoesLogin("");
+  pMarcadosDe = null; $("pFiltroCat").value = "";
   $("fpTitulo").textContent = "Novo profissional"; desenharProfissionais();
 }
 function editarProfissional(id) {
   const p = profissionais.find(x => x.id === id); if (!p) return;
   $("pId").value = p.id; $("pNome").value = p.name; $("pCor").value = p.color || "#8a5a3c"; $("pAtivo").checked = p.active;
   $("pComissao").value = p.commission_pct ? String(p.commission_pct) : ""; opcoesLogin(p.user_id);
+  pMarcadosDe = null; $("pFiltroCat").value = "";
   $("fpTitulo").textContent = "Editar profissional"; desenharProfissionais(); window.scrollTo({ top: 0, behavior: "smooth" });
 }
 $("pLimpar").onclick = limparProfissional;
@@ -836,7 +908,7 @@ $("pSalvar").onclick = async () => {
     const { data, error } = await sb.from("professionals").insert(row).select("id").single(); if (error) return erro(error);
     id = data.id;
   }
-  const escolhidos = [...$("pServicos").querySelectorAll("input:checked")].map(i => i.value);
+  const escolhidos = [...pMarcados];
   const atuais = vinculos.filter(v => v.professional_id === id).map(v => v.service_id);
   const remover = atuais.filter(s => !escolhidos.includes(s));
   const incluir = escolhidos.filter(s => !atuais.includes(s));
