@@ -532,13 +532,22 @@
           <button class="ghost" id="sLimpar">Limpar</button>
         </div>
       </div>
+      <div class="card admin-only">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <span><b>Importar planilha</b> <span class="muted" style="font-size:13px">.xlsx ou .csv. Serviço com o mesmo nome é atualizado; os demais são criados. Campo em branco mantém o valor atual.</span></span>
+          <span class="actions" style="margin:0"><button class="ghost" id="sModelo">Baixar modelo (com os serviços atuais)</button><button id="sImportar">Importar planilha</button></span>
+        </div>
+        <input type="file" id="sArq" accept=".xlsx,.csv,.txt" class="hidden">
+        <div id="sPrevia"></div>
+      </div>
       <div class="card">
-        <b>Ver serviços</b>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>Ver serviços</b><button class="danger admin-only" id="sExcluir" disabled>Excluir marcados</button></div>
         <div class="row" style="margin-top:4px">
           <div><label for="sfCat">Categoria</label><select id="sfCat"></select></div>
           <div><label for="sfServ">Serviço</label><select id="sfServ"></select></div>
         </div>
-        <table style="margin-top:10px"><thead><tr><th>Serviço</th><th>Duração</th><th>Preço</th><th></th></tr></thead><tbody id="sLista"></tbody></table>
+        <table style="margin-top:10px"><thead><tr><th style="width:28px"><input type="checkbox" id="sTodos" class="admin-only" title="Marcar todos da lista" style="width:auto"></th><th>Serviço</th><th>Duração</th><th>Preço</th><th></th></tr></thead><tbody id="sLista"></tbody></table>
+        <p class="muted admin-only" style="font-size:12px;margin:8px 0 0">Só é excluído o serviço sem histórico (sem agendamentos nem comandas). Os que têm histórico continuam; nesse caso, desmarque "Ativo" para tirar da lista das clientes.</p>
       </div>
     </div>
 
@@ -570,8 +579,18 @@
           <button class="ghost" id="pLimpar">Limpar</button>
         </div>
       </div>
+      <div class="card admin-only">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <span><b>Importar planilha</b> <span class="muted" style="font-size:13px">.xlsx ou .csv. Profissional com o mesmo nome é atualizado; os demais são criados. Na coluna Serviços, separe os nomes com ponto e vírgula; se ela vier preenchida, os serviços do profissional passam a ser exatamente esses.</span></span>
+          <span class="actions" style="margin:0"><button class="ghost" id="pModelo">Baixar modelo (com os profissionais atuais)</button><button id="pImportar">Importar planilha</button></span>
+        </div>
+        <input type="file" id="pArq" accept=".xlsx,.csv,.txt" class="hidden">
+        <div id="pPrevia"></div>
+      </div>
       <div class="card hidden" id="pListaCard">
-        <table><thead><tr><th>Profissional</th><th>Comissão</th><th>Serviços</th><th></th></tr></thead><tbody id="pLista"></tbody></table>
+        <div style="display:flex;justify-content:flex-end"><button class="danger admin-only" id="pExcluir" disabled>Excluir marcados</button></div>
+        <table><thead><tr><th style="width:28px"><input type="checkbox" id="pTodos" class="admin-only" title="Marcar todos" style="width:auto"></th><th>Profissional</th><th>Comissão</th><th>Serviços</th><th></th></tr></thead><tbody id="pLista"></tbody></table>
+        <p class="muted admin-only" style="font-size:12px;margin:8px 0 0">Só é excluído o profissional sem histórico (sem agendamentos, comandas, avaliações, clientes indicados ou lançamentos no fluxo pessoal). Com histórico, desmarque "Ativo".</p>
       </div>
     </div>
 
@@ -717,6 +736,7 @@ async function iniciar() {
   if (t?.timezone) TZ = t.timezone;
   $("who").textContent = staff[0].full_name + " · " + user.email;
   aplicarPermissoes();
+  document.querySelectorAll(".admin-only").forEach(e => e.classList.toggle("hidden", !ehAdmin()));
   kiaraLigada = t?.ai_enabled !== false; desenharKiara();
   mostrar("vApp");
   carregarEquipe(true);
@@ -816,18 +836,22 @@ function desenharServicos() {
   $("sfServ").value = daCat.some(x => x.id === serv) ? serv : "";
   const lista = $("sfServ").value ? servicos.filter(x => x.id === $("sfServ").value) : cat ? daCat : null;
   if (!lista) {
-    $("sLista").innerHTML = `<tr><td colspan="4" class="muted">${servicos.length ? `Escolha uma categoria ou um serviço para ver a lista (${servicos.length} cadastrados).` : "Nenhum serviço ainda. Cadastre o primeiro acima."}</td></tr>`;
+    sVisiveis = []; ligarMarcacao("s", sDel, sVisiveis);
+    $("sLista").innerHTML = `<tr><td colspan="5" class="muted">${servicos.length ? `Escolha uma categoria ou um serviço para ver a lista (${servicos.length} cadastrados).` : "Nenhum serviço ainda. Cadastre o primeiro acima."}</td></tr>`;
     return;
   }
+  sVisiveis = lista.map(s => s.id);
   $("sLista").innerHTML = lista.length ? lista.map(s => `
     <tr>
+      <td>${ehAdmin() ? `<input type="checkbox" data-sdel="${s.id}" ${sDel.has(s.id) ? "checked" : ""} style="width:auto">` : ""}</td>
       <td><b>${esc(s.name)}</b>${s.category ? ` <span class="muted">· ${esc(s.category)}</span>` : ""}
         ${s.active ? "" : ' <span class="pill off">inativo</span>'}</td>
       <td>${s.duration_min} min</td>
       <td>${reais(s.price_cents)}</td>
       <td><button class="ghost" data-edit-s="${s.id}">Editar</button></td>
-    </tr>`).join("") : '<tr><td colspan="4" class="muted">Nenhum serviço nesse filtro.</td></tr>';
+    </tr>`).join("") : '<tr><td colspan="5" class="muted">Nenhum serviço nesse filtro.</td></tr>';
   document.querySelectorAll("[data-edit-s]").forEach(b => b.onclick = () => editarServico(b.dataset.editS));
+  ligarMarcacao("s", sDel, sVisiveis);
 }
 function limparServico() {
   for (const id of ["sId","sNome","sDur","sPreco","sDesc"]) $(id).value = ""; opcoesCategoria("sCat", "");
@@ -902,14 +926,16 @@ function desenharProfissionais() {
     const nomes = vinculos.filter(v => v.professional_id === p.id).map(v => servicos.find(s => s.id === v.service_id)?.name).filter(Boolean);
     const login = equipe.find(e => e.user_id === p.user_id);
     return `<tr>
+      <td>${ehAdmin() ? `<input type="checkbox" data-pdel="${p.id}" ${pDel.has(p.id) ? "checked" : ""} style="width:auto">` : ""}</td>
       <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(p.color || "#ccc")}"></span>
         <b>${esc(p.name)}</b>${p.active ? "" : ' <span class="pill off">inativo</span>'}${login ? `<br><span class="muted" style="font-size:12px">login: ${esc(login.full_name)}</span>` : ""}</td>
       <td>${Number(p.commission_pct || 0).toLocaleString("pt-BR")}%</td>
       <td class="muted">${nomes.length ? esc(nomes.join(", ")) : "nenhum"}</td>
       <td><button class="ghost" data-edit-p="${p.id}">Editar</button></td>
     </tr>`;
-  }).join("") : '<tr><td colspan="4" class="muted">Nenhum profissional ainda.</td></tr>';
+  }).join("") : '<tr><td colspan="5" class="muted">Nenhum profissional ainda.</td></tr>';
   document.querySelectorAll("[data-edit-p]").forEach(b => b.onclick = () => editarProfissional(b.dataset.editP));
+  ligarMarcacao("p", pDel, profissionais.map(p => p.id));
 }
 function opcoesLogin(atual) {
   const usados = new Set(profissionais.filter(p => p.user_id && p.id !== $("pId").value).map(p => p.user_id));
@@ -950,6 +976,221 @@ $("pSalvar").onclick = async () => {
   if (remover.length) { const { error } = await sb.from("professional_services").delete().eq("professional_id", id).in("service_id", remover); if (error) return erro(error); }
   if (incluir.length) { const { error } = await sb.from("professional_services").insert(incluir.map(s => ({ tenant_id: tenantId, professional_id: id, service_id: s }))); if (error) return erro(error); }
   aviso("Profissional salvo."); $("pId").value = ""; await carregar(); limparProfissional();
+};
+
+// ---------- Importar planilha e excluir marcados (Serviços e Profissionais) ----------
+let sDel = new Set(), pDel = new Set(), sVisiveis = [];
+const semAcento = (t) => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+const chaveCol = (t) => semAcento(t).replace(/[^a-z0-9]/g, "");
+function ligarMarcacao(pref, conj, visiveis) {
+  for (const id of [...conj]) if (!(pref === "s" ? servicos : profissionais).some(x => x.id === id)) conj.delete(id);
+  document.querySelectorAll(`[data-${pref}del]`).forEach(i => i.onchange = () => { i.checked ? conj.add(i.dataset[pref + "del"]) : conj.delete(i.dataset[pref + "del"]); ligarMarcacao(pref, conj, visiveis); });
+  const bt = $(pref + "Excluir"), todos = $(pref + "Todos");
+  bt.disabled = !conj.size; bt.textContent = conj.size ? `Excluir marcados (${conj.size})` : "Excluir marcados";
+  const marcadosVis = visiveis.filter(id => conj.has(id)).length;
+  todos.checked = visiveis.length > 0 && marcadosVis === visiveis.length;
+  todos.indeterminate = marcadosVis > 0 && marcadosVis < visiveis.length;
+  todos.onchange = () => { for (const id of visiveis) todos.checked ? conj.add(id) : conj.delete(id); pref === "s" ? desenharServicos() : desenharProfissionais(); };
+}
+async function excluirMarcados(tipo, conj, rotulo) {
+  const ids = [...conj]; if (!ids.length) return;
+  if (!confirm(`Excluir ${ids.length} ${rotulo}${ids.length > 1 ? "s" : ""} marcado${ids.length > 1 ? "s" : ""}? Só sai quem não tem histórico. Isso não pode ser desfeito.`)) return;
+  const { data, error } = await sb.rpc("excluir_cadastros", { p_tipo: tipo, p_ids: ids });
+  if (error) return erro(error);
+  conj.clear();
+  const ex = data.excluidos || [], mt = data.mantidos || [];
+  if (tipo === "servico" && ex.some(x => x.id === $("sId").value)) limparServico();
+  if (tipo === "profissional" && ex.some(x => x.id === $("pId").value)) $("pId").value = "";
+  await carregar();
+  if (tipo === "profissional" && !$("pId").value) limparProfissional();
+  const msg = `${ex.length} excluído${ex.length === 1 ? "" : "s"}.` + (mt.length ? ` Não excluídos por terem histórico: ${mt.map(x => `${x.nome} (${x.motivo})`).join("; ")}. Para tirar de uso, desmarque "Ativo".` : "");
+  aviso(msg, mt.length ? "err" : "ok");
+}
+$("sExcluir").onclick = () => excluirMarcados("servico", sDel, "serviço");
+$("pExcluir").onclick = () => excluirMarcados("profissional", pDel, "profissional");
+
+function lerCsv(texto) {
+  texto = texto.replace(/^﻿/, "");
+  const prim = texto.split(/\r?\n/)[0] || "";
+  const sep = [";", "\t", ","].map(c => [c, prim.split(c).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const linhas = []; let campo = "", linha = [], aspas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i];
+    if (aspas) { if (c === '"') { if (texto[i + 1] === '"') { campo += '"'; i++; } else aspas = false; } else campo += c; }
+    else if (c === '"') aspas = true;
+    else if (c === sep) { linha.push(campo); campo = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && texto[i + 1] === "\n") i++; linha.push(campo); linhas.push(linha); linha = []; campo = ""; }
+    else campo += c;
+  }
+  if (campo !== "" || linha.length) { linha.push(campo); linhas.push(linha); }
+  return linhas;
+}
+function valorCelula(v) {
+  if (v == null) return "";
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (typeof v === "object") { if (v.richText) return v.richText.map(x => x.text).join(""); if ("result" in v) return v.result ?? ""; if (v.text) return v.text; return ""; }
+  return v;
+}
+async function lerPlanilha(arq) {
+  let linhas;
+  if (/\.xlsx$/i.test(arq.name)) {
+    await carregarExcelJS();
+    const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await arq.arrayBuffer());
+    const ws = wb.worksheets[0]; linhas = [];
+    if (!ws) throw new Error("a planilha está vazia");
+    ws.eachRow({ includeEmpty: false }, (row) => { const l = []; for (let c = 1; c <= ws.columnCount; c++) l.push(valorCelula(row.getCell(c).value)); linhas.push(l); });
+  } else if (/\.(csv|txt)$/i.test(arq.name)) {
+    let txt = await arq.text();
+    if (txt.includes("�")) txt = new TextDecoder("windows-1252").decode(await arq.arrayBuffer());
+    linhas = lerCsv(txt);
+  } else throw new Error("use um arquivo .xlsx ou .csv");
+  linhas = linhas.filter(l => l.some(x => String(x).trim() !== ""));
+  if (linhas.length < 2) throw new Error("a planilha precisa ter a linha de títulos e pelo menos uma linha de dados");
+  const cab = linhas[0].map(chaveCol);
+  return { cab, regs: linhas.slice(1).map((l, i) => { const o = { _linha: i + 2 }; cab.forEach((k, j) => { if (k && o[k] === undefined) o[k] = String(l[j] ?? "").trim(); }); return o; }) };
+}
+const colP = (o, ...nomes) => { for (const n of nomes) if (o[n] !== undefined && o[n] !== "") return o[n]; return ""; };
+const temCol = (cab, ...nomes) => nomes.some(n => cab.includes(n));
+const simNao = (v) => !["nao", "n", "0", "false", "inativo", "no"].includes(semAcento(v));
+function numeroBr(v) {
+  let t = String(v ?? "").replace(/[R$\s%]/g, "");
+  if (t === "") return NaN;
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
+  const n = Number(t); return Number.isFinite(n) ? n : NaN;
+}
+const C_NOME = ["nome", "servico", "nomedoservico", "profissional", "nomedoprofissional"];
+const C_CAT = ["categoria"], C_DUR = ["duracaomin", "duracao", "duracaominutos", "minutos", "tempo", "tempomin"];
+const C_PRECO = ["precor", "preco", "valor", "valorr", "precors"], C_DESC = ["descricao", "descricaoparaaia", "descricaoparaarecepcionistaia", "descricaoopcional"];
+const C_ATIVO = ["ativo", "status", "situacao"], C_COM = ["comissao", "comissaopct", "comissaosobreservicos"], C_COR = ["cor", "cornaagenda"], C_SERV = ["servicos", "servicosquefaz"];
+
+function prepararServicos({ cab, regs }) {
+  if (!temCol(cab, ...C_NOME)) throw new Error('falta a coluna "Nome"');
+  const porNome = new Map(servicos.map(s => [semAcento(s.name), s])), vistos = new Set();
+  return regs.map(o => {
+    const nome = colP(o, ...C_NOME), r = { linha: o._linha, nome };
+    if (!nome) return { ...r, erro: "sem nome" };
+    if (vistos.has(semAcento(nome))) return { ...r, erro: "nome repetido na planilha" };
+    vistos.add(semAcento(nome));
+    const atual = porNome.get(semAcento(nome)), row = { tenant_id: tenantId, name: atual ? atual.name : nome };
+    const cat = colP(o, ...C_CAT); if (cat) row.category = nomesCategorias(servicos).find(c => semAcento(c) === semAcento(cat)) || cat;
+    const dTxt = colP(o, ...C_DUR), d = numeroBr(dTxt);
+    if (dTxt) { if (!(d > 0)) return { ...r, erro: "duração inválida" }; row.duration_min = Math.round(d); }
+    else if (!atual) return { ...r, erro: "falta a duração" };
+    const pTxt = colP(o, ...C_PRECO), pr = numeroBr(pTxt);
+    if (pTxt) { if (!(pr >= 0)) return { ...r, erro: "preço inválido" }; row.price_cents = Math.round(pr * 100); }
+    else if (!atual) return { ...r, erro: "falta o preço" };
+    const desc = colP(o, ...C_DESC); if (desc) row.description = desc;
+    const at = colP(o, ...C_ATIVO); if (at) row.active = simNao(at); else if (!atual) row.active = true;
+    const det = [row.category && `categoria ${row.category}`, row.duration_min && `${row.duration_min} min`, row.price_cents !== undefined && reais(row.price_cents), row.active === false && "inativo"].filter(Boolean).join(" · ");
+    return { ...r, row, id: atual?.id, acao: atual ? "atualizar" : "novo", det };
+  });
+}
+function prepararProfissionais({ cab, regs }) {
+  if (!temCol(cab, ...C_NOME)) throw new Error('falta a coluna "Nome"');
+  const porNome = new Map(profissionais.map(p => [semAcento(p.name), p])), servPorNome = new Map(servicos.map(s => [semAcento(s.name), s])), vistos = new Set();
+  return regs.map(o => {
+    const nome = colP(o, ...C_NOME), r = { linha: o._linha, nome };
+    if (!nome) return { ...r, erro: "sem nome" };
+    if (vistos.has(semAcento(nome))) return { ...r, erro: "nome repetido na planilha" };
+    vistos.add(semAcento(nome));
+    const atual = porNome.get(semAcento(nome)), row = { tenant_id: tenantId, name: atual ? atual.name : nome };
+    const cTxt = colP(o, ...C_COM), c = numeroBr(cTxt);
+    if (cTxt) { const pct = c > 0 && c <= 1 && !String(cTxt).includes("%") && String(cTxt).includes(".") ? c * 100 : c; if (!(pct >= 0 && pct <= 100)) return { ...r, erro: "comissão inválida" }; row.commission_pct = pct; }
+    else if (!atual) row.commission_pct = 0;
+    const cor = colP(o, ...C_COR);
+    if (cor) { if (!/^#?[0-9a-f]{6}$/i.test(cor)) return { ...r, erro: "cor inválida (use #RRGGBB)" }; row.color = cor.startsWith("#") ? cor : "#" + cor; }
+    else if (!atual) row.color = "#8a5a3c";
+    const at = colP(o, ...C_ATIVO); if (at) row.active = simNao(at); else if (!atual) row.active = true;
+    const sTxt = colP(o, ...C_SERV); let servIds = null; const naoAchou = [];
+    if (sTxt) {
+      const partes = (/[;|\n]/.test(sTxt) ? sTxt.split(/[;|\n]/) : sTxt.split(",")).map(x => x.trim()).filter(Boolean);
+      servIds = [];
+      for (const n of partes) { const sv = servPorNome.get(semAcento(n)); sv ? servIds.push(sv.id) : naoAchou.push(n); }
+      servIds = [...new Set(servIds)];
+    }
+    const det = [row.commission_pct !== undefined && `comissão ${pjF(row.commission_pct)}%`, servIds && `${servIds.length} serviço${servIds.length === 1 ? "" : "s"}`, row.active === false && "inativo"].filter(Boolean).join(" · ")
+      + (naoAchou.length ? `<br><span class="ruim">Serviço não encontrado (ignorado): ${naoAchou.map(esc).join(", ")}</span>` : "");
+    return { ...r, row, servIds, id: atual?.id, acao: atual ? "atualizar" : "novo", det, detHtml: true };
+  });
+}
+function mostrarPrevia(box, itens, confirmar) {
+  const ok = itens.filter(x => !x.erro), novos = ok.filter(x => x.acao === "novo").length, atu = ok.length - novos, err = itens.length - ok.length;
+  $(box).innerHTML = `<div class="pj-aviso" style="background:var(--bg);color:var(--ink)"><b>Prévia:</b> ${novos} novo${novos === 1 ? "" : "s"}, ${atu} para atualizar${err ? `, <span class="ruim">${err} com erro (serão ignorados)</span>` : ""}.
+    <div class="tabela-wrap" style="max-height:340px;overflow:auto;margin-top:6px"><table class="pj"><thead><tr><th>Linha</th><th>Nome</th><th>O que acontece</th><th>Detalhes</th></tr></thead><tbody>
+    ${itens.map(x => `<tr><td>${x.linha}</td><td>${esc(x.nome || "")}</td><td class="${x.erro ? "ruim" : "ok"}">${x.erro ? "erro: " + esc(x.erro) : x.acao === "novo" ? "novo" : "atualizar"}</td><td>${x.det ? (x.detHtml ? x.det : esc(x.det)) : ""}</td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="actions"><button data-imp-ok ${ok.length ? "" : "disabled"}>Confirmar importação (${ok.length})</button><button class="ghost" data-imp-cancel>Cancelar</button></div></div>`;
+  $(box).querySelector("[data-imp-cancel]").onclick = () => { $(box).innerHTML = ""; };
+  $(box).querySelector("[data-imp-ok]").onclick = async (e) => {
+    e.target.disabled = true; e.target.textContent = "Importando...";
+    try { await confirmar(ok); $(box).innerHTML = ""; } catch (er) { erro(er); e.target.disabled = false; e.target.textContent = `Confirmar importação (${ok.length})`; }
+  };
+}
+async function emLotes(lista, n, fn) { for (let i = 0; i < lista.length; i += n) await Promise.all(lista.slice(i, i + n).map(fn)); }
+async function importarServicos(ok) {
+  const novasCats = [...new Set(ok.map(x => x.row.category).filter(c => c && !cats.some(k => semAcento(k.name) === semAcento(c))))];
+  for (const c of novasCats) { const { error } = await sb.from("categories").insert({ tenant_id: tenantId, name: c }); if (error && error.code !== "23505") throw error; }
+  const novos = ok.filter(x => x.acao === "novo").map(x => x.row);
+  if (novos.length) { const { error } = await sb.from("services").insert(novos); if (error) throw error; }
+  await emLotes(ok.filter(x => x.acao === "atualizar"), 8, async (x) => { const { error } = await sb.from("services").update(x.row).eq("id", x.id); if (error) throw error; });
+  await carregar();
+  aviso(`Importação concluída: ${novos.length} serviço(s) novo(s) e ${ok.length - novos.length} atualizado(s).`);
+}
+async function importarProfissionais(ok) {
+  let novos = 0;
+  await emLotes(ok, 6, async (x) => {
+    let id = x.id;
+    if (id) { const { error } = await sb.from("professionals").update(x.row).eq("id", id); if (error) throw error; }
+    else { const { data, error } = await sb.from("professionals").insert(x.row).select("id").single(); if (error) throw error; id = data.id; novos++; }
+    if (x.servIds) {
+      const atuais = vinculos.filter(v => v.professional_id === id).map(v => v.service_id);
+      const remover = atuais.filter(s => !x.servIds.includes(s)), incluir = x.servIds.filter(s => !atuais.includes(s));
+      if (remover.length) { const { error } = await sb.from("professional_services").delete().eq("professional_id", id).in("service_id", remover); if (error) throw error; }
+      if (incluir.length) { const { error } = await sb.from("professional_services").insert(incluir.map(s => ({ tenant_id: tenantId, professional_id: id, service_id: s }))); if (error) throw error; }
+    }
+  });
+  await carregar();
+  aviso(`Importação concluída: ${novos} profissional(is) novo(s) e ${ok.length - novos} atualizado(s).`);
+}
+function ligarImportacao(pref, preparar, importar) {
+  $(pref + "Importar").onclick = () => { $(pref + "Arq").value = ""; $(pref + "Arq").click(); };
+  $(pref + "Arq").onchange = async () => {
+    const arq = $(pref + "Arq").files[0]; if (!arq) return;
+    try { mostrarPrevia(pref + "Previa", preparar(await lerPlanilha(arq)), importar); }
+    catch (e) { $(pref + "Previa").innerHTML = ""; aviso("Não consegui ler a planilha: " + (e.message || e), "err"); }
+  };
+}
+ligarImportacao("s", prepararServicos, importarServicos);
+ligarImportacao("p", prepararProfissionais, importarProfissionais);
+async function baixarModelo(nomeArq, aba, cabecalho, linhas, nota) {
+  try { await carregarExcelJS(); } catch (e) { return erro(e); }
+  const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet(aba);
+  ws.addRow(cabecalho); linhas.forEach(l => ws.addRow(l));
+  ws.getRow(1).eachCell(c => { c.font = { bold: true, color: { argb: "FFFFFFFF" } }; c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF3A2343" } }; });
+  ws.columns.forEach((c, i) => { c.width = Math.min(60, Math.max(12, ...[cabecalho[i], ...linhas.map(l => l[i])].map(v => String(v ?? "").length + 2))); });
+  ws.views = [{ state: "frozen", ySplit: 1 }];
+  const wi = wb.addWorksheet("Como preencher"); nota.forEach(t => wi.addRow([t])); wi.getColumn(1).width = 110;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([await wb.xlsx.writeBuffer()], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+  a.download = nomeArq; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+$("sModelo").onclick = () => {
+  const l = [...servicos].sort((a, b) => (a.category || "").localeCompare(b.category || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR"))
+    .map(s => [s.name, s.category || "", s.duration_min, s.price_cents / 100, s.description || "", s.active ? "Sim" : "Não"]);
+  baixarModelo(`servicos-${hojeLocal()}.xlsx`, "Serviços", ["Nome", "Categoria", "Duração (min)", "Preço (R$)", "Descrição", "Ativo"],
+    l.length ? l : [["Corte feminino", "Cabelo", 60, 180, "Inclui lavagem e finalização.", "Sim"]],
+    ["Uma linha por serviço. A primeira linha (títulos) não pode mudar de nome.", "Nome igual a um serviço já cadastrado: o serviço é atualizado. Nome novo: o serviço é criado.",
+     "Para serviço novo, Duração e Preço são obrigatórios. Para atualizar, campo em branco mantém o valor atual.", "Ativo: Sim ou Não (em branco = Sim para serviço novo).",
+     "Categoria que ainda não existe é criada.", "Pode salvar também como CSV (separado por ponto e vírgula)."]);
+};
+$("pModelo").onclick = () => {
+  const l = profissionais.map(p => [p.name, Number(p.commission_pct || 0), p.color || "", vinculos.filter(v => v.professional_id === p.id).map(v => servicos.find(s => s.id === v.service_id)?.name).filter(Boolean).join("; "), p.active ? "Sim" : "Não"]);
+  baixarModelo(`profissionais-${hojeLocal()}.xlsx`, "Profissionais", ["Nome", "Comissão (%)", "Cor", "Serviços", "Ativo"],
+    l.length ? l : [["Ana", 40, "#8a5a3c", "Corte feminino; Escova", "Sim"]],
+    ["Uma linha por profissional. A primeira linha (títulos) não pode mudar de nome.", "Nome igual a um profissional já cadastrado: ele é atualizado. Nome novo: é criado.",
+     "Serviços: nomes exatamente como estão em Serviços, separados por ponto e vírgula (;). Se a coluna vier preenchida, os serviços do profissional passam a ser exatamente esses; em branco, ficam como estão.",
+     "Comissão em % (ex.: 40). Cor no formato #RRGGBB (opcional). Ativo: Sim ou Não.", "O login do profissional não é importado; ligue pela tela de edição."]);
 };
 
 // ---------- Horários ----------
