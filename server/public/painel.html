@@ -581,7 +581,7 @@
       </div>
       <div class="card admin-only">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-          <span><b>Importar planilha</b> <span class="muted" style="font-size:13px">.xlsx ou .csv. Profissional com o mesmo nome é atualizado; os demais são criados. Na coluna Serviços, separe os nomes com ponto e vírgula; se ela vier preenchida, os serviços do profissional passam a ser exatamente esses.</span></span>
+          <span><b>Importar planilha</b> <span class="muted" style="font-size:13px">.xlsx ou .csv. Profissional com o mesmo nome é atualizado; os demais são criados. Os serviços da planilha são somados aos que o profissional já faz (nenhum é removido). Pode usar uma linha por serviço repetindo o nome, ou vários serviços na mesma célula separados por ponto e vírgula.</span></span>
           <span class="actions" style="margin:0"><button class="ghost" id="pModelo">Baixar modelo (com os profissionais atuais)</button><button id="pImportar">Importar planilha</button></span>
         </div>
         <input type="file" id="pArq" accept=".xlsx,.csv,.txt" class="hidden">
@@ -1123,33 +1123,44 @@ function prepararServicos({ cab, regs }) {
     return { ...r, row, id: atual?.id, acao: atual ? "atualizar" : "novo", det };
   });
 }
+// Serviços da planilha são SOMADOS aos que o profissional já faz (nada é removido).
+// O mesmo nome pode aparecer em várias linhas (ex.: uma linha por serviço): as linhas são juntadas.
 function prepararProfissionais({ cab, regs }) {
   if (!temCol(cab, ...C_NOME)) throw new Error('falta a coluna "Nome"');
-  const porNome = new Map(profissionais.map(p => [semAcento(p.name), p])), servPorNome = new Map(servicos.map(s => [semAcento(s.name), s])), vistos = new Set();
-  return regs.map(o => {
+  const porNome = new Map(profissionais.map(p => [semAcento(p.name), p])), servPorNome = new Map(servicos.map(s => [semAcento(s.name), s]));
+  const grupos = new Map(), erros = [];
+  for (const o of regs) {
     const nome = colP(o, ...C_NOME), r = { linha: o._linha, nome };
-    if (!nome) return { ...r, erro: "sem nome" };
-    if (vistos.has(semAcento(nome))) return { ...r, erro: "nome repetido na planilha" };
-    vistos.add(semAcento(nome));
-    const atual = porNome.get(semAcento(nome)), row = { tenant_id: tenantId, name: atual ? atual.name : nome };
+    if (!nome) { erros.push({ ...r, erro: "sem nome" }); continue; }
+    const k = semAcento(nome), atual = porNome.get(k);
+    let g = grupos.get(k);
+    if (!g) { g = { linhas: [], nome, atual, row: { tenant_id: tenantId, name: atual ? atual.name : nome }, servIds: new Set(), naoAchou: [], erro: null }; grupos.set(k, g); }
+    g.linhas.push(o._linha);
     const cTxt = colP(o, ...C_COM), c = numeroBr(cTxt);
-    if (cTxt) { const pct = c > 0 && c <= 1 && !String(cTxt).includes("%") && String(cTxt).includes(".") ? c * 100 : c; if (!(pct >= 0 && pct <= 100)) return { ...r, erro: "comissão inválida" }; row.commission_pct = pct; }
-    else if (!atual) row.commission_pct = 0;
+    if (cTxt) { const pct = c > 0 && c <= 1 && !String(cTxt).includes("%") && String(cTxt).includes(".") ? c * 100 : c; if (!(pct >= 0 && pct <= 100)) g.erro = g.erro || `comissão inválida (linha ${o._linha})`; else g.row.commission_pct = pct; }
     const cor = colP(o, ...C_COR);
-    if (cor) { if (!/^#?[0-9a-f]{6}$/i.test(cor)) return { ...r, erro: "cor inválida (use #RRGGBB)" }; row.color = cor.startsWith("#") ? cor : "#" + cor; }
-    else if (!atual) row.color = "#8a5a3c";
-    const at = colP(o, ...C_ATIVO); if (at) row.active = simNao(at); else if (!atual) row.active = true;
-    const sTxt = colP(o, ...C_SERV); let servIds = null; const naoAchou = [];
-    if (sTxt) {
-      const partes = (/[;|\n]/.test(sTxt) ? sTxt.split(/[;|\n]/) : sTxt.split(",")).map(x => x.trim()).filter(Boolean);
-      servIds = [];
-      for (const n of partes) { const sv = servPorNome.get(semAcento(n)); sv ? servIds.push(sv.id) : naoAchou.push(n); }
-      servIds = [...new Set(servIds)];
+    if (cor) { if (!/^#?[0-9a-f]{6}$/i.test(cor)) g.erro = g.erro || `cor inválida, use #RRGGBB (linha ${o._linha})`; else g.row.color = cor.startsWith("#") ? cor : "#" + cor; }
+    const at = colP(o, ...C_ATIVO); if (at) g.row.active = simNao(at);
+    const sTxt = colP(o, ...C_SERV);
+    if (sTxt) for (const n of (/[;|\n]/.test(sTxt) ? sTxt.split(/[;|\n]/) : sTxt.split(",")).map(x => x.trim()).filter(Boolean)) {
+      const sv = servPorNome.get(semAcento(n)); sv ? g.servIds.add(sv.id) : g.naoAchou.includes(n) || g.naoAchou.push(n);
     }
-    const det = [row.commission_pct !== undefined && `comissão ${pjF(row.commission_pct)}%`, servIds && `${servIds.length} serviço${servIds.length === 1 ? "" : "s"}`, row.active === false && "inativo"].filter(Boolean).join(" · ")
-      + (naoAchou.length ? `<br><span class="ruim">Serviço não encontrado (ignorado): ${naoAchou.map(esc).join(", ")}</span>` : "");
-    return { ...r, row, servIds, id: atual?.id, acao: atual ? "atualizar" : "novo", det, detHtml: true };
+  }
+  const itens = [...grupos.values()].map(g => {
+    const r = { linha: g.linhas.join(", "), nome: g.nome };
+    if (g.erro) return { ...r, erro: g.erro };
+    const row = g.row, atual = g.atual;
+    if (!atual) { if (row.commission_pct === undefined) row.commission_pct = 0; if (!row.color) row.color = "#8a5a3c"; if (row.active === undefined) row.active = true; }
+    const ja = new Set(atual ? vinculos.filter(v => v.professional_id === atual.id).map(v => v.service_id) : []);
+    const novosServ = [...g.servIds].filter(id => !ja.has(id));
+    const nomeServ = (id) => esc(servicos.find(s => s.id === id)?.name || "");
+    const det = [row.commission_pct !== undefined && `comissão ${pjF(row.commission_pct)}%`, row.active === false && "inativo"].filter(Boolean).join(" · ")
+      + (novosServ.length ? `${row.commission_pct !== undefined || row.active === false ? "<br>" : ""}<span class="ok">+ ${novosServ.length} serviço${novosServ.length === 1 ? "" : "s"}: ${novosServ.map(nomeServ).join(", ")}</span>` : "")
+      + (g.servIds.size && !novosServ.length ? '<br><span class="muted">já faz todos os serviços da planilha</span>' : "")
+      + (g.naoAchou.length ? `<br><span class="ruim">Serviço não encontrado (ignorado): ${g.naoAchou.map(esc).join(", ")}</span>` : "");
+    return { ...r, row, servIds: novosServ, id: atual?.id, acao: atual ? "atualizar" : "novo", det, detHtml: true };
   });
+  return [...erros, ...itens].sort((a, b) => parseInt(a.linha, 10) - parseInt(b.linha, 10));
 }
 function mostrarPrevia(box, itens, confirmar, voltar) {
   const ok = itens.filter(x => !x.erro), novos = ok.filter(x => x.acao === "novo").length, atu = ok.length - novos, err = itens.length - ok.length;
@@ -1181,10 +1192,9 @@ async function importarProfissionais(ok) {
     let id = x.id;
     if (id) { const { error } = await sb.from("professionals").update(x.row).eq("id", id); if (error) throw error; }
     else { const { data, error } = await sb.from("professionals").insert(x.row).select("id").single(); if (error) throw error; id = data.id; novos++; }
-    if (x.servIds) {
+    if (x.servIds?.length) {
       const atuais = vinculos.filter(v => v.professional_id === id).map(v => v.service_id);
-      const remover = atuais.filter(s => !x.servIds.includes(s)), incluir = x.servIds.filter(s => !atuais.includes(s));
-      if (remover.length) { const { error } = await sb.from("professional_services").delete().eq("professional_id", id).in("service_id", remover); if (error) throw error; }
+      const incluir = x.servIds.filter(s => !atuais.includes(s));
       if (incluir.length) { const { error } = await sb.from("professional_services").insert(incluir.map(s => ({ tenant_id: tenantId, professional_id: id, service_id: s }))); if (error) throw error; }
     }
   });
@@ -1234,7 +1244,7 @@ $("pModelo").onclick = () => {
   baixarModelo(`profissionais-${hojeLocal()}.xlsx`, "Profissionais", ["Nome", "Comissão (%)", "Cor", "Serviços", "Ativo"],
     l.length ? l : [["Ana", 40, "#8a5a3c", "Corte feminino; Escova", "Sim"]],
     ["Uma linha por profissional. A primeira linha (títulos) não pode mudar de nome.", "Nome igual a um profissional já cadastrado: ele é atualizado. Nome novo: é criado.",
-     "Serviços: nomes exatamente como estão em Serviços, separados por ponto e vírgula (;). Se a coluna vier preenchida, os serviços do profissional passam a ser exatamente esses; em branco, ficam como estão.",
+     "Serviços: nomes exatamente como estão em Serviços, separados por ponto e vírgula (;). Os serviços são SOMADOS aos que o profissional já faz; nenhum é removido (para tirar, use a tela de edição). Pode repetir o nome em várias linhas, uma por serviço.",
      "Comissão em % (ex.: 40). Cor no formato #RRGGBB (opcional). Ativo: Sim ou Não.", "O login do profissional não é importado; ligue pela tela de edição."]);
 };
 
