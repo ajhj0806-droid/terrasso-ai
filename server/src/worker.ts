@@ -33,7 +33,7 @@ export async function processConversation(conversationId: string, phoneNumberId:
     .eq("tenant_id", c.tenant_id).order("created_at").limit(1).maybeSingle();
 
   const result = await reply(
-    { tenantId: c.tenant_id, timeZone: c.tenants.timezone, clientId: c.client_id, conversationId, unitId: unit?.id ?? null },
+    { tenantId: c.tenant_id, timeZone: c.tenants.timezone, clientId: c.client_id, conversationId, unitId: unit?.id ?? null, leadMin: Number(c.tenants.settings?.antecedencia_min ?? 60) },
     { name: c.tenants.name, timeZone: c.tenants.timezone, settings: c.tenants.settings, unitName: unit?.name, unitAddress: unit?.address },
     c.clients.full_name,
     history,

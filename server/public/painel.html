@@ -650,6 +650,9 @@
         <textarea id="aFaq" style="min-height:140px" placeholder="Ex.: Endereço e ponto de referência, estacionamento, horário de funcionamento, se atende criança, cuidados antes e depois de procedimentos..."></textarea>
         <label for="aDif">Diferenciais do salão</label>
         <textarea id="aDif" placeholder="Ex.: Produtos veganos, café especial, equipe com formação internacional..."></textarea>
+        <label for="aAntec">Antecedência mínima para a Kiara marcar pelo WhatsApp (minutos)</label>
+        <input id="aAntec" type="number" min="0" step="15" placeholder="60" style="max-width:160px">
+        <p class="muted" style="font-size:12px;margin:4px 0 0">Ex.: 60 = às 16:20 ela só marca a partir das 17:20. Use 0 para permitir encaixe imediato.</p>
         <label class="checks" style="margin-top:14px"><span><input type="checkbox" id="aLembrete"> Mandar lembrete no WhatsApp na véspera, com botões "Confirmar" e "Preciso remarcar"</span></label>
         <label class="checks" style="margin-top:10px"><span><input type="checkbox" id="aAval"> Pedir avaliação do atendimento no WhatsApp, 2 horas depois de concluído (Ótimo / Bom / Pode melhorar)</span></label>
         <p class="muted" style="font-size:12px;margin:4px 0 0">As duas mensagens só funcionam depois que os modelos forem aprovados pela Meta e houver forma de pagamento na conta do WhatsApp. Avaliação baixa vira alerta na aba Conversas.</p>
@@ -1461,6 +1464,7 @@ async function carregarPerfil() {
   settingsAtuais = data.settings || {};
   for (const [id, k] of Object.entries(CAMPOS)) $(id).value = settingsAtuais[k] || "";
   $("aLembrete").checked = settingsAtuais.lembrete_vespera === true;
+  $("aAntec").value = settingsAtuais.antecedencia_min ?? 60;
   $("aAval").checked = settingsAtuais.avaliacao_pos === true;
 }
 $("aSalvar").onclick = async () => {
@@ -1469,6 +1473,7 @@ $("aSalvar").onclick = async () => {
   const novo = { ...(atual.data.settings || {}) };
   for (const [id, k] of Object.entries(CAMPOS)) { const v = $(id).value.trim(); if (v) novo[k] = v; else delete novo[k]; }
   novo.lembrete_vespera = $("aLembrete").checked;
+  { const v = parseInt($("aAntec").value, 10); novo.antecedencia_min = Number.isFinite(v) && v >= 0 ? v : 60; }
   novo.avaliacao_pos = $("aAval").checked;
   const { data, error } = await sb.from("tenants").update({ settings: novo }).eq("id", tenantId).select("id");
   if (error) return erro(error);

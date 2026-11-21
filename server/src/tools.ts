@@ -12,9 +12,12 @@ export interface Ctx {
   clientId: string;
   conversationId: string;
   unitId: string | null;
+  /** Antecedência mínima (min) para marcar pelo WhatsApp; vem de tenants.settings.antecedencia_min. */
+  leadMin?: number;
 }
 
-const MIN_LEAD_MIN = 60; // antecedência mínima para agendar pelo WhatsApp
+const MIN_LEAD_MIN = 60; // antecedência mínima padrão para agendar pelo WhatsApp
+const leadOf = (ctx: Ctx) => (Number.isFinite(ctx.leadMin) && (ctx.leadMin as number) >= 0 ? (ctx.leadMin as number) : MIN_LEAD_MIN);
 const nullableStr = { type: ["string", "null"] } as const;
 
 export const toolDefs: Anthropic.Beta.Messages.BetaTool[] = [
@@ -223,9 +226,13 @@ async function slotsFor(ctx: Ctx, professionalId: string, date: string, duration
     ...(appts.data ?? []).filter((a: any) => a.id !== ignoreAppointmentId).map((a: any) => parseRange(a.period)),
     ...(blocks.data ?? []).map((b: any) => parseRange(b.period)),
   ];
-  return freeSlots({
+  const slots = freeSlots({
     date, timeZone: ctx.timeZone, shifts: shifts.data ?? [], busy, durationMin,
-    stepMin: 15, notBefore: new Date(Date.now() + MIN_LEAD_MIN * 60_000),
+    stepMin: 15, notBefore: new Date(Date.now() + leadOf(ctx) * 60_000),
+  });
+  return Object.assign(slots, {
+    expediente: (shifts.data ?? []).map((s: any) => `${s.start_time.slice(0, 5)}-${s.end_time.slice(0, 5)}`).sort(),
+    ocupados: busy.map((b) => `${utcToLocal(b.start, ctx.timeZone).time}-${utcToLocal(b.end, ctx.timeZone).time}`).sort(),
   });
 }
 
@@ -235,16 +242,26 @@ async function searchSlots(ctx: Ctx, serviceId: string, date: string, profession
   const pros = await professionalsFor(ctx, serviceId, professionalId);
   if (pros.length === 0) return { ok: false, erro: "nenhum profissional ativo faz esse serviço" };
   const result = [];
+  const lead = leadOf(ctx), hoje = utcToLocal(new Date(), ctx.timeZone).date;
   for (const p of pros) {
     const slots = await slotsFor(ctx, p.id, date, service.duration_min);
     result.push({
       profissional_id: p.id,
       profissional: p.name,
-      horarios: slots.slice(0, 12).map((s) => utcToLocal(s, ctx.timeZone).time),
-      total_livres: slots.length,
+      // todos os inícios possíveis (passo de 15 min); não cortar, senão a tarde some
+      horarios: slots.map((s) => utcToLocal(s, ctx.timeZone).time),
+      expediente_no_dia: slots.expediente.length ? slots.expediente : "não trabalha nesse dia (sem horário cadastrado)",
+      ocupados: slots.ocupados,
     });
   }
-  return { ok: true, servico: service.name, data: date, duracao_min: service.duration_min, opcoes: result };
+  return {
+    ok: true, servico: service.name, data: date, duracao_min: service.duration_min, opcoes: result,
+    regras: [
+      `Só aparecem inícios em que o serviço inteiro (${service.duration_min} min) cabe antes do fim do expediente e não encosta em 'ocupados'.`,
+      date === hoje ? `Pelo WhatsApp só dá para marcar com ${lead} min de antecedência: hoje, nada antes de ${utcToLocal(new Date(Date.now() + lead * 60_000), ctx.timeZone).time}.` : "",
+      "Se o horário pedido não estiver em 'horarios', explique o motivo real com esses dados (fora do expediente, antecedência mínima, ocupado ou o serviço não cabe até o fim do expediente). Nunca diga que a agenda mudou ou que há bloqueio se 'ocupados' estiver vazio.",
+    ].filter(Boolean),
+  };
 }
 
 async function book(ctx: Ctx, a: { servico_id: string; profissional_id: string; data: string; hora: string }): Promise<Result> {
