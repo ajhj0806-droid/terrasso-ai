@@ -81,6 +81,9 @@
   .p-chip { display:inline-flex; align-items:center; gap:4px; background:#f3ebe3; color:var(--ink); border-radius:999px; padding:3px 4px 3px 10px; font-size:13px; }
   .p-chip button { background:none; border:0; color:var(--muted); padding:0 6px; font-size:15px; line-height:1; cursor:pointer; }
   .p-chip button:hover { color:var(--danger); }
+  .p-chip input { width:52px; padding:1px 4px; font-size:12px; border:1px solid var(--line, #ddd); border-radius:6px; margin-left:4px; background:#fff; }
+  .p-chip .p-pct { font-size:12px; color:var(--muted); }
+  .p-chip-com { background:#e7d6c4; }
   .conv-bt { display:flex; gap:6px; flex-wrap:wrap; }
   tr.bloqueada td { opacity:.65; }
   .estrela { font-size:15px; line-height:1; }
@@ -367,7 +370,7 @@
             <button class="ghost" id="pjRestaurar">Recomeçar</button>
           </div>
         </div>
-        <p class="muted" style="font-size:13px">Defina a meta, escolha os serviços e informe quantas vezes cada profissional vai fazer cada serviço no período. O sistema compara com a agenda e mostra quanto falta agendar. Valores e durações vêm do cadastro de serviços; a comissão vem do cadastro de cada profissional. Os campos <span class="pj-ed-amostra">em amarelo</span> podem ser alterados. <span id="pjSalvoEm"></span></p>
+        <p class="muted" style="font-size:13px">Defina a meta, escolha os serviços e informe quantas vezes cada profissional vai fazer cada serviço no período. O sistema compara com a agenda e mostra quanto falta agendar. Valores e durações vêm do cadastro de serviços; a comissão vem do cadastro de cada profissional (a do serviço, ou a padrão dele). Os campos <span class="pj-ed-amostra">em amarelo</span> podem ser alterados. <span id="pjSalvoEm"></span></p>
         <div id="pjVeredito" class="pj-veredito"></div>
         <div class="kpis" id="pjResKpi" style="margin-top:10px"></div>
       </div>
@@ -560,7 +563,7 @@
         <div class="row">
           <div><label for="pNome">Nome</label><input id="pNome" placeholder="Ex.: Ana"></div>
           <div><label for="pCor">Cor na agenda</label><input id="pCor" type="color" value="#8a5a3c"></div>
-          <div><label for="pComissao">Comissão sobre serviços (%)</label><input id="pComissao" type="number" min="0" max="100" step="0.5" placeholder="40"></div>
+          <div><label for="pComissao" title="Usada nos serviços que não têm comissão própria">Comissão padrão (%)</label><input id="pComissao" type="number" min="0" max="100" step="0.5" placeholder="40"></div>
           <div><label for="pLogin">Login do profissional</label><select id="pLogin"></select></div>
         </div>
         <p class="muted" style="font-size:12px;margin:6px 0 0">O login liga o profissional a uma pessoa da aba Equipe: com ele, o profissional entra no painel e vê só a própria agenda e as próprias comissões.</p>
@@ -802,7 +805,7 @@ async function carregar() {
   const [s, p, v, pr, ct] = await Promise.all([
     sb.from("services").select("*").eq("tenant_id", tenantId).order("name"),
     sb.from("professionals").select("*").eq("tenant_id", tenantId).order("name"),
-    sb.from("professional_services").select("professional_id, service_id").eq("tenant_id", tenantId),
+    sb.from("professional_services").select("professional_id, service_id, commission_pct").eq("tenant_id", tenantId),
     sb.from("products").select("*").eq("tenant_id", tenantId).order("name"),
     sb.from("categories").select("id, name").eq("tenant_id", tenantId).order("name"),
   ]);
@@ -885,12 +888,21 @@ $("sSalvar").onclick = async () => {
 
 // ---------- Profissionais ----------
 // Serviços marcados no formulário (vale entre categorias)
-let pMarcados = new Set(), pMarcadosDe = null;
+let pMarcados = new Set(), pMarcadosDe = null, pComServ = new Map();
+// Comissão do vínculo profissional–serviço; sem valor próprio vale a comissão padrão do profissional
+function pctF(v) { return Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 2 }); }
+const comissaoDe = (profId, servId) => {
+  const v = vinculos.find(x => x.professional_id === profId && x.service_id === servId);
+  if (v && v.commission_pct != null) return Number(v.commission_pct);
+  return Number(profissionais.find(x => x.id === profId)?.commission_pct || 0);
+};
 function carregarMarcados() {
   const id = $("pId").value || "";
   if (pMarcadosDe === id) return;
   pMarcadosDe = id;
-  pMarcados = new Set((id ? vinculos.filter(v => v.professional_id === id) : []).map(v => v.service_id));
+  const meus = id ? vinculos.filter(v => v.professional_id === id) : [];
+  pMarcados = new Set(meus.map(v => v.service_id));
+  pComServ = new Map(meus.filter(v => v.commission_pct != null).map(v => [v.service_id, Number(v.commission_pct)]));
 }
 function desenharServicosDoProf() {
   const ativos = servicos.filter(s => s.active), cat = $("pFiltroCat").value;
@@ -905,15 +917,23 @@ function desenharServicosDoProf() {
 }
 function resumoServicosDoProf() {
   const sel = servicos.filter(s => pMarcados.has(s.id));
+  const padrao = pctF($("pComissao").value.trim() === "" ? 0 : Number($("pComissao").value.replace(",", ".")) || 0);
   if (!sel.length) { $("pResumoServ").textContent = "Nenhum serviço marcado."; return; }
   const porCat = {};
   for (const s of sel) (porCat[s.category || "Sem categoria"] ||= []).push(s);
   $("pResumoServ").innerHTML = `<b>${sel.length} serviço${sel.length > 1 ? "s" : ""} marcado${sel.length > 1 ? "s" : ""}:</b>` +
     Object.entries(porCat).sort((a, b) => a[0].localeCompare(b[0], "pt-BR")).map(([c, l]) => `<div class="p-sel"><span class="p-sel-cat">${esc(c)}</span>` +
-      l.sort((a, b) => a.name.localeCompare(b.name, "pt-BR")).map(x => `<span class="p-chip">${esc(x.name)}${x.active ? "" : " (inativo)"}<button type="button" title="Tirar" data-ptirar="${x.id}">×</button></span>`).join("") + `</div>`).join("");
-  $("pResumoServ").querySelectorAll("[data-ptirar]").forEach(b => b.onclick = () => { pMarcados.delete(b.dataset.ptirar); desenharServicosDoProf(); });
+      l.sort((a, b) => a.name.localeCompare(b.name, "pt-BR")).map(x => `<span class="p-chip${pComServ.has(x.id) ? " p-chip-com" : ""}">${esc(x.name)}${x.active ? "" : " (inativo)"}<input type="number" min="0" max="100" step="0.5" data-pcom="${x.id}" value="${pComServ.has(x.id) ? pComServ.get(x.id) : ""}" placeholder="${esc(padrao)}" title="Comissão deste serviço (%). Em branco = padrão (${esc(padrao)}%)"><span class="p-pct">%</span><button type="button" title="Tirar" data-ptirar="${x.id}">×</button></span>`).join("") + `</div>`).join("")
+    + `<div class="muted" style="font-size:12px;margin-top:6px">Comissão por serviço: digite o % no serviço. Em branco vale a comissão padrão (${esc(padrao)}%).</div>`;
+  $("pResumoServ").querySelectorAll("[data-ptirar]").forEach(b => b.onclick = () => { pMarcados.delete(b.dataset.ptirar); pComServ.delete(b.dataset.ptirar); desenharServicosDoProf(); });
+  $("pResumoServ").querySelectorAll("[data-pcom]").forEach(i => i.oninput = () => {
+    const t = i.value.trim(), v = Number(t.replace(",", "."));
+    if (t === "" || !(v >= 0 && v <= 100)) pComServ.delete(i.dataset.pcom); else pComServ.set(i.dataset.pcom, v);
+    i.closest(".p-chip").classList.toggle("p-chip-com", pComServ.has(i.dataset.pcom));
+  });
 }
 $("pFiltroCat").onchange = desenharServicosDoProf;
+$("pComissao").addEventListener("change", resumoServicosDoProf);
 $("pMarcarCat").onclick = () => { $("pServicos").querySelectorAll("input").forEach(i => pMarcados.add(i.value)); desenharServicosDoProf(); };
 $("pDesmarcarCat").onclick = () => { $("pServicos").querySelectorAll("input").forEach(i => pMarcados.delete(i.value)); desenharServicosDoProf(); };
 $("pListar").onclick = () => {
@@ -924,13 +944,15 @@ function desenharProfissionais() {
   carregarMarcados();
   desenharServicosDoProf();
   $("pLista").innerHTML = profissionais.length ? profissionais.map(p => {
-    const nomes = vinculos.filter(v => v.professional_id === p.id).map(v => servicos.find(s => s.id === v.service_id)?.name).filter(Boolean);
+    const meus = vinculos.filter(v => v.professional_id === p.id);
+    const nomes = meus.map(v => { const n = servicos.find(s => s.id === v.service_id)?.name; return n && (v.commission_pct != null ? `${n} (${pctF(v.commission_pct)}%)` : n); }).filter(Boolean);
+    const excecoes = meus.filter(v => v.commission_pct != null).length;
     const login = equipe.find(e => e.user_id === p.user_id);
     return `<tr>
       <td>${ehAdmin() ? `<input type="checkbox" data-pdel="${p.id}" ${pDel.has(p.id) ? "checked" : ""} style="width:auto">` : ""}</td>
       <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(p.color || "#ccc")}"></span>
         <b>${esc(p.name)}</b>${p.active ? "" : ' <span class="pill off">inativo</span>'}${login ? `<br><span class="muted" style="font-size:12px">login: ${esc(login.full_name)}</span>` : ""}</td>
-      <td>${Number(p.commission_pct || 0).toLocaleString("pt-BR")}%</td>
+      <td>${Number(p.commission_pct || 0).toLocaleString("pt-BR")}%${excecoes ? `<br><span class="muted" style="font-size:12px">${excecoes} serviço${excecoes > 1 ? "s" : ""} com % próprio</span>` : ""}</td>
       <td class="muted">${nomes.length ? esc(nomes.join(", ")) : "nenhum"}</td>
       <td><button class="ghost" data-edit-p="${p.id}">Editar</button></td>
     </tr>`;
@@ -963,6 +985,8 @@ $("pSalvar").onclick = async () => {
   const row = { tenant_id: tenantId, name: $("pNome").value.trim(), color: $("pCor").value, active: $("pAtivo").checked, commission_pct: pct, user_id: $("pLogin").value || null };
   if (!row.name) return aviso("Informe o nome do profissional.", "err");
   if (!(pct >= 0 && pct <= 100)) return aviso("A comissão precisa ficar entre 0 e 100%.", "err");
+  const invalida = [...document.querySelectorAll("[data-pcom]")].find(i => i.value.trim() !== "" && !(Number(i.value.replace(",", ".")) >= 0 && Number(i.value.replace(",", ".")) <= 100));
+  if (invalida) return aviso("A comissão de cada serviço precisa ficar entre 0 e 100% (ou em branco para usar a padrão).", "err");
   let id = $("pId").value;
   if (id) {
     const { error } = await sb.from("professionals").update(row).eq("id", id); if (error) return erro(error);
@@ -975,7 +999,12 @@ $("pSalvar").onclick = async () => {
   const remover = atuais.filter(s => !escolhidos.includes(s));
   const incluir = escolhidos.filter(s => !atuais.includes(s));
   if (remover.length) { const { error } = await sb.from("professional_services").delete().eq("professional_id", id).in("service_id", remover); if (error) return erro(error); }
-  if (incluir.length) { const { error } = await sb.from("professional_services").insert(incluir.map(s => ({ tenant_id: tenantId, professional_id: id, service_id: s }))); if (error) return erro(error); }
+  if (incluir.length) { const { error } = await sb.from("professional_services").insert(incluir.map(s => ({ tenant_id: tenantId, professional_id: id, service_id: s, commission_pct: pComServ.has(s) ? pComServ.get(s) : null }))); if (error) return erro(error); }
+  const mudouCom = escolhidos.filter(s => atuais.includes(s)).filter(s => {
+    const v = vinculos.find(x => x.professional_id === id && x.service_id === s), antes = v.commission_pct == null ? null : Number(v.commission_pct);
+    return antes !== (pComServ.has(s) ? pComServ.get(s) : null);
+  });
+  for (const s of mudouCom) { const { error } = await sb.from("professional_services").update({ commission_pct: pComServ.has(s) ? pComServ.get(s) : null }).eq("professional_id", id).eq("service_id", s); if (error) return erro(error); }
   aviso("Profissional salvo."); $("pId").value = ""; await carregar(); limparProfissional();
 };
 
@@ -1053,7 +1082,7 @@ async function lerPlanilha(arq) {
 }
 // Campos do sistema: [chave usada no preparo, rótulo, apelidos para casar com o título da coluna, obrigatório]
 const S_CAMPOS = () => [["nome", "Nome do serviço", C_NOME, true], ["categoria", "Categoria", C_CAT], ["duracaomin", "Duração (min)", C_DUR], ["precor", "Preço (R$)", C_PRECO], ["descricao", "Descrição para a IA", C_DESC], ["ativo", "Ativo (Sim/Não)", C_ATIVO]];
-const P_CAMPOS = () => [["nome", "Nome do profissional", C_NOME, true], ["comissao", "Comissão (%)", C_COM], ["cor", "Cor na agenda", C_COR], ["servicos", "Serviços que faz (separados por ;)", C_SERV], ["ativo", "Ativo (Sim/Não)", C_ATIVO]];
+const P_CAMPOS = () => [["nome", "Nome do profissional", ["nome", "profissional", "nomedoprofissional"], true], ["comissao", "Comissão padrão (%)", C_COM], ["cor", "Cor na agenda", C_COR], ["servicos", "Serviço(s) que faz (vários: separe por ;)", C_SERV], ["comserv", "Comissão do serviço (%)", C_COMSERV], ["ativo", "Ativo (Sim/Não)", C_ATIVO]];
 function sugerirMapa(campos, rot) {
   const usadas = new Set(), mapa = {};
   for (const [k, , apelidos] of campos) {
@@ -1100,7 +1129,10 @@ function numeroBr(v) {
 const C_NOME = ["nome", "servico", "nomedoservico", "procedimento", "profissional", "nomedoprofissional"];
 const C_CAT = ["categoria", "grupo"], C_DUR = ["duracaomin", "duracao", "duracaominutos", "minutos", "tempo", "tempomin"];
 const C_PRECO = ["precor", "preco", "valor", "valorr", "precors"], C_DESC = ["descricao", "descricaoparaaia", "descricaoparaarecepcionistaia", "descricaoopcional"];
-const C_ATIVO = ["ativo", "status", "situacao"], C_COM = ["comissao", "comissaopct", "comissaosobreservicos"], C_COR = ["cor", "cornaagenda"], C_SERV = ["servicos", "servicosquefaz"];
+const C_ATIVO = ["ativo", "status", "situacao"], C_COM = ["comissao", "comissaopct", "comissaosobreservicos", "comissaopadrao"], C_COR = ["cor", "cornaagenda"], C_SERV = ["servicos", "servicosquefaz", "servico", "servicoquefaz"],
+  C_COMSERV = ["comissaodoservico", "comissaoservico", "comissaoporservico", "comissaodoservicopct"];
+// "0,4" sem % vira 40%; devolve null se inválido
+const pctPlanilha = (t) => { const c = numeroBr(t), pct = c > 0 && c <= 1 && !String(t).includes("%") && String(t).includes(".") ? c * 100 : c; return pct >= 0 && pct <= 100 ? pct : null; };
 
 function prepararServicos({ cab, regs }) {
   if (!temCol(cab, ...C_NOME)) throw new Error('falta a coluna "Nome"');
@@ -1135,16 +1167,19 @@ function prepararProfissionais({ cab, regs }) {
     if (!nome) { erros.push({ ...r, erro: "sem nome" }); continue; }
     const k = semAcento(nome), atual = porNome.get(k);
     let g = grupos.get(k);
-    if (!g) { g = { linhas: [], nome, atual, row: { tenant_id: tenantId, name: atual ? atual.name : nome }, servIds: new Set(), naoAchou: [], erro: null }; grupos.set(k, g); }
+    if (!g) { g = { linhas: [], nome, atual, row: { tenant_id: tenantId, name: atual ? atual.name : nome }, servIds: new Set(), servCom: new Map(), naoAchou: [], erro: null }; grupos.set(k, g); }
     g.linhas.push(o._linha);
     const cTxt = colP(o, ...C_COM), c = numeroBr(cTxt);
     if (cTxt) { const pct = c > 0 && c <= 1 && !String(cTxt).includes("%") && String(cTxt).includes(".") ? c * 100 : c; if (!(pct >= 0 && pct <= 100)) g.erro = g.erro || `comissão inválida (linha ${o._linha})`; else g.row.commission_pct = pct; }
     const cor = colP(o, ...C_COR);
     if (cor) { if (!/^#?[0-9a-f]{6}$/i.test(cor)) g.erro = g.erro || `cor inválida, use #RRGGBB (linha ${o._linha})`; else g.row.color = cor.startsWith("#") ? cor : "#" + cor; }
     const at = colP(o, ...C_ATIVO); if (at) g.row.active = simNao(at);
-    const sTxt = colP(o, ...C_SERV);
+    const sTxt = colP(o, ...C_SERV), csTxt = colP(o, "comserv", ...C_COMSERV);
+    const cs = csTxt === "" ? undefined : pctPlanilha(csTxt);
+    if (cs === null) g.erro = g.erro || `comissão do serviço inválida (linha ${o._linha})`;
     if (sTxt) for (const n of (/[;|\n]/.test(sTxt) ? sTxt.split(/[;|\n]/) : sTxt.split(",")).map(x => x.trim()).filter(Boolean)) {
-      const sv = servPorNome.get(semAcento(n)); sv ? g.servIds.add(sv.id) : g.naoAchou.includes(n) || g.naoAchou.push(n);
+      const sv = servPorNome.get(semAcento(n));
+      if (sv) { g.servIds.add(sv.id); if (cs != null) g.servCom.set(sv.id, cs); } else g.naoAchou.includes(n) || g.naoAchou.push(n);
     }
   }
   const itens = [...grupos.values()].map(g => {
@@ -1154,12 +1189,14 @@ function prepararProfissionais({ cab, regs }) {
     if (!atual) { if (row.commission_pct === undefined) row.commission_pct = 0; if (!row.color) row.color = "#8a5a3c"; if (row.active === undefined) row.active = true; }
     const ja = new Set(atual ? vinculos.filter(v => v.professional_id === atual.id).map(v => v.service_id) : []);
     const novosServ = [...g.servIds].filter(id => !ja.has(id));
-    const nomeServ = (id) => esc(servicos.find(s => s.id === id)?.name || "");
+    const comAtu = atual ? [...g.servCom].filter(([sid, v]) => { const vi = vinculos.find(x => x.professional_id === atual.id && x.service_id === sid); return vi && (vi.commission_pct == null || Number(vi.commission_pct) !== v); }) : [];
+    const nomeServ = (id) => esc(servicos.find(s => s.id === id)?.name || "") + (g.servCom.has(id) ? ` (${pctF(g.servCom.get(id))}%)` : "");
     const det = [row.commission_pct !== undefined && `comissão ${pjF(row.commission_pct)}%`, row.active === false && "inativo"].filter(Boolean).join(" · ")
       + (novosServ.length ? `${row.commission_pct !== undefined || row.active === false ? "<br>" : ""}<span class="ok">+ ${novosServ.length} serviço${novosServ.length === 1 ? "" : "s"}: ${novosServ.map(nomeServ).join(", ")}</span>` : "")
-      + (g.servIds.size && !novosServ.length ? '<br><span class="muted">já faz todos os serviços da planilha</span>' : "")
+      + (comAtu.length ? `<br><span class="ok">comissão alterada em ${comAtu.length} serviço${comAtu.length === 1 ? "" : "s"}: ${comAtu.map(([sid]) => nomeServ(sid)).join(", ")}</span>` : "")
+      + (g.servIds.size && !novosServ.length && !comAtu.length ? '<br><span class="muted">já faz todos os serviços da planilha</span>' : "")
       + (g.naoAchou.length ? `<br><span class="ruim">Serviço não encontrado (ignorado): ${g.naoAchou.map(esc).join(", ")}</span>` : "");
-    return { ...r, row, servIds: novosServ, id: atual?.id, acao: atual ? "atualizar" : "novo", det, detHtml: true };
+    return { ...r, row, servIds: novosServ, servCom: g.servCom, comAtu, id: atual?.id, acao: atual ? "atualizar" : "novo", det, detHtml: true };
   });
   return [...erros, ...itens].sort((a, b) => parseInt(a.linha, 10) - parseInt(b.linha, 10));
 }
@@ -1196,8 +1233,9 @@ async function importarProfissionais(ok) {
     if (x.servIds?.length) {
       const atuais = vinculos.filter(v => v.professional_id === id).map(v => v.service_id);
       const incluir = x.servIds.filter(s => !atuais.includes(s));
-      if (incluir.length) { const { error } = await sb.from("professional_services").insert(incluir.map(s => ({ tenant_id: tenantId, professional_id: id, service_id: s }))); if (error) throw error; }
+      if (incluir.length) { const { error } = await sb.from("professional_services").insert(incluir.map(s => ({ tenant_id: tenantId, professional_id: id, service_id: s, commission_pct: x.servCom?.has(s) ? x.servCom.get(s) : null }))); if (error) throw error; }
     }
+    for (const [s, v] of x.comAtu || []) { const { error } = await sb.from("professional_services").update({ commission_pct: v }).eq("professional_id", id).eq("service_id", s); if (error) throw error; }
   });
   await carregar();
   aviso(`Importação concluída: ${novos} profissional(is) novo(s) e ${ok.length - novos} atualizado(s).`);
@@ -1241,12 +1279,19 @@ $("sModelo").onclick = () => {
      "Categoria que ainda não existe é criada.", "Pode salvar também como CSV (separado por ponto e vírgula)."]);
 };
 $("pModelo").onclick = () => {
-  const l = profissionais.map(p => [p.name, Number(p.commission_pct || 0), p.color || "", vinculos.filter(v => v.professional_id === p.id).map(v => servicos.find(s => s.id === v.service_id)?.name).filter(Boolean).join("; "), p.active ? "Sim" : "Não"]);
-  baixarModelo(`profissionais-${hojeLocal()}.xlsx`, "Profissionais", ["Nome", "Comissão (%)", "Cor", "Serviços", "Ativo"],
-    l.length ? l : [["Ana", 40, "#8a5a3c", "Corte feminino; Escova", "Sim"]],
-    ["Uma linha por profissional. A primeira linha (títulos) não pode mudar de nome.", "Nome igual a um profissional já cadastrado: ele é atualizado. Nome novo: é criado.",
-     "Serviços: nomes exatamente como estão em Serviços, separados por ponto e vírgula (;). Os serviços são SOMADOS aos que o profissional já faz; nenhum é removido (para tirar, use a tela de edição). Pode repetir o nome em várias linhas, uma por serviço.",
-     "Comissão em % (ex.: 40). Cor no formato #RRGGBB (opcional). Ativo: Sim ou Não.", "O login do profissional não é importado; ligue pela tela de edição."]);
+  const l = [];
+  for (const p of profissionais) {
+    const base = [p.name, Number(p.commission_pct || 0), p.color || ""], ativo = p.active ? "Sim" : "Não";
+    const meus = vinculos.filter(v => v.professional_id === p.id).map(v => [servicos.find(s => s.id === v.service_id)?.name, v.commission_pct]).filter(x => x[0]).sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
+    if (!meus.length) l.push([...base, "", "", ativo]);
+    for (const [n, c] of meus) l.push([...base, n, c == null ? "" : Number(c), ativo]);
+  }
+  baixarModelo(`profissionais-${hojeLocal()}.xlsx`, "Profissionais", ["Nome", "Comissão padrão (%)", "Cor", "Serviço", "Comissão do serviço (%)", "Ativo"],
+    l.length ? l : [["Ana", 40, "#8a5a3c", "Corte feminino", 45, "Sim"], ["Ana", 40, "#8a5a3c", "Escova", "", "Sim"]],
+    ["Uma linha por profissional e serviço (repita o nome do profissional em cada linha). A primeira linha (títulos) não pode mudar de nome.", "Nome igual a um profissional já cadastrado: ele é atualizado. Nome novo: é criado.",
+     "Serviço: nome exatamente como está em Serviços. Os serviços são SOMADOS aos que o profissional já faz; nenhum é removido (para tirar, use a tela de edição).",
+     "Comissão do serviço (%): a comissão daquele serviço para aquele profissional. Em branco = usa a Comissão padrão.",
+     "Comissão padrão em % (ex.: 40), usada nos serviços sem comissão própria. Cor no formato #RRGGBB (opcional). Ativo: Sim ou Não.", "O login do profissional não é importado; ligue pela tela de edição."]);
 };
 
 // ---------- Horários ----------
@@ -2535,7 +2580,8 @@ function calcularProjecao() {
     l.horas = qtd * s.dur / 60; l.valor = qtd * s.preco;
     l.agend = pjAg.porPS[p.id + "|" + s.id] || 0;
     l.falta = Math.max(0, qtd - l.agend); l.valorFalta = l.falta * s.preco;
-    l.com = l.valor * p.com; l.liq = l.valor * (1 - p.com - ins - imp);
+    l.pct = comissaoDe(p.id, s.id) / 100;
+    l.com = l.valor * l.pct; l.liq = l.valor * (1 - l.pct - ins - imp);
     return l;
   });
   const validas = linhas.filter(l => l.ok);
@@ -2610,7 +2656,7 @@ function desenharProjecao() {
     <td><select class="ed" data-pjk="${l.i}:serv">${optServ(l.m.prof, l.m.serv)}</select></td>
     <td>${pjInput(l.m.qtd || "", `data-pjk="${l.i}:qtd" placeholder="0"`, 1)}</td>
     <td class="n">${pjF(l.horas)}</td><td class="n">${pjR(l.valor)}</td><td class="n">${l.agend}</td>
-    <td class="n ${l.falta > 0 ? "ruim" : "ok"}">${l.ok ? l.falta : ""}</td><td class="n">${pjR(l.valorFalta)}</td><td class="n">${pjR(l.liq)}</td>
+    <td class="n ${l.falta > 0 ? "ruim" : "ok"}">${l.ok ? l.falta : ""}</td><td class="n">${pjR(l.valorFalta)}</td><td class="n">${pjR(l.liq)}${l.ok ? `<br><span class="muted" style="font-size:11px">comissão ${pjF(l.pct * 100)}%</span>` : ""}</td>
     <td><button class="danger" data-pjkrm="${l.i}">Remover</button></td></tr>`).join("")
     + (r.linhas.length ? "" : '<tr><td colspan="10" class="muted">Nenhuma linha. Escolha os serviços no quadro 3 e clique em "Criar linhas dos serviços escolhidos" ou "+ linha".</td></tr>')
     + `<tr class="tot"><td>Total</td><td></td><td>${t.qtd}</td><td class="n">${pjF(t.horas)}</td><td class="n">${pjR(t.valor)}</td><td class="n">${t.agend}</td><td class="n">${t.falta}</td><td class="n">${pjR(t.valorFalta)}</td><td class="n">${pjR(t.liq)}</td><td></td></tr>`;
@@ -2629,7 +2675,7 @@ function desenharProjecao() {
   const lin = (tx, v, forte) => `<tr${forte ? ' class="forte"' : ""}><td>${tx}</td><td>${pjR(v)}</td></tr>`;
   $("pjDrePrazo").textContent = `(${fmtD(per.ini)} a ${fmtD(per.fimIncl)})`;
   $("pjDre").innerHTML = lin("Receita de serviços", d.servBruto) + lin("Receita de produtos", d.prodBruto) + lin("Receita bruta", d.bruto, 1)
-    + lin("(−) Comissões (de cada profissional)", d.com) + lin("(−) Insumos", d.ins) + lin("(−) Impostos e cartão", d.imp) + lin("(−) Custo dos produtos", d.cmv)
+    + lin("(−) Comissões (por profissional e serviço)", d.com) + lin("(−) Insumos", d.ins) + lin("(−) Impostos e cartão", d.imp) + lin("(−) Custo dos produtos", d.cmv)
     + lin("Margem de contribuição", d.margem, 1) + lin("(−) Estrutura", d.estrutura) + lin("(−) Extras", d.extras) + lin("Resultado líquido", d.liquido, 1);
   const v = $("pjVeredito"), lista = (l) => l.length ? `<ul>${l.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
   v.className = "pj-veredito " + (r.problemas.length ? "ruim" : "ok");
@@ -2720,7 +2766,7 @@ $("pjXlsx").onclick = async () => {
   for (const l of r.validas) {
     wm.getCell(`A${n}`).value = l.p.nome; wm.getCell(`B${n}`).value = l.s.nome;
     wm.getCell(`C${n}`).value = l.s.preco; wm.getCell(`C${n}`).numFmt = BRL; wm.getCell(`D${n}`).value = l.s.dur;
-    wm.getCell(`E${n}`).value = l.p.com; wm.getCell(`E${n}`).numFmt = PCT; ed(wm.getCell(`F${n}`), l.qtd);
+    wm.getCell(`E${n}`).value = l.pct; wm.getCell(`E${n}`).numFmt = PCT; ed(wm.getCell(`F${n}`), l.qtd);
     wm.getCell(`G${n}`).value = f(`F${n}*D${n}/60`, l.horas); wm.getCell(`H${n}`).value = f(`F${n}*C${n}`, l.valor); wm.getCell(`H${n}`).numFmt = BRL;
     wm.getCell(`I${n}`).value = l.agend; wm.getCell(`J${n}`).value = f(`MAX(0,F${n}-I${n})`, l.falta);
     wm.getCell(`K${n}`).value = f(`J${n}*C${n}`, l.valorFalta); wm.getCell(`K${n}`).numFmt = BRL;
