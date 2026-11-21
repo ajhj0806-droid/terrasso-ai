@@ -364,11 +364,12 @@
             <button id="pjSalvar">Salvar estudo</button>
             <button class="ghost" id="pjVerDre">Ver DRE</button>
             <button class="ghost" id="pjXlsx">Gerar planilha (xlsx)</button>
-            <button class="ghost" id="pjRestaurar">Recomeçar do cadastro</button>
+            <button class="ghost" id="pjRestaurar">Recomeçar</button>
           </div>
         </div>
-        <p class="muted" style="font-size:13px">Simule quanto vender para chegar ao resultado líquido que você quer. Os campos <span class="pj-ed-amostra">em amarelo</span> podem ser alterados; o resto recalcula sozinho. Mudanças aqui não alteram o cadastro de serviços, produtos nem a agenda. <span id="pjSalvoEm"></span></p>
+        <p class="muted" style="font-size:13px">Defina a meta, escolha os serviços e informe quantas vezes cada profissional vai fazer cada serviço no período. O sistema compara com a agenda e mostra quanto falta agendar. Valores e durações vêm do cadastro de serviços; a comissão vem do cadastro de cada profissional. Os campos <span class="pj-ed-amostra">em amarelo</span> podem ser alterados. <span id="pjSalvoEm"></span></p>
         <div id="pjVeredito" class="pj-veredito"></div>
+        <div class="kpis" id="pjResKpi" style="margin-top:10px"></div>
       </div>
 
       <div class="card">
@@ -378,28 +379,25 @@
       </div>
 
       <div class="card tabela-wrap">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span><b>2. Catálogo</b> <span class="muted">Só consulta. Preço e duração vêm do cadastro (altere em Serviços e Produtos); comissão, insumo e imposto vêm das premissas.</span></span><button class="ghost" id="pjCatToggle">Mostrar catálogo</button></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span><b>2. Catálogo</b> <span class="muted">Só consulta. Preço e duração vêm do cadastro (altere em Serviços e Produtos).</span></span><button class="ghost" id="pjCatToggle">Mostrar catálogo</button></div>
         <div id="pjCatBox" class="hidden">
-        <table class="pj pj-ro" style="margin-top:8px"><thead><tr><th>Categoria</th><th>Serviço</th><th class="n">Preço</th><th class="n">Duração (min)</th><th class="n">Comissão %</th><th class="n">Insumo %</th><th class="n">Imposto+cartão %</th><th class="n">Margem unitária</th><th class="n">Margem %</th><th class="n">Fatura por hora</th></tr></thead><tbody id="pjCatS"></tbody></table>
-        <table class="pj pj-ro" style="margin-top:12px"><thead><tr><th>Produto</th><th class="n">Preço</th><th class="n">Custo</th><th class="n">Comissão %</th><th class="n">Imposto+cartão %</th><th class="n">Margem unitária</th><th class="n">Margem %</th><th class="n">Estoque</th></tr></thead><tbody id="pjCatP"></tbody></table>
+        <table class="pj pj-ro" style="margin-top:8px"><thead><tr><th>Categoria</th><th>Serviço</th><th class="n">Preço</th><th class="n">Duração (min)</th><th class="n">Fatura por hora</th></tr></thead><tbody id="pjCatS"></tbody></table>
+        <table class="pj pj-ro" style="margin-top:12px"><thead><tr><th>Produto</th><th class="n">Preço</th><th class="n">Custo</th><th class="n">Margem unitária</th><th class="n">Estoque</th></tr></thead><tbody id="pjCatP"></tbody></table>
         </div>
       </div>
 
       <div class="card tabela-wrap">
-        <b>3. Resultado</b> <span class="muted">Clique no + da categoria para ver os serviços. Marque os serviços que entram no estudo e informe a fatia de cada um no faturamento de serviços (soma 100%). Produtos: informe a quantidade que pretende vender.</span>
-        <div class="pj-barra"><button class="ghost" id="pjRateio">Rateio igual entre os marcados</button><button class="ghost" id="pjAbrirTodas">Abrir todas</button><button class="ghost" id="pjFecharTodas">Fechar todas</button><span id="pjSomaMix" class="pj-soma"></span></div>
-        <table class="pj"><thead><tr><th>Categoria / serviço</th><th>Participação %</th><th class="n">Quantidade</th><th class="n">Por dia</th><th class="n">Por dia útil</th><th class="n">Receita por dia útil</th><th class="n">Receita bruta</th><th class="n">Resultado líquido</th><th class="n">Horas de agenda</th></tr></thead><tbody id="pjResS"></tbody></table>
-        <table class="pj" style="margin-top:12px"><thead><tr><th>Produto</th><th>Quantidade</th><th class="n">Por dia</th><th class="n">Por dia útil</th><th class="n">Receita por dia útil</th><th class="n">Receita bruta</th><th class="n">Resultado líquido</th><th>Estoque</th></tr></thead><tbody id="pjResP"></tbody></table>
-        <div class="kpis" id="pjResKpi"></div>
+        <b>3. Serviços escolhidos</b> <span class="muted">Clique no + da categoria e marque os serviços que entram nas metas. Só eles aparecem no quadro 4.</span>
+        <div class="pj-barra"><button class="ghost" id="pjAbrirTodas">Abrir todas</button><button class="ghost" id="pjFecharTodas">Fechar todas</button><span class="muted" id="pjPeriodoTxt"></span></div>
+        <table class="pj"><thead><tr><th>Categoria / serviço</th><th class="n">Valor unitário</th><th class="n">Horas</th><th class="n">Agendadas no período</th><th class="n">Valor total (meta)</th></tr></thead><tbody id="pjResS"></tbody></table>
       </div>
 
       <div class="card tabela-wrap">
-        <b>4. Capacidade da agenda</b> <span class="muted" style="font-size:13px">Uma linha para cada serviço que o profissional faz. O mesmo profissional pode aparecer em mais de uma linha; divida as horas da semana entre elas. Pode incluir alguém que ainda não está cadastrado, para simular uma contratação.</span>
-        <table class="pj"><thead><tr><th>Profissional</th><th>Serviço</th><th>Horas/semana</th><th>Horas no prazo</th><th>Com ocupação máx.</th><th></th></tr></thead><tbody id="pjCap"></tbody></table>
-        <datalist id="pjProfs"></datalist>
-        <div class="actions"><button class="ghost" id="pjCapAdd">+ linha</button><button class="ghost" id="pjCapAgenda">Refazer pelos horários cadastrados</button></div>
+        <b>4. Profissional x Serviço</b> <span class="muted" style="font-size:13px">Uma linha para cada serviço do profissional, com a meta de quantidade no período. O mesmo profissional pode aparecer em várias linhas.</span>
+        <table class="pj" style="margin-top:6px"><thead><tr><th>Profissional</th><th>Serviço</th><th>Meta (qtde)</th><th class="n">Total de horas</th><th class="n">Valor dos serviços</th><th class="n">Qtde agendada</th><th class="n">Falta agendar</th><th class="n">Valor que falta</th><th class="n">Resultado líquido</th><th></th></tr></thead><tbody id="pjCap"></tbody></table>
+        <div class="actions"><button class="ghost" id="pjCapAdd">+ linha</button><button class="ghost" id="pjCapGerar">Criar linhas dos serviços escolhidos</button></div>
         <div id="pjCapAvisos"></div>
-        <table class="pj" style="margin-top:12px"><thead><tr><th>Serviço</th><th>Horas necessárias</th><th>Horas de quem faz</th><th>Situação</th></tr></thead><tbody id="pjCapServ"></tbody></table>
+        <table class="pj" style="margin-top:12px"><thead><tr><th>Produto (opcional)</th><th>Meta (qtde)</th><th class="n">Receita</th><th class="n">Resultado líquido</th><th>Estoque</th></tr></thead><tbody id="pjResP"></tbody></table>
       </div>
       <dialog id="pjDreDlg"><b>DRE projetada</b> <span class="muted" id="pjDrePrazo"></span><table class="pj-dre"><tbody id="pjDre"></tbody></table><div class="actions"><button id="pjDreFechar">Fechar</button></div></dialog>
     </div>
@@ -2449,6 +2447,7 @@ $("eConvidar").onclick = async () => {
 };
 
 // ---------- Caixa › Projeção de resultado ----------
+// Metas de quantidade por profissional x serviço, confrontadas com a agenda do período.
 // O estudo fica em tenants.settings.projecao (só administrador grava). Nada aqui altera o cadastro.
 document.querySelectorAll("[data-cx]").forEach(b => b.onclick = () => {
   document.querySelectorAll("[data-cx]").forEach(x => x.classList.toggle("on", x === b));
@@ -2457,250 +2456,229 @@ document.querySelectorAll("[data-cx]").forEach(b => b.onclick = () => {
   if (b.dataset.cx === "proj") abrirProjecao();
 });
 const PJ_PREM = [
-  ["prazo", "Prazo (dias)", 30, ""], ["diasUteis", "Dias de atendimento no prazo", 20, ""],
-  ["meta", "Meta de resultado líquido (R$)", 30000, ""], ["estrutura", "Estrutura por mês (R$)", 10000, ""],
-  ["extras", "Extras por mês (R$)", 1000, ""], ["comServ", "Comissão de serviço (%)", 40, "%"],
-  ["comProd", "Comissão de produto (%)", 10, "%"], ["insumo", "Insumos do serviço (% do preço)", 10, "%"],
-  ["imposto", "Impostos + cartão (%)", 10, "%"], ["ocupacao", "Ocupação máxima da agenda (%)", 85, "%"],
+  ["prazo", "Prazo (dias)", 30], ["diasUteis", "Dias de atendimento no prazo", 20],
+  ["meta", "Valor da meta (R$)", 30000], ["estrutura", "Estrutura por mês (R$)", 10000],
+  ["extras", "Extras por mês (R$)", 1000], ["insumo", "Insumos do serviço (% do preço)", 10],
+  ["imposto", "Impostos + cartão (%)", 10], ["ocupacao", "Ocupação máxima da agenda (%)", 85],
 ];
-let pj = null, pjSalvo = null, pjAbertas = new Set();
+let pj = null, pjSalvo = null, pjAbertas = new Set(), pjAg = { porPS: {}, porS: {}, horasProf: {}, chave: "" };
 const pjNum = (v) => { const n = Number(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? n : 0; };
 const pjR = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const pjF = (v, d = 1) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: d });
-const pjOv = (v) => v === null || v === undefined || v === "" ? null : pjNum(v);
+const pjCat = (s) => s.category || "Sem categoria";
 
-async function horasSemanaPorProf() {
-  const { data, error } = await sb.from("work_schedules").select("professional_id, start_time, end_time").eq("tenant_id", tenantId);
-  if (error) { erro(error); return {}; }
-  const h = {};
-  for (const r of data) {
-    const [a, b] = [r.start_time, r.end_time].map(t => { const [x, y] = t.split(":").map(Number); return x * 60 + y; });
-    h[r.professional_id] = (h[r.professional_id] || 0) + Math.max(0, b - a) / 60;
-  }
-  return h;
+function pjPeriodo() {
+  const ini = pj.prem.inicio || hojeLocal(), dias = Math.max(1, Math.round(pj.prem.prazo || 1));
+  return { ini, fimIncl: somarDias(ini, dias - 1), fimExcl: somarDias(ini, dias), dias };
 }
-async function capacidadeDaAgenda() {
-  const horas = await horasSemanaPorProf(), linhas = [];
-  for (const p of profissionais.filter(x => x.active)) {
-    const servs = vinculos.filter(v => v.professional_id === p.id).map(v => v.service_id).filter(id => servicos.some(s => s.id === id && s.active));
-    const h = horas[p.id] || 0;
-    if (!servs.length) { if (h) linhas.push({ prof: p.name, serv: "", horas: Math.round(h * 10) / 10 }); continue; }
-    for (const s of servs) linhas.push({ prof: p.name, serv: s, horas: Math.round(h / servs.length * 10) / 10 });
+// Agenda do período: quantidade agendada por profissional+serviço e horas de escala por profissional.
+async function carregarAgendaProjecao(forcar) {
+  const per = pjPeriodo(), chave = per.ini + "|" + per.dias;
+  if (!forcar && pjAg.chave === chave) return;
+  const [a, w] = await Promise.all([
+    sb.from("appointments").select("professional_id, service_id, status").eq("tenant_id", tenantId)
+      .not("status", "in", "(cancelled,no_show)").overlaps("period", faixa(localParaUtc(per.ini, "00:00"), localParaUtc(per.fimExcl, "00:00"))),
+    sb.from("work_schedules").select("professional_id, weekday, start_time, end_time").eq("tenant_id", tenantId),
+  ]);
+  if (a.error) return erro(a.error);
+  if (w.error) return erro(w.error);
+  const porPS = {}, porS = {};
+  for (const x of a.data) { porPS[x.professional_id + "|" + x.service_id] = (porPS[x.professional_id + "|" + x.service_id] || 0) + 1; porS[x.service_id] = (porS[x.service_id] || 0) + 1; }
+  const dowCount = [0, 0, 0, 0, 0, 0, 0];
+  for (let i = 0; i < per.dias; i++) dowCount[new Date(somarDias(per.ini, i) + "T12:00:00Z").getUTCDay()]++;
+  const horasProf = {};
+  for (const r of w.data) {
+    const [h1, m1] = r.start_time.split(":").map(Number), [h2, m2] = r.end_time.split(":").map(Number);
+    horasProf[r.professional_id] = (horasProf[r.professional_id] || 0) + Math.max(0, (h2 * 60 + m2 - h1 * 60 - m1) / 60) * dowCount[r.weekday];
   }
-  return linhas;
+  pjAg = { porPS, porS, horasProf, chave };
 }
-async function projecaoPadrao() {
-  const prem = {};
+function projecaoPadrao() {
+  const prem = { inicio: hojeLocal(), metaTipo: "resultado" };
   for (const [k, , v] of PJ_PREM) prem[k] = v;
-  return { prem, serv: {}, prod: {}, mix: {}, sel: {}, qtd: {}, cap: await capacidadeDaAgenda() };
+  return { versao: 2, prem, sel: {}, metas: [], qtd: {} };
+}
+// Estudos antigos (rateio por % e capacidade em horas) viram linhas de meta zeradas.
+function migrarProjecao(o) {
+  if (o.versao === 2) return o;
+  const n = projecaoPadrao();
+  for (const [k] of PJ_PREM) if (o.prem?.[k] !== undefined) n.prem[k] = o.prem[k];
+  n.sel = o.sel || {}; n.qtd = o.qtd || {};
+  for (const c of o.cap || []) {
+    const p = profissionais.find(x => semAcento(x.name) === semAcento(c.prof || ""));
+    if (p && c.serv && !n.metas.some(m => m.prof === p.id && m.serv === c.serv)) { n.metas.push({ prof: p.id, serv: c.serv, qtd: 0 }); n.sel[c.serv] = true; }
+  }
+  return n;
 }
 async function abrirProjecao() {
   const { data, error } = await sb.from("tenants").select("settings").eq("id", tenantId).single();
   if (error) return erro(error);
   pjSalvo = data.settings?.projecao || null;
-  pj = pjSalvo ? JSON.parse(JSON.stringify(pjSalvo)) : await projecaoPadrao();
+  pj = pjSalvo ? migrarProjecao(JSON.parse(JSON.stringify(pjSalvo))) : projecaoPadrao();
   for (const [k, , v] of PJ_PREM) if (pj.prem[k] === undefined) pj.prem[k] = v;
-  for (const k of ["serv", "prod", "mix", "qtd"]) pj[k] = pj[k] || {};
-  pj.cap = pj.cap || [];
-  if (!pj.sel) { pj.sel = {}; for (const [id, v] of Object.entries(pj.mix)) if (pjNum(v) > 0) pj.sel[id] = true; }
-  pjAbertas = new Set(servicos.filter(s => s.active && pj.sel[s.id]).map(s => s.category || "Sem categoria"));
+  pj.prem.inicio = pj.prem.inicio || hojeLocal(); pj.prem.metaTipo = pj.prem.metaTipo || "resultado";
+  pj.sel = pj.sel || {}; pj.metas = pj.metas || []; pj.qtd = pj.qtd || {};
+  pjAbertas = new Set(servicos.filter(s => s.active && pj.sel[s.id]).map(pjCat));
   $("pjSalvoEm").textContent = pjSalvo?.salvoEm ? `Estudo salvo em ${new Date(pjSalvo.salvoEm).toLocaleString("pt-BR", { timeZone: TZ, dateStyle: "short", timeStyle: "short" })}.` : "Estudo ainda não salvo.";
+  await carregarAgendaProjecao(true);
   desenharProjecao();
 }
 
-// Valores de cada item: preço e duração do cadastro; comissão, insumo e imposto das premissas.
-// (O catálogo do estudo é só consulta; alterações são feitas em Serviços e Produtos.)
-function pjItens() {
-  const P = pj.prem, o = {};
-  const serv = servicos.filter(s => s.active).map(s => {
-    const preco = s.price_cents / 100, dur = s.duration_min;
-    const com = P.comServ, ins = P.insumo, imp = P.imposto;
-    const margem = preco * (1 - (com + ins + imp) / 100);
-    return { id: s.id, nome: s.name, cat: s.category || "Sem categoria", preco, dur, com, ins, imp, o, margem, mpct: preco ? margem / preco : 0, porHora: dur ? preco / (dur / 60) : 0 };
-  }).sort((a, b) => a.cat.localeCompare(b.cat, "pt-BR") || a.nome.localeCompare(b.nome, "pt-BR"));
-  const prod = produtos.filter(p => p.active).map(p => {
-    const preco = p.price_cents / 100, custo = (p.cost_cents || 0) / 100;
-    const com = P.comProd, imp = P.imposto;
-    const margem = preco * (1 - (com + imp) / 100) - custo;
-    return { id: p.id, nome: p.name, preco, custo, com, imp, o, margem, mpct: preco ? margem / preco : 0, estoque: p.stock_qty };
-  });
-  return { serv, prod };
-}
 function calcularProjecao() {
-  const P = pj.prem, { serv, prod } = pjItens();
-  const fixos = (P.estrutura + P.extras) * P.prazo / 30, necessario = P.meta + fixos;
-  for (const p of prod) { p.qtd = Math.max(0, Math.round(pjNum(pj.qtd[p.id]))); p.bruto = p.qtd * p.preco; p.liq = p.qtd * p.margem; }
-  const margemProd = prod.reduce((a, p) => a + p.liq, 0), brutoProd = prod.reduce((a, p) => a + p.bruto, 0);
-  const pctDe = (s) => pj.sel[s.id] ? pjNum(pj.mix[s.id]) : 0;
-  const somaMix = serv.reduce((a, s) => a + pctDe(s), 0);
-  const pond = serv.reduce((a, s) => a + pctDe(s) / 100 * s.mpct, 0);
-  const restante = Math.max(0, necessario - margemProd);
-  const receitaServ = pond > 0 ? restante / pond : 0;
-  for (const s of serv) {
-    s.pct = pctDe(s);
-    s.qtd = s.preco > 0 ? Math.ceil(receitaServ * s.pct / 100 / s.preco - 1e-9) : 0;
-    s.bruto = s.qtd * s.preco; s.liq = s.qtd * s.margem; s.horas = s.qtd * s.dur / 60;
-  }
-  const cap = pj.cap.map(c => ({ ...c, h: pjNum(c.horas), prazo: pjNum(c.horas) * P.prazo / 7 }));
-  for (const c of cap) c.util = c.prazo * P.ocupacao / 100;
-  const capTotal = cap.reduce((a, c) => a + c.prazo, 0), capUtil = cap.reduce((a, c) => a + c.util, 0);
-  const horasNec = serv.reduce((a, s) => a + s.horas, 0);
-  const porServ = serv.filter(s => s.qtd > 0).map(s => {
-    const disp = cap.filter(c => c.serv === s.id).reduce((a, c) => a + c.util, 0);
-    return { s, nec: s.horas, disp, ok: disp > 0 && s.horas <= disp + 1e-9 };
+  const P = pj.prem, ins = P.insumo / 100, imp = P.imposto / 100;
+  const serv = {}; for (const s of servicos) serv[s.id] = { id: s.id, nome: s.name, cat: pjCat(s), preco: s.price_cents / 100, dur: s.duration_min, ativo: s.active };
+  const prof = {}; for (const p of profissionais) prof[p.id] = { id: p.id, nome: p.name, com: Number(p.commission_pct || 0) / 100, ativo: p.active };
+  const linhas = pj.metas.map((m, i) => {
+    const s = serv[m.serv], p = prof[m.prof], qtd = Math.max(0, Math.round(pjNum(m.qtd)));
+    const l = { i, m, s, p, qtd, ok: !!(s && p), escolhido: !!(s && pj.sel[s.id]) };
+    if (!l.ok) return Object.assign(l, { horas: 0, valor: 0, agend: 0, falta: 0, valorFalta: 0, com: 0, liq: 0 });
+    l.horas = qtd * s.dur / 60; l.valor = qtd * s.preco;
+    l.agend = pjAg.porPS[p.id + "|" + s.id] || 0;
+    l.falta = Math.max(0, qtd - l.agend); l.valorFalta = l.falta * s.preco;
+    l.com = l.valor * p.com; l.liq = l.valor * (1 - p.com - ins - imp);
+    return l;
   });
-  const bruto = brutoProd + serv.reduce((a, s) => a + s.bruto, 0);
-  const dre = {
-    servBruto: serv.reduce((a, s) => a + s.bruto, 0), prodBruto: brutoProd, bruto,
-    com: -(serv.reduce((a, s) => a + s.bruto * s.com / 100, 0) + prod.reduce((a, p) => a + p.bruto * p.com / 100, 0)),
-    ins: -serv.reduce((a, s) => a + s.bruto * s.ins / 100, 0),
-    imp: -(serv.reduce((a, s) => a + s.bruto * s.imp / 100, 0) + prod.reduce((a, p) => a + p.bruto * p.imp / 100, 0)),
-    cmv: -prod.reduce((a, p) => a + p.qtd * p.custo, 0),
-    estrutura: -P.estrutura * P.prazo / 30, extras: -P.extras * P.prazo / 30,
-  };
+  const validas = linhas.filter(l => l.ok);
+  const prod = produtos.filter(p => p.active).map(p => {
+    const preco = p.price_cents / 100, custo = (p.cost_cents || 0) / 100, qtd = Math.max(0, Math.round(pjNum(pj.qtd[p.id])));
+    const margem = preco * (1 - imp) - custo;
+    return { id: p.id, nome: p.name, preco, custo, margem, qtd, bruto: qtd * preco, liq: qtd * margem, estoque: p.stock_qty };
+  });
+  const soma = (l, f) => l.reduce((a, x) => a + x[f], 0);
+  const fixos = (P.estrutura + P.extras) * P.prazo / 30;
+  const dre = { servBruto: soma(validas, "valor"), prodBruto: soma(prod, "bruto") };
+  dre.bruto = dre.servBruto + dre.prodBruto;
+  dre.com = -soma(validas, "com"); dre.ins = -dre.servBruto * ins;
+  dre.imp = -(dre.servBruto * imp + dre.prodBruto * imp); dre.cmv = -prod.reduce((a, p) => a + p.qtd * p.custo, 0);
   dre.margem = dre.bruto + dre.com + dre.ins + dre.imp + dre.cmv;
+  dre.estrutura = -P.estrutura * P.prazo / 30; dre.extras = -P.extras * P.prazo / 30;
   dre.liquido = dre.margem + dre.estrutura + dre.extras;
-  const problemas = [];
-  if (Math.abs(somaMix - 100) > 0.01) problemas.push(`A participação dos serviços marcados soma ${pjF(somaMix, 2)}%, diferente de 100%. Ajuste os percentuais ou use o rateio igual.`);
-  if (pond <= 0 && restante > 0) problemas.push("Nenhum serviço com margem positiva na participação.");
-  for (const x of porServ) if (!x.ok) problemas.push(x.disp === 0 ? `${x.s.nome}: ninguém na capacidade faz esse serviço (precisa de ${pjF(x.nec, 0)} h).` : `${x.s.nome}: faltam ${pjF(x.nec - x.disp, 0)} h de agenda.`);
-  const alertas = [];
-  for (const p of prod) if (p.qtd > p.estoque) alertas.push(`${p.nome}: estoque de ${p.estoque}, comprar mais ${p.qtd - p.estoque} unidades.`);
-  for (const p of prod) if (p.qtd > 0 && p.margem <= 0) alertas.push(`${p.nome}: cada unidade vendida dá prejuízo de ${pjR(-p.margem)}.`);
-  return { alertas, P, serv, prod, fixos, necessario, margemProd, somaMix, pond, restante, receitaServ, cap, capTotal, capUtil, horasNec, porServ, dre, problemas };
+  const atingido = P.metaTipo === "faturamento" ? dre.bruto : dre.liquido, faltaMeta = P.meta - atingido;
+  // horas por profissional x escala do período
+  const porProf = {};
+  for (const l of validas) (porProf[l.p.id] ||= { p: l.p, horas: 0 }).horas += l.horas;
+  const cargas = Object.values(porProf).map(x => { const disp = (pjAg.horasProf[x.p.id] || 0) * P.ocupacao / 100; return { ...x, disp, ok: x.horas <= disp + 1e-9 }; });
+  const problemas = [], alertas = [];
+  if (faltaMeta > 0.005) problemas.push(`Faltam ${pjR(faltaMeta)} para a meta de ${P.metaTipo === "faturamento" ? "faturamento" : "resultado líquido"}: aumente as metas de quantidade.`);
+  for (const c of cargas) if (!c.ok) problemas.push(c.disp === 0 ? `${c.p.nome}: não tem horário cadastrado no período (precisa de ${pjF(c.horas)} h).` : `${c.p.nome}: a meta pede ${pjF(c.horas)} h e a agenda comporta ${pjF(c.disp)} h (ocupação de ${pjF(P.ocupacao, 0)}%).`);
+  for (const l of linhas) if (!l.ok && (l.m.prof || l.m.serv)) alertas.push(`Linha ${l.i + 1} do quadro 4 está incompleta (escolha profissional e serviço).`);
+  for (const l of validas) if (!l.escolhido) alertas.push(`${l.p.nome} · ${l.s.nome}: serviço não está marcado no quadro 3.`);
+  for (const id of Object.keys(pj.sel)) if (pj.sel[id] && serv[id] && !validas.some(l => l.s.id === id)) alertas.push(`${serv[id].nome}: escolhido, mas sem meta no quadro 4.`);
+  for (const p of prod) if (p.qtd > p.estoque) alertas.push(`${p.nome}: estoque de ${p.estoque}, comprar mais ${p.qtd - p.estoque}.`);
+  return { P, serv, prof, linhas, validas, prod, fixos, dre, atingido, faltaMeta, cargas, problemas, alertas,
+    totais: { qtd: soma(validas, "qtd"), horas: soma(validas, "horas"), valor: soma(validas, "valor"), agend: soma(validas, "agend"), falta: soma(validas, "falta"), valorFalta: soma(validas, "valorFalta"), liq: soma(validas, "liq") } };
 }
 
 function pjInput(valor, attrs, step) { return `<input class="ed" type="number" step="${step || "any"}" min="0" value="${valor ?? ""}" ${attrs}>`; }
 function desenharProjecao() {
-  const r = calcularProjecao(), P = r.P;
-  $("pjPrem").innerHTML = PJ_PREM.map(([k, rot]) => `<div><label>${rot}</label>${pjInput(P[k], `data-pjp="${k}"`)}</div>`).join("");
-  $("pjPremKpi").innerHTML = `<div class="kpi"><b>${pjR(r.fixos)}</b>Custos fixos no prazo</div><div class="kpi"><b>${pjR(r.necessario)}</b>Margem necessária (meta + fixos)</div>`;
-  const ro = (v) => `<td class="n">${v}</td>`;
-  $("pjCatS").innerHTML = r.serv.map(s => `<tr><td class="muted">${esc(s.cat)}</td><td><b>${esc(s.nome)}</b></td>${ro(pjR(s.preco))}${ro(s.dur)}${ro(pjF(s.com))}${ro(pjF(s.ins))}${ro(pjF(s.imp))}
-    ${ro(pjR(s.margem))}${ro(pjF(s.mpct * 100) + "%")}${ro(pjR(s.porHora) + "/h")}</tr>`).join("") || '<tr><td colspan="10" class="muted">Nenhum serviço ativo.</td></tr>';
-  $("pjCatP").innerHTML = r.prod.map(p => `<tr><td><b>${esc(p.nome)}</b></td>${ro(pjR(p.preco))}${ro(pjR(p.custo))}${ro(pjF(p.com))}${ro(pjF(p.imp))}
-    <td class="n ${p.margem <= 0 ? "ruim" : ""}">${pjR(p.margem)}</td>${ro(pjF(p.mpct * 100) + "%")}${ro(p.estoque)}</tr>`).join("") || '<tr><td colspan="8" class="muted">Nenhum produto ativo.</td></tr>';
-  const dia = (q) => pjF(q / (P.prazo || 1)), util = (q) => pjF(q / (P.diasUteis || 1));
-  const du = P.diasUteis || 1, cats = {};
-  for (const s of r.serv) (cats[s.cat] ||= []).push(s);
-  const soma = (l, f) => l.reduce((a, s) => a + s[f], 0);
+  const r = calcularProjecao(), P = r.P, per = pjPeriodo(), t = r.totais, d = r.dre;
+  const fmtD = (x) => x.split("-").reverse().join("/");
+  // 1. Premissas
+  $("pjPrem").innerHTML = `<div><label>Tipo de meta</label><select class="ed" id="pjMetaTipo"><option value="resultado" ${P.metaTipo !== "faturamento" ? "selected" : ""}>Resultado líquido</option><option value="faturamento" ${P.metaTipo === "faturamento" ? "selected" : ""}>Faturamento</option></select></div>
+    <div><label>Início do período</label><input class="ed" type="date" id="pjInicio" value="${P.inicio}"></div>`
+    + PJ_PREM.map(([k, rot]) => `<div><label>${k === "meta" ? (P.metaTipo === "faturamento" ? "Meta de faturamento (R$)" : "Meta de resultado líquido (R$)") : rot}</label>${pjInput(P[k], `data-pjp="${k}"`)}</div>`).join("");
+  $("pjPremKpi").innerHTML = `<div class="kpi"><b>${fmtD(per.ini)} a ${fmtD(per.fimIncl)}</b>Período (${per.dias} dias)</div><div class="kpi"><b>${pjR(r.fixos)}</b>Custos fixos no prazo</div>`
+    + (P.metaTipo === "faturamento" ? "" : `<div class="kpi"><b>${pjR(P.meta + r.fixos)}</b>Margem necessária (meta + fixos)</div>`);
+  $("pjPeriodoTxt").textContent = `Agenda considerada: ${fmtD(per.ini)} a ${fmtD(per.fimIncl)}.`;
+  // 2. Catálogo
+  const ativos = servicos.filter(s => s.active).sort((a, b) => pjCat(a).localeCompare(pjCat(b), "pt-BR") || a.name.localeCompare(b.name, "pt-BR"));
+  $("pjCatS").innerHTML = ativos.map(s => `<tr><td class="muted">${esc(pjCat(s))}</td><td><b>${esc(s.name)}</b></td><td class="n">${reais(s.price_cents)}</td><td class="n">${s.duration_min}</td><td class="n">${pjR(s.duration_min ? s.price_cents / 100 / (s.duration_min / 60) : 0)}/h</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Nenhum serviço ativo.</td></tr>';
+  $("pjCatP").innerHTML = r.prod.map(p => `<tr><td><b>${esc(p.nome)}</b></td><td class="n">${pjR(p.preco)}</td><td class="n">${pjR(p.custo)}</td><td class="n ${p.margem <= 0 ? "ruim" : ""}">${pjR(p.margem)}</td><td class="n">${p.estoque}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Nenhum produto ativo.</td></tr>';
+  // 3. Serviços escolhidos
+  const metaServ = {}; for (const l of r.validas) metaServ[l.s.id] = (metaServ[l.s.id] || 0) + l.valor;
+  const cats = {}; for (const s of ativos) (cats[pjCat(s)] ||= []).push(s);
   $("pjResS").innerHTML = Object.entries(cats).map(([c, l]) => {
     const marc = l.filter(s => pj.sel[s.id]).length, aberta = pjAbertas.has(c);
-    let h = `<tr class="pj-cat" data-pjcat="${esc(c)}"><td><span class="pj-mais">${aberta ? "−" : "+"}</span><input type="checkbox" class="pj-chk" data-pjcatchk="${esc(c)}" title="Marcar todos os serviços da categoria" ${marc === l.length ? "checked" : ""} ${marc && marc < l.length ? 'data-parcial="1"' : ""}>${esc(c)} <span class="muted" style="font-weight:400">${marc}/${l.length} marcados</span></td>
-      <td class="n">${pjF(soma(l, "pct"), 2)}%</td><td class="n">${soma(l, "qtd")}</td><td class="n">${dia(soma(l, "qtd"))}</td><td class="n">${util(soma(l, "qtd"))}</td><td class="n">${pjR(soma(l, "bruto") / du)}</td>
-      <td class="n">${pjR(soma(l, "bruto"))}</td><td class="n">${pjR(soma(l, "liq"))}</td><td class="n">${pjF(soma(l, "horas"))}</td></tr>`;
-    if (aberta) h += l.map(s => `<tr class="pj-sv${pj.sel[s.id] ? "" : " desm"}">
-      <td class="pj-nome"><label style="display:inline;margin:0;color:inherit;font-size:inherit"><input type="checkbox" class="pj-chk" data-pjsel="${s.id}" ${pj.sel[s.id] ? "checked" : ""}>${esc(s.nome)}</label></td>
-      <td>${pjInput(pj.sel[s.id] ? pjNum(pj.mix[s.id]) : "", `data-pjm="${s.id}" placeholder="0"`)}</td>
-      <td class="n"><b>${s.qtd}</b></td><td class="n">${dia(s.qtd)}</td><td class="n">${util(s.qtd)}</td><td class="n">${pjR(s.bruto / du)}</td>
-      <td class="n">${pjR(s.bruto)}</td><td class="n">${pjR(s.liq)}</td><td class="n">${pjF(s.horas)}</td></tr>`).join("");
+    const ag = l.reduce((a, s) => a + (pjAg.porS[s.id] || 0), 0), vm = l.reduce((a, s) => a + (metaServ[s.id] || 0), 0);
+    let h = `<tr class="pj-cat" data-pjcat="${esc(c)}"><td><span class="pj-mais">${aberta ? "−" : "+"}</span><input type="checkbox" class="pj-chk" data-pjcatchk="${esc(c)}" title="Marcar todos os serviços da categoria" ${marc === l.length ? "checked" : ""} ${marc && marc < l.length ? 'data-parcial="1"' : ""}>${esc(c)} <span class="muted" style="font-weight:400">${marc}/${l.length} escolhidos</span></td>
+      <td></td><td></td><td class="n">${ag}</td><td class="n">${vm ? pjR(vm) : ""}</td></tr>`;
+    if (aberta) h += l.map(s => `<tr class="pj-sv${pj.sel[s.id] ? "" : " desm"}"><td class="pj-nome"><label style="display:inline;margin:0;color:inherit;font-size:inherit"><input type="checkbox" class="pj-chk" data-pjsel="${s.id}" ${pj.sel[s.id] ? "checked" : ""}>${esc(s.name)}</label></td>
+      <td class="n">${reais(s.price_cents)}</td><td class="n">${pjF(s.duration_min / 60, 2)} h</td><td class="n">${pjAg.porS[s.id] || 0}</td><td class="n">${metaServ[s.id] ? pjR(metaServ[s.id]) : ""}</td></tr>`).join("");
     return h;
-  }).join("") + `<tr class="tot"><td>Total (${r.serv.filter(s => pj.sel[s.id]).length} serviços marcados)</td><td class="${Math.abs(r.somaMix - 100) > 0.01 ? "ruim" : "ok"}">${pjF(r.somaMix, 2)}%</td><td class="n">${r.serv.reduce((a, s) => a + s.qtd, 0)}</td><td></td><td></td><td class="n">${pjR(r.dre.servBruto / du)}</td><td class="n">${pjR(r.dre.servBruto)}</td><td class="n">${pjR(r.serv.reduce((a, s) => a + s.liq, 0))}</td><td class="n">${pjF(r.horasNec)}</td></tr>`;
+  }).join("") + `<tr class="tot"><td>Total (${ativos.filter(s => pj.sel[s.id]).length} escolhidos)</td><td></td><td></td><td class="n">${ativos.filter(s => pj.sel[s.id]).reduce((a, s) => a + (pjAg.porS[s.id] || 0), 0)}</td><td class="n">${pjR(t.valor)}</td></tr>`;
   $("pjResS").querySelectorAll("[data-parcial]").forEach(i => i.indeterminate = true);
-  const difMix = 100 - r.somaMix, sm = $("pjSomaMix");
-  sm.className = "pj-soma " + (Math.abs(difMix) > 0.01 ? "ruim" : "ok");
-  sm.textContent = Math.abs(difMix) <= 0.01 ? "Participação: 100% ✓" : `Participação: ${pjF(r.somaMix, 2)}%, diferente de 100%. ${difMix > 0 ? `Faltam ${pjF(difMix, 2)}%.` : `Passou ${pjF(-difMix, 2)}%.`}`;
-  $("pjResP").innerHTML = r.prod.map(p => `<tr>
-    <td><b>${esc(p.nome)}</b></td><td>${pjInput(p.qtd, `data-pjq="${p.id}"`, 1)}</td>
-    <td class="n">${dia(p.qtd)}</td><td class="n">${util(p.qtd)}</td><td class="n">${pjR(p.bruto / (P.diasUteis || 1))}</td>
-    <td class="n">${pjR(p.bruto)}</td><td class="n">${pjR(p.liq)}</td>
-    <td class="${p.qtd > p.estoque ? "ruim" : "ok"}">${p.qtd > p.estoque ? `faltam ${p.qtd - p.estoque}` : "ok"} (${p.estoque})</td></tr>`).join("")
-    + (r.prod.length ? `<tr class="tot"><td>Total</td><td class="n">${r.prod.reduce((a, p) => a + p.qtd, 0)}</td><td></td><td></td><td class="n">${pjR(r.dre.prodBruto / (P.diasUteis || 1))}</td><td class="n">${pjR(r.dre.prodBruto)}</td><td class="n">${pjR(r.margemProd)}</td><td></td></tr>` : "");
+  // 4. Profissional x Serviço
+  const profsAtivos = profissionais.filter(p => p.active || pj.metas.some(m => m.prof === p.id)).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const optProf = (sel) => `<option value="">Escolha</option>` + profsAtivos.map(p => `<option value="${p.id}" ${p.id === sel ? "selected" : ""}>${esc(p.name)}</option>`).join("");
+  const optServ = (profId, sel) => {
+    const faz = new Set(vinculos.filter(v => v.professional_id === profId).map(v => v.service_id));
+    const l = servicos.filter(s => (pj.sel[s.id] && faz.has(s.id)) || s.id === sel).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+    return `<option value="">${!profId ? "Escolha o profissional" : l.length ? "Escolha o serviço" : "Nenhum serviço escolhido que ele(a) faz"}</option>` + l.map(s => `<option value="${s.id}" ${s.id === sel ? "selected" : ""}>${esc(s.name)}</option>`).join("");
+  };
+  $("pjCap").innerHTML = r.linhas.map(l => `<tr>
+    <td><select class="ed" data-pjk="${l.i}:prof">${optProf(l.m.prof)}</select></td>
+    <td><select class="ed" data-pjk="${l.i}:serv">${optServ(l.m.prof, l.m.serv)}</select></td>
+    <td>${pjInput(l.m.qtd || "", `data-pjk="${l.i}:qtd" placeholder="0"`, 1)}</td>
+    <td class="n">${pjF(l.horas)}</td><td class="n">${pjR(l.valor)}</td><td class="n">${l.agend}</td>
+    <td class="n ${l.falta > 0 ? "ruim" : "ok"}">${l.ok ? l.falta : ""}</td><td class="n">${pjR(l.valorFalta)}</td><td class="n">${pjR(l.liq)}</td>
+    <td><button class="danger" data-pjkrm="${l.i}">Remover</button></td></tr>`).join("")
+    + (r.linhas.length ? "" : '<tr><td colspan="10" class="muted">Nenhuma linha. Escolha os serviços no quadro 3 e clique em "Criar linhas dos serviços escolhidos" ou "+ linha".</td></tr>')
+    + `<tr class="tot"><td>Total</td><td></td><td>${t.qtd}</td><td class="n">${pjF(t.horas)}</td><td class="n">${pjR(t.valor)}</td><td class="n">${t.agend}</td><td class="n">${t.falta}</td><td class="n">${pjR(t.valorFalta)}</td><td class="n">${pjR(t.liq)}</td><td></td></tr>`;
+  $("pjCapAvisos").innerHTML = r.cargas.length ? `<table class="pj" style="margin-top:10px"><thead><tr><th>Profissional</th><th class="n">Horas da meta</th><th class="n">Horas na escala do período (ocupação ${pjF(P.ocupacao, 0)}%)</th><th>Situação</th></tr></thead><tbody>`
+    + r.cargas.map(c => `<tr><td>${esc(c.p.nome)}</td><td class="n">${pjF(c.horas)}</td><td class="n">${pjF(c.disp)}</td><td class="${c.disp === 0 ? (c.horas ? "ruim" : "muted") : c.ok ? "ok" : "ruim"}">${c.disp === 0 ? "sem horário cadastrado" : c.ok ? `ok, sobram ${pjF(c.disp - c.horas)} h` : `faltam ${pjF(c.horas - c.disp)} h`}</td></tr>`).join("") + "</tbody></table>" : "";
+  $("pjResP").innerHTML = r.prod.map(p => `<tr><td><b>${esc(p.nome)}</b></td><td>${pjInput(p.qtd || "", `data-pjq="${p.id}" placeholder="0"`, 1)}</td><td class="n">${pjR(p.bruto)}</td><td class="n">${pjR(p.liq)}</td>
+    <td class="${p.qtd > p.estoque ? "ruim" : ""}">${p.qtd > p.estoque ? `faltam ${p.qtd - p.estoque} (${p.estoque})` : p.estoque}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Nenhum produto ativo.</td></tr>';
+  // Resumo
   $("pjResKpi").innerHTML = [
-    [pjR(r.dre.bruto), "Faturamento necessário no prazo"], [pjR(r.dre.bruto / (P.diasUteis || 1)), "Por dia de atendimento"],
-    [pjF(r.pond * 100) + "%", "Margem média dos serviços"], [pjF(r.horasNec, 0) + " h", "Horas de agenda necessárias"],
-    [pjF(r.capUtil, 0) + " h", "Horas disponíveis (ocupação máx.)"], [r.capTotal ? pjF(r.horasNec / r.capTotal * 100, 0) + "%" : "-", "Ocupação da agenda"],
-  ].map(([v, t]) => `<div class="kpi"><b>${v}</b>${t}</div>`).join("");
-  $("pjDrePrazo").textContent = `(prazo de ${pjF(P.prazo, 0)} dias)`;
-  const d = r.dre, linha = (t, v, forte) => `<tr${forte ? ' class="forte"' : ""}><td>${t}</td><td>${pjR(v)}</td></tr>`;
-  $("pjDre").innerHTML = linha("Receita de serviços", d.servBruto) + linha("Receita de produtos", d.prodBruto) + linha("Receita bruta", d.bruto, 1)
-    + linha("(−) Comissões", d.com) + linha("(−) Insumos", d.ins) + linha("(−) Impostos e cartão", d.imp) + linha("(−) Custo dos produtos", d.cmv)
-    + linha("Margem de contribuição", d.margem, 1) + linha("(−) Estrutura", d.estrutura) + linha("(−) Extras", d.extras) + linha("Resultado líquido", d.liquido, 1);
-  const nomesProf = [...new Set([...profissionais.filter(p => p.active).map(p => p.name), ...pj.cap.map(c => c.prof).filter(Boolean)])];
-  $("pjProfs").innerHTML = nomesProf.map(n => `<option value="${esc(n)}">`).join("");
-  const optServ = (sel) => `<option value="">Escolha o serviço</option>` + servicos.filter(s => s.active).map(s => `<option value="${s.id}"${s.id === sel ? " selected" : ""}>${esc(s.nome || s.name)}</option>`).join("");
-  $("pjCap").innerHTML = r.cap.map((c, i) => `<tr>
-    <td><input class="ed" list="pjProfs" value="${esc(c.prof)}" data-pjk="${i}:prof" placeholder="Nome"></td>
-    <td><select class="ed" data-pjk="${i}:serv">${optServ(c.serv)}</select></td>
-    <td>${pjInput(c.h, `data-pjk="${i}:horas"`, 0.5)}</td>
-    <td class="n">${pjF(c.prazo)}</td><td class="n">${pjF(c.util)}</td>
-    <td><button class="danger" data-pjkrm="${i}">Remover</button></td></tr>`).join("")
-    + `<tr class="tot"><td>Total</td><td></td><td class="n">${pjF(r.cap.reduce((a, c) => a + c.h, 0))}</td><td class="n">${pjF(r.capTotal)}</td><td class="n">${pjF(r.capUtil)}</td><td></td></tr>`;
-  // aviso: profissional com mais horas na projeção do que no horário cadastrado
-  horasSemanaPorProf().then(h => {
-    const av = [];
-    for (const p of profissionais) {
-      const soma = r.cap.filter(c => c.prof.trim().toLowerCase() === p.name.trim().toLowerCase()).reduce((a, c) => a + c.h, 0);
-      const cad = h[p.id] || 0;
-      if (soma > cad + 0.05) av.push(`${esc(p.name)}: ${pjF(soma)} h/semana na projeção, ${pjF(cad)} h nos horários cadastrados.`);
-    }
-    const novos = r.cap.filter(c => c.prof && !profissionais.some(p => p.name.trim().toLowerCase() === c.prof.trim().toLowerCase())).map(c => esc(c.prof));
-    if (novos.length) av.push(`Ainda não cadastrado(s): ${[...new Set(novos)].join(", ")} (simulação de contratação).`);
-    $("pjCapAvisos").innerHTML = av.length ? `<div class="pj-aviso">${av.join("<br>")}</div>` : "";
-  });
-  $("pjCapServ").innerHTML = r.porServ.map(x => `<tr><td>${esc(x.s.nome)}</td><td class="n">${pjF(x.nec)}</td><td class="n">${pjF(x.disp)}</td>
-    <td class="${x.ok ? "ok" : "ruim"}">${x.disp === 0 ? "ninguém faz" : x.ok ? `ok, sobram ${pjF(x.disp - x.nec, 0)} h` : `faltam ${pjF(x.nec - x.disp, 0)} h`}</td></tr>`).join("") || '<tr><td colspan="4" class="muted">Nenhum serviço com quantidade.</td></tr>';
-  const v = $("pjVeredito");
+    [pjR(P.meta), P.metaTipo === "faturamento" ? "Meta de faturamento" : "Meta de resultado líquido"],
+    [pjR(r.atingido), P.metaTipo === "faturamento" ? "Faturamento das metas" : "Resultado líquido das metas"],
+    [pjR(Math.max(0, r.faltaMeta)), "Falta para a meta"],
+    [pjR(t.valor - t.valorFalta), "Já agendado (valor)"], [`${t.falta} · ${pjR(t.valorFalta)}`, "Falta agendar (qtde · valor)"],
+    [pjF(t.horas, 0) + " h", "Horas das metas"],
+  ].map(([v, x]) => `<div class="kpi"><b>${v}</b>${x}</div>`).join("");
+  const lin = (tx, v, forte) => `<tr${forte ? ' class="forte"' : ""}><td>${tx}</td><td>${pjR(v)}</td></tr>`;
+  $("pjDrePrazo").textContent = `(${fmtD(per.ini)} a ${fmtD(per.fimIncl)})`;
+  $("pjDre").innerHTML = lin("Receita de serviços", d.servBruto) + lin("Receita de produtos", d.prodBruto) + lin("Receita bruta", d.bruto, 1)
+    + lin("(−) Comissões (de cada profissional)", d.com) + lin("(−) Insumos", d.ins) + lin("(−) Impostos e cartão", d.imp) + lin("(−) Custo dos produtos", d.cmv)
+    + lin("Margem de contribuição", d.margem, 1) + lin("(−) Estrutura", d.estrutura) + lin("(−) Extras", d.extras) + lin("Resultado líquido", d.liquido, 1);
+  const v = $("pjVeredito"), lista = (l) => l.length ? `<ul>${l.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
   v.className = "pj-veredito " + (r.problemas.length ? "ruim" : "ok");
-  const lista = (l) => l.length ? `<ul>${l.map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : "";
-  v.innerHTML = r.problemas.length
-    ? `A meta não fecha com essas premissas.${lista([...r.problemas, ...r.alertas])}`
-    : `Viável: ${pjR(d.bruto)} de faturamento, ${pjF(r.horasNec, 0)} h de agenda (${r.capTotal ? pjF(r.horasNec / r.capTotal * 100, 0) : 0}% da capacidade) e resultado líquido de ${pjR(d.liquido)}.${r.alertas.length ? " Atenção:" : ""}${lista(r.alertas)}`;
+  v.innerHTML = r.problemas.length ? `A meta ainda não fecha.${lista([...r.problemas, ...r.alertas])}`
+    : `A meta fecha: ${P.metaTipo === "faturamento" ? "faturamento" : "resultado líquido"} de ${pjR(r.atingido)}. Falta agendar ${t.falta} atendimento${t.falta === 1 ? "" : "s"} (${pjR(t.valorFalta)}).${lista(r.alertas)}`;
   ligarProjecao();
 }
 function ligarProjecao() {
   const tab = $("cxProj");
-  tab.querySelectorAll("[data-pjp]").forEach(i => i.onchange = () => { pj.prem[i.dataset.pjp] = pjNum(i.value); desenharProjecao(); });
-  tab.querySelectorAll("[data-pjm]").forEach(i => i.onchange = () => {
-    const v = Math.max(0, pjNum(i.value)); pj.mix[i.dataset.pjm] = v;
-    if (v > 0) pj.sel[i.dataset.pjm] = true;
+  $("pjMetaTipo").onchange = () => { pj.prem.metaTipo = $("pjMetaTipo").value; desenharProjecao(); };
+  $("pjInicio").onchange = async () => { pj.prem.inicio = $("pjInicio").value || hojeLocal(); await carregarAgendaProjecao(); desenharProjecao(); };
+  tab.querySelectorAll("[data-pjp]").forEach(i => i.onchange = async () => { pj.prem[i.dataset.pjp] = pjNum(i.value); if (i.dataset.pjp === "prazo") await carregarAgendaProjecao(); desenharProjecao(); });
+  tab.querySelectorAll("[data-pjq]").forEach(i => i.onchange = () => { pj.qtd[i.dataset.pjq] = Math.max(0, Math.round(pjNum(i.value))); desenharProjecao(); });
+  tab.querySelectorAll("[data-pjk]").forEach(i => i.onchange = () => {
+    const [n, campo] = i.dataset.pjk.split(":"), m = pj.metas[n];
+    if (campo === "qtd") m.qtd = Math.max(0, Math.round(pjNum(i.value)));
+    else { m[campo] = i.value; if (campo === "prof" && m.serv && !vinculos.some(v => v.professional_id === m.prof && v.service_id === m.serv)) m.serv = ""; }
     desenharProjecao();
   });
-  const marcar = (id, sim) => { if (sim) pj.sel[id] = true; else { delete pj.sel[id]; pj.mix[id] = 0; } };
-  tab.querySelectorAll("[data-pjsel]").forEach(i => i.onchange = () => { marcar(i.dataset.pjsel, i.checked); desenharProjecao(); });
+  tab.querySelectorAll("[data-pjkrm]").forEach(b => b.onclick = () => { pj.metas.splice(Number(b.dataset.pjkrm), 1); desenharProjecao(); });
+  tab.querySelectorAll("[data-pjsel]").forEach(i => i.onchange = () => { i.checked ? pj.sel[i.dataset.pjsel] = true : delete pj.sel[i.dataset.pjsel]; desenharProjecao(); });
   tab.querySelectorAll("[data-pjcatchk]").forEach(i => {
     i.onclick = (e) => e.stopPropagation();
     i.onchange = () => {
       const c = i.dataset.pjcatchk;
-      for (const s of servicos.filter(x => x.active && (x.category || "Sem categoria") === c)) marcar(s.id, i.checked);
+      for (const s of servicos.filter(x => x.active && pjCat(x) === c)) i.checked ? pj.sel[s.id] = true : delete pj.sel[s.id];
       if (i.checked) pjAbertas.add(c);
       desenharProjecao();
     };
   });
-  tab.querySelectorAll("[data-pjcat]").forEach(tr => tr.onclick = () => {
-    const c = tr.dataset.pjcat; pjAbertas.has(c) ? pjAbertas.delete(c) : pjAbertas.add(c); desenharProjecao();
-  });
-  tab.querySelectorAll("[data-pjq]").forEach(i => i.onchange = () => { pj.qtd[i.dataset.pjq] = Math.max(0, Math.round(pjNum(i.value))); desenharProjecao(); });
-  tab.querySelectorAll("[data-pjk]").forEach(i => i.onchange = () => {
-    const [n, campo] = i.dataset.pjk.split(":");
-    pj.cap[n][campo] = campo === "horas" ? pjNum(i.value) : i.value.trim();
-    desenharProjecao();
-  });
-  tab.querySelectorAll("[data-pjkrm]").forEach(b => b.onclick = () => { pj.cap.splice(Number(b.dataset.pjkrm), 1); desenharProjecao(); });
+  tab.querySelectorAll("[data-pjcat]").forEach(tr => tr.onclick = () => { const c = tr.dataset.pjcat; pjAbertas.has(c) ? pjAbertas.delete(c) : pjAbertas.add(c); desenharProjecao(); });
 }
-$("pjRateio").onclick = () => {
-  const ids = servicos.filter(s => s.active && pj.sel[s.id]).map(s => s.id);
-  if (!ids.length) return aviso("Marque pelo menos um serviço para fazer o rateio.", "err");
-  const base = Math.floor(10000 / ids.length) / 100;
-  let resto = Math.round((100 - base * ids.length) * 100);
-  if (!confirm(`Dividir 100% igualmente entre os ${ids.length} serviços marcados (cerca de ${pjF(base, 2)}% cada)? Os percentuais atuais serão trocados.`)) return;
-  for (const id of Object.keys(pj.mix)) if (!pj.sel[id]) pj.mix[id] = 0;
-  for (const id of ids) { pj.mix[id] = Math.round((base + (resto > 0 ? 0.01 : 0)) * 100) / 100; if (resto > 0) resto--; }
-  desenharProjecao();
-};
-$("pjAbrirTodas").onclick = () => { pjAbertas = new Set(servicos.filter(s => s.active).map(s => s.category || "Sem categoria")); desenharProjecao(); };
+$("pjAbrirTodas").onclick = () => { pjAbertas = new Set(servicos.filter(s => s.active).map(pjCat)); desenharProjecao(); };
 $("pjFecharTodas").onclick = () => { pjAbertas = new Set(); desenharProjecao(); };
 $("pjCatToggle").onclick = () => { const box = $("pjCatBox"), abrir = box.classList.contains("hidden"); box.classList.toggle("hidden", !abrir); $("pjCatToggle").textContent = abrir ? "Esconder catálogo" : "Mostrar catálogo"; };
 $("pjVerDre").onclick = () => { if (pj) desenharProjecao(); $("pjDreDlg").showModal(); };
 $("pjDreFechar").onclick = () => $("pjDreDlg").close();
-$("pjCapAdd").onclick = () => { pj.cap.push({ prof: "", serv: "", horas: 0 }); desenharProjecao(); };
-$("pjCapAgenda").onclick = async () => {
-  if (!confirm("Trocar as linhas de capacidade pelos horários e serviços cadastrados de cada profissional?")) return;
-  pj.cap = await capacidadeDaAgenda(); desenharProjecao();
+$("pjCapAdd").onclick = () => { pj.metas.push({ prof: "", serv: "", qtd: 0 }); desenharProjecao(); };
+$("pjCapGerar").onclick = () => {
+  let n = 0;
+  for (const p of profissionais.filter(x => x.active).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")))
+    for (const v of vinculos.filter(v => v.professional_id === p.id && pj.sel[v.service_id] && servicos.some(s => s.id === v.service_id && s.active)))
+      if (!pj.metas.some(m => m.prof === p.id && m.serv === v.service_id)) { pj.metas.push({ prof: p.id, serv: v.service_id, qtd: 0 }); n++; }
+  aviso(n ? `${n} linha${n === 1 ? "" : "s"} criada${n === 1 ? "" : "s"}. Agora informe a meta de cada uma.` : "Nenhuma linha nova: escolha serviços no quadro 3 que algum profissional faça.", n ? "ok" : "err");
+  desenharProjecao();
 };
-$("pjRestaurar").onclick = async () => {
-  if (!confirm("Recomeçar o estudo com os valores do cadastro? O que não foi salvo se perde.")) return;
-  pj = await projecaoPadrao(); desenharProjecao();
+$("pjRestaurar").onclick = () => {
+  if (!confirm("Recomeçar o estudo do zero? O que não foi salvo se perde.")) return;
+  pj = projecaoPadrao(); pjAbertas = new Set(); carregarAgendaProjecao(true).then(desenharProjecao);
 };
 $("pjSalvar").onclick = async () => {
   const { data, error } = await sb.from("tenants").select("settings").eq("id", tenantId).single();
@@ -2722,143 +2700,58 @@ function carregarExcelJS() {
 }
 $("pjXlsx").onclick = async () => {
   try { await carregarExcelJS(); } catch (e) { return erro(e); }
-  const r = calcularProjecao(), P = r.P, wb = new ExcelJS.Workbook();
+  const r = calcularProjecao(), P = r.P, per = pjPeriodo(), wb = new ExcelJS.Workbook();
   const AM = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF2CC" } }, CAB = { type: "pattern", pattern: "solid", fgColor: { argb: "FF3A2343" } };
-  const BRL = '"R$" #,##0.00', PCT = '0.0%';
+  const BRL = '"R$" #,##0.00', PCT = "0.0%", f = (formula, result) => ({ formula, result });
   const cab = (ws, n, t) => { const row = ws.getRow(n); t.forEach((x, i) => { const c = row.getCell(i + 1); c.value = x; c.fill = CAB; c.font = { bold: true, color: { argb: "FFFFFFFF" } }; c.alignment = { wrapText: true, vertical: "middle" }; }); };
   const tit = (ws, t) => { ws.getCell("A1").value = t; ws.getCell("A1").font = { bold: true, size: 14, color: { argb: "FF3A2343" } }; };
-  const f = (formula, result) => ({ formula, result });
   const ed = (c, v, fmt) => { c.value = v; c.fill = AM; if (fmt) c.numFmt = fmt; };
-  // Premissas: B5..B14
-  const wp = wb.addWorksheet("Premissas"); tit(wp, "Projeção de resultado · Premissas");
-  wp.getCell("A2").value = `Gerado pelo painel em ${new Date().toLocaleString("pt-BR", { timeZone: TZ })}. Células amarelas são editáveis.`;
-  cab(wp, 4, ["Premissa", "Valor"]);
-  const PR = {}; PJ_PREM.forEach(([k, rot, , u], i) => { const n = 5 + i; PR[k] = `Premissas!$B$${n}`; wp.getCell(`A${n}`).value = rot.replace(" (%)", "").replace(" (R$)", ""); ed(wp.getCell(`B${n}`), u ? P[k] / 100 : P[k], u ? PCT : (["meta", "estrutura", "extras"].includes(k) ? BRL : "0")); });
-  wp.getCell("A16").value = "Custos fixos no prazo"; wp.getCell("B16").value = f("(B8+B9)*B5/30", r.fixos); wp.getCell("B16").numFmt = BRL;
-  wp.getCell("A17").value = "Margem de contribuição necessária"; wp.getCell("B17").value = f("B7+B16", r.necessario); wp.getCell("B17").numFmt = BRL;
-  wp.getCell("A17").font = wp.getCell("B17").font = { bold: true };
-  wp.getColumn(1).width = 40; wp.getColumn(2).width = 16;
-  // Catálogo
-  const wc = wb.addWorksheet("Catálogo"); tit(wc, "Catálogo calibrado");
-  cab(wc, 3, ["Item", "Tipo", "Preço", "Duração (min)", "Custo produto", "Comissão %", "Insumo %", "Imposto+cartão %", "Margem unitária", "Margem %", "Estoque", "Fatura por hora"]);
-  const linhaCat = {}; let n = 4;
-  for (const s of r.serv) {
-    linhaCat["s" + s.id] = n; wc.getCell(`A${n}`).value = s.nome; wc.getCell(`B${n}`).value = "Serviço";
-    ed(wc.getCell(`C${n}`), s.preco, BRL); ed(wc.getCell(`D${n}`), s.dur, "0"); wc.getCell(`E${n}`).value = 0;
-    ed(wc.getCell(`F${n}`), s.o.com != null ? s.com / 100 : f(PR.comServ, s.com / 100), PCT);
-    ed(wc.getCell(`G${n}`), s.o.ins != null ? s.ins / 100 : f(PR.insumo, s.ins / 100), PCT);
-    ed(wc.getCell(`H${n}`), s.o.imp != null ? s.imp / 100 : f(PR.imposto, s.imp / 100), PCT);
-    wc.getCell(`L${n}`).value = f(`IF(D${n}=0,0,C${n}/(D${n}/60))`, s.porHora); wc.getCell(`L${n}`).numFmt = BRL; n++;
+  // Premissas
+  const wp = wb.addWorksheet("Premissas"); tit(wp, "Projeção de resultado · Premissas"); cab(wp, 2, ["Premissa", "Valor"]);
+  const PR = {}, prem = [["metaTipo", "Tipo de meta", P.metaTipo === "faturamento" ? "Faturamento" : "Resultado líquido"], ["inicio", "Início do período", per.ini.split("-").reverse().join("/")],
+    ["prazo", "Prazo (dias)", P.prazo], ["diasUteis", "Dias de atendimento", P.diasUteis], ["meta", "Valor da meta (R$)", P.meta, BRL], ["estrutura", "Estrutura por mês (R$)", P.estrutura, BRL],
+    ["extras", "Extras por mês (R$)", P.extras, BRL], ["insumo", "Insumos (% do preço)", P.insumo / 100, PCT], ["imposto", "Impostos + cartão", P.imposto / 100, PCT], ["ocupacao", "Ocupação máxima", P.ocupacao / 100, PCT]];
+  prem.forEach(([k, rot, v, fmt], i) => { const n = 3 + i; wp.getCell(`A${n}`).value = rot; ed(wp.getCell(`B${n}`), v, fmt); PR[k] = `Premissas!$B$${n}`; });
+  wp.getColumn(1).width = 30; wp.getColumn(2).width = 20;
+  // Metas
+  const wm = wb.addWorksheet("Metas"); tit(wm, `Profissional x Serviço · ${per.ini.split("-").reverse().join("/")} a ${per.fimIncl.split("-").reverse().join("/")}`);
+  cab(wm, 2, ["Profissional", "Serviço", "Preço", "Duração (min)", "Comissão", "Meta (qtde)", "Total de horas", "Valor dos serviços", "Qtde agendada", "Falta agendar", "Valor que falta", "Resultado líquido"]);
+  let n = 3; const i0 = n;
+  for (const l of r.validas) {
+    wm.getCell(`A${n}`).value = l.p.nome; wm.getCell(`B${n}`).value = l.s.nome;
+    wm.getCell(`C${n}`).value = l.s.preco; wm.getCell(`C${n}`).numFmt = BRL; wm.getCell(`D${n}`).value = l.s.dur;
+    wm.getCell(`E${n}`).value = l.p.com; wm.getCell(`E${n}`).numFmt = PCT; ed(wm.getCell(`F${n}`), l.qtd);
+    wm.getCell(`G${n}`).value = f(`F${n}*D${n}/60`, l.horas); wm.getCell(`H${n}`).value = f(`F${n}*C${n}`, l.valor); wm.getCell(`H${n}`).numFmt = BRL;
+    wm.getCell(`I${n}`).value = l.agend; wm.getCell(`J${n}`).value = f(`MAX(0,F${n}-I${n})`, l.falta);
+    wm.getCell(`K${n}`).value = f(`J${n}*C${n}`, l.valorFalta); wm.getCell(`K${n}`).numFmt = BRL;
+    wm.getCell(`L${n}`).value = f(`H${n}*(1-E${n}-${PR.insumo}-${PR.imposto})`, l.liq); wm.getCell(`L${n}`).numFmt = BRL; n++;
   }
-  for (const p of r.prod) {
-    linhaCat["p" + p.id] = n; wc.getCell(`A${n}`).value = p.nome; wc.getCell(`B${n}`).value = "Produto";
-    ed(wc.getCell(`C${n}`), p.preco, BRL); wc.getCell(`D${n}`).value = 0; ed(wc.getCell(`E${n}`), p.custo, BRL);
-    ed(wc.getCell(`F${n}`), p.o.com != null ? p.com / 100 : f(PR.comProd, p.com / 100), PCT); wc.getCell(`G${n}`).value = 0;
-    ed(wc.getCell(`H${n}`), p.o.imp != null ? p.imp / 100 : f(PR.imposto, p.imp / 100), PCT);
-    wc.getCell(`K${n}`).value = p.estoque; n++;
-  }
-  const catFim = n - 1;
-  for (let i = 4; i <= catFim; i++) {
-    const it = [...r.serv, ...r.prod][i - 4];
-    wc.getCell(`I${i}`).value = f(`C${i}*(1-F${i}-G${i}-H${i})-E${i}`, it.margem); wc.getCell(`I${i}`).numFmt = BRL;
-    wc.getCell(`J${i}`).value = f(`IF(C${i}=0,0,I${i}/C${i})`, it.mpct); wc.getCell(`J${i}`).numFmt = PCT;
-  }
-  [22, 10, 12, 12, 13, 12, 10, 14, 15, 10, 9, 14].forEach((w, i) => wc.getColumn(i + 1).width = w);
-  // Resultado
-  const wr = wb.addWorksheet("Resultado"); tit(wr, "Quanto vender para atingir a meta");
-  wr.getCell("A2").value = "Serviços: participação = fatia do faturamento de serviços (soma 100%). Produtos: quantidade informada.";
-  cab(wr, 4, ["Serviço", "Participação %", "Quantidade", "Por dia", "Por dia útil", "Receita por dia útil", "Receita bruta", "Resultado líquido", "Horas de agenda"]);
-  const sIni = 5; n = sIni;
-  for (const s of r.serv) {
-    const c = linhaCat["s" + s.id]; wr.getCell(`A${n}`).value = s.nome; ed(wr.getCell(`B${n}`), s.pct / 100, PCT);
-    wr.getCell(`C${n}`).value = f(`IF(Catálogo!C${c}=0,0,ROUNDUP($B$RS*B${n}/Catálogo!C${c},0))`, s.qtd);
-    wr.getCell(`D${n}`).value = f(`C${n}/${PR.prazo}`, s.qtd / P.prazo); wr.getCell(`E${n}`).value = f(`C${n}/${PR.diasUteis}`, s.qtd / P.diasUteis);
-    wr.getCell(`F${n}`).value = f(`G${n}/${PR.diasUteis}`, s.bruto / P.diasUteis); wr.getCell(`G${n}`).value = f(`C${n}*Catálogo!C${c}`, s.bruto);
-    wr.getCell(`H${n}`).value = f(`C${n}*Catálogo!I${c}`, s.liq); wr.getCell(`I${n}`).value = f(`C${n}*Catálogo!D${c}/60`, s.horas);
-    n++;
-  }
-  const sFim = n - 1, sTot = n;
-  wr.getCell(`A${sTot}`).value = "Total serviços";
-  wr.getCell(`B${sTot}`).value = f(`SUM(B${sIni}:B${sFim})`, r.somaMix / 100); wr.getCell(`B${sTot}`).numFmt = PCT;
-  for (const [col, v] of [["C", r.serv.reduce((a, s) => a + s.qtd, 0)], ["F", r.dre.servBruto / P.diasUteis], ["G", r.dre.servBruto], ["H", r.serv.reduce((a, s) => a + s.liq, 0)], ["I", r.horasNec]]) wr.getCell(`${col}${sTot}`).value = f(`SUM(${col}${sIni}:${col}${sFim})`, v);
-  wr.getRow(sTot).font = { bold: true };
-  n = sTot + 2; cab(wr, n, ["Produto", "Quantidade", "", "Por dia", "Por dia útil", "Receita por dia útil", "Receita bruta", "Resultado líquido", "Estoque ok?"]);
-  const pIni = ++n;
-  for (const p of r.prod) {
-    const c = linhaCat["p" + p.id]; wr.getCell(`A${n}`).value = p.nome; ed(wr.getCell(`B${n}`), p.qtd, "0");
-    wr.getCell(`D${n}`).value = f(`B${n}/${PR.prazo}`, p.qtd / P.prazo); wr.getCell(`E${n}`).value = f(`B${n}/${PR.diasUteis}`, p.qtd / P.diasUteis);
-    wr.getCell(`F${n}`).value = f(`G${n}/${PR.diasUteis}`, p.bruto / P.diasUteis); wr.getCell(`G${n}`).value = f(`B${n}*Catálogo!C${c}`, p.bruto);
-    wr.getCell(`H${n}`).value = f(`B${n}*Catálogo!I${c}`, p.liq);
-    wr.getCell(`I${n}`).value = f(`IF(B${n}<=Catálogo!K${c},"sim","FALTAM "&(B${n}-Catálogo!K${c}))`, p.qtd <= p.estoque ? "sim" : `FALTAM ${p.qtd - p.estoque}`);
-    n++;
-  }
-  const pFim = Math.max(n - 1, pIni), pTot = Math.max(n, pIni + 1);
-  wr.getCell(`A${pTot}`).value = "Total produtos";
-  for (const [col, v] of [["B", r.prod.reduce((a, p) => a + p.qtd, 0)], ["G", r.dre.prodBruto], ["H", r.margemProd]]) wr.getCell(`${col}${pTot}`).value = f(`SUM(${col}${pIni}:${col}${pFim})`, v);
-  wr.getRow(pTot).font = { bold: true };
-  n = pTot + 2;
-  const resumo = [
-    ["Margem que os produtos trazem", f(`H${pTot}`, r.margemProd), BRL],
-    ["Margem que falta vir dos serviços", f(`MAX(0,Premissas!B17-B${n})`, r.restante), BRL],
-    ["Margem média ponderada dos serviços", f(`SUMPRODUCT(B${sIni}:B${sFim},Catálogo!J4:J${3 + r.serv.length})`, r.pond), PCT],
-    ["Receita de serviços necessária", f(`IF(B${n + 2}<=0,0,B${n + 1}/B${n + 2})`, r.receitaServ), BRL],
-    ["Horas de agenda necessárias", f(`I${sTot}`, r.horasNec), "0"],
-    ["Horas disponíveis (ocupação máx.)", f(`Capacidade!E$TOT`, r.capUtil), "0"],
-    ["Veredito", (r.problemas.length ? "NÃO FECHA: " + r.problemas.join(" | ") : "VIÁVEL") + (r.alertas.length ? " | Atenção: " + r.alertas.join(" | ") : ""), null],
-  ];
-  const RS = n + 3;
-  resumo.forEach(([t, v, fmt], i) => { wr.getCell(`A${n + i}`).value = t; wr.getCell(`A${n + i}`).font = { bold: true }; wr.getCell(`B${n + i}`).value = v; if (fmt) wr.getCell(`B${n + i}`).numFmt = fmt; });
-  const linhaHoras = n + 5;
+  const i1 = Math.max(n - 1, i0), tot = Math.max(n, i0 + 1), t = r.totais;
+  wm.getCell(`A${tot}`).value = "Total"; wm.getRow(tot).font = { bold: true };
+  for (const [c, v, fmt] of [["F", t.qtd], ["G", t.horas], ["H", t.valor, BRL], ["I", t.agend], ["J", t.falta], ["K", t.valorFalta, BRL], ["L", t.liq, BRL]]) { wm.getCell(`${c}${tot}`).value = f(`SUM(${c}${i0}:${c}${i1})`, v); if (fmt) wm.getCell(`${c}${tot}`).numFmt = fmt; }
+  [22, 34, 12, 12, 11, 12, 12, 16, 13, 12, 16, 16].forEach((w, i) => wm.getColumn(i + 1).width = w);
+  // Produtos
+  const wq = wb.addWorksheet("Produtos"); tit(wq, "Produtos"); cab(wq, 2, ["Produto", "Preço", "Custo", "Meta (qtde)", "Receita", "Resultado líquido"]);
+  let k = 3; const k0 = k;
+  for (const p of r.prod) { wq.getCell(`A${k}`).value = p.nome; wq.getCell(`B${k}`).value = p.preco; wq.getCell(`C${k}`).value = p.custo; ed(wq.getCell(`D${k}`), p.qtd);
+    wq.getCell(`E${k}`).value = f(`D${k}*B${k}`, p.bruto); wq.getCell(`F${k}`).value = f(`D${k}*(B${k}*(1-${PR.imposto})-C${k})`, p.liq);
+    for (const c of "BCEF") wq.getCell(`${c}${k}`).numFmt = BRL; k++; }
+  const k1 = Math.max(k - 1, k0), ktot = Math.max(k, k0 + 1);
+  wq.getCell(`A${ktot}`).value = "Total"; wq.getCell(`E${ktot}`).value = f(`SUM(E${k0}:E${k1})`, r.dre.prodBruto); wq.getCell(`F${ktot}`).value = f(`SUM(F${k0}:F${k1})`, r.prod.reduce((a, p) => a + p.liq, 0));
+  wq.getCell(`E${ktot}`).numFmt = BRL; wq.getCell(`F${ktot}`).numFmt = BRL; wq.getRow(ktot).font = { bold: true }; wq.getColumn(1).width = 30;
   // DRE
-  n = n + resumo.length + 2; wr.getCell(`A${n}`).value = "DRE projetada"; wr.getCell(`A${n}`).font = { bold: true, size: 13 }; n++;
-  const d = r.dre, sv = `B${sIni}:B${sFim}`;
-  const catS = `Catálogo!C4:C${3 + r.serv.length}`, comS = `Catálogo!F4:F${3 + r.serv.length}`, insS = `Catálogo!G4:G${3 + r.serv.length}`, impS = `Catálogo!H4:H${3 + r.serv.length}`;
-  const pc = r.prod.length ? 4 + r.serv.length : null, pcF = 3 + r.serv.length + r.prod.length;
-  const dre = [
-    ["Receita de serviços", f(`G${sTot}`, d.servBruto)], ["Receita de produtos", f(`G${pTot}`, d.prodBruto)], ["Receita bruta", f(`B${n}+B${n + 1}`, d.bruto)],
-    ["(−) Comissões", f(`-SUMPRODUCT(G${sIni}:G${sFim},${comS})` + (pc ? `-SUMPRODUCT(G${pIni}:G${pFim},Catálogo!F${pc}:F${pcF})` : ""), d.com)],
-    ["(−) Insumos", f(`-SUMPRODUCT(G${sIni}:G${sFim},${insS})`, d.ins)],
-    ["(−) Impostos e cartão", f(`-SUMPRODUCT(G${sIni}:G${sFim},${impS})` + (pc ? `-SUMPRODUCT(G${pIni}:G${pFim},Catálogo!H${pc}:H${pcF})` : ""), d.imp)],
-    ["(−) Custo dos produtos", pc ? f(`-SUMPRODUCT(B${pIni}:B${pFim},Catálogo!E${pc}:E${pcF})`, d.cmv) : 0],
-    ["Margem de contribuição", f(`SUM(B${n + 2}:B${n + 6})`, d.margem)],
-    ["(−) Estrutura", f(`-Premissas!B8*Premissas!B5/30`, d.estrutura)], ["(−) Extras", f(`-Premissas!B9*Premissas!B5/30`, d.extras)],
-    ["Resultado líquido", f(`B${n + 7}+B${n + 8}+B${n + 9}`, d.liquido)],
-  ];
-  dre.forEach(([t, v], i) => { wr.getCell(`A${n + i}`).value = t; wr.getCell(`B${n + i}`).value = v; wr.getCell(`B${n + i}`).numFmt = BRL; if ([2, 7, 10].includes(i)) wr.getRow(n + i).font = { bold: true }; });
-  // Capacidade
-  const wk = wb.addWorksheet("Capacidade"); tit(wk, "Capacidade da agenda");
-  wk.getCell("A2").value = "Uma linha por serviço. O mesmo profissional pode aparecer em mais de uma linha.";
-  cab(wk, 4, ["Profissional", "Serviço", "Horas/semana", "Horas no prazo", "Com ocupação máx."]);
-  n = 5;
-  const nomeServ = (id) => servicos.find(s => s.id === id)?.name || "";
-  for (const c of r.cap) {
-    ed(wk.getCell(`A${n}`), c.prof); ed(wk.getCell(`B${n}`), nomeServ(c.serv)); ed(wk.getCell(`C${n}`), c.h, "0.0");
-    wk.getCell(`D${n}`).value = f(`C${n}*${PR.prazo}/7`, c.prazo); wk.getCell(`E${n}`).value = f(`D${n}*${PR.ocupacao}`, c.util);
-    wk.getCell(`D${n}`).numFmt = wk.getCell(`E${n}`).numFmt = "0.0"; n++;
-  }
-  const kFim = Math.max(n - 1, 5), kTot = Math.max(n, 6);
-  wk.getCell(`A${kTot}`).value = "Total";
-  for (const [col, v] of [["C", r.cap.reduce((a, c) => a + c.h, 0)], ["D", r.capTotal], ["E", r.capUtil]]) { wk.getCell(`${col}${kTot}`).value = f(`SUM(${col}5:${col}${kFim})`, v); wk.getCell(`${col}${kTot}`).numFmt = "0.0"; }
-  wk.getRow(kTot).font = { bold: true };
-  n = kTot + 2; cab(wk, n, ["Serviço", "Horas necessárias", "Horas de quem faz", "Situação"]); n++;
-  for (const x of r.porServ) {
-    wk.getCell(`A${n}`).value = x.s.nome;
-    wk.getCell(`B${n}`).value = f(`SUMIF(Resultado!A${sIni}:A${sFim},A${n},Resultado!I${sIni}:I${sFim})`, x.nec);
-    wk.getCell(`C${n}`).value = f(`SUMIF(B5:B${kFim},A${n},E5:E${kFim})`, x.disp);
-    wk.getCell(`B${n}`).numFmt = wk.getCell(`C${n}`).numFmt = "0.0";
-    wk.getCell(`D${n}`).value = f(`IF(B${n}=0,"-",IF(C${n}=0,"ninguém faz",IF(B${n}<=C${n},"ok","faltam "&TEXT(B${n}-C${n},"0")&" h")))`, x.disp === 0 ? "ninguém faz" : x.ok ? "ok" : `faltam ${Math.round(x.nec - x.disp)} h`);
-    n++;
-  }
-  [22, 24, 14, 15, 18].forEach((w, i) => wk.getColumn(i + 1).width = w);
-  // referências que só se conhecem no fim
-  for (let i = sIni; i <= sFim; i++) { const c = wr.getCell(`C${i}`); c.value = { formula: c.value.formula.replace("$B$RS", `$B$${RS}`), result: c.value.result }; }
-  const ch = wr.getCell(`B${linhaHoras}`); ch.value = { formula: `Capacidade!E${kTot}`, result: r.capUtil };
-  wr.getColumn(1).width = 38; for (let i = 2; i <= 9; i++) wr.getColumn(i).width = 16;
-  for (let i = sIni; i <= sTot; i++) for (const [col, fmt] of [["C", "0"], ["D", "0.0"], ["E", "0.0"], ["F", BRL], ["G", BRL], ["H", BRL], ["I", "0.0"]]) wr.getCell(`${col}${i}`).numFmt = fmt;
-  for (let i = pIni; i <= pTot; i++) for (const [col, fmt] of [["B", "0"], ["D", "0.0"], ["E", "0.0"], ["F", BRL], ["G", BRL], ["H", BRL]]) wr.getCell(`${col}${i}`).numFmt = fmt;
-  wb.calcProperties = { fullCalcOnLoad: true };
-  const buf = await wb.xlsx.writeBuffer();
-  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+  const wd = wb.addWorksheet("DRE"); tit(wd, "DRE projetada"); cab(wd, 2, ["Linha", "Valor"]);
+  const d = r.dre;
+  const dl = [["Receita de serviços", f(`Metas!H${tot}`, d.servBruto)], ["Receita de produtos", f(`Produtos!E${ktot}`, d.prodBruto)], ["Receita bruta", f("B3+B4", d.bruto)],
+    ["(−) Comissões", f(`-SUMPRODUCT(Metas!H${i0}:H${i1},Metas!E${i0}:E${i1})`, d.com)], ["(−) Insumos", f(`-B3*${PR.insumo}`, d.ins)], ["(−) Impostos e cartão", f(`-B5*${PR.imposto}`, d.imp)],
+    ["(−) Custo dos produtos", f(`-SUMPRODUCT(Produtos!C${k0}:C${k1},Produtos!D${k0}:D${k1})`, d.cmv)], ["Margem de contribuição", f("SUM(B5:B9)", d.margem)],
+    ["(−) Estrutura", f(`-${PR.estrutura}*${PR.prazo}/30`, d.estrutura)], ["(−) Extras", f(`-${PR.extras}*${PR.prazo}/30`, d.extras)], ["Resultado líquido", f("B10+B11+B12", d.liquido)],
+    ["Meta", f(PR.meta, P.meta)], ["Falta para a meta", f(`MAX(0,B14-IF(${PR.metaTipo}="Faturamento",B5,B13))`, Math.max(0, r.faltaMeta))]];
+  dl.forEach(([rot, v], i) => { wd.getCell(`A${3 + i}`).value = rot; wd.getCell(`B${3 + i}`).value = v; wd.getCell(`B${3 + i}`).numFmt = BRL; if (/bruta|Margem|Resultado|Falta/.test(rot)) wd.getRow(3 + i).font = { bold: true }; });
+  wd.getColumn(1).width = 30; wd.getColumn(2).width = 18;
+  wb.calcProperties.fullCalcOnLoad = true;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([await wb.xlsx.writeBuffer()], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
   a.download = `projecao-resultado-${hojeLocal()}.xlsx`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 };
 
