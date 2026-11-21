@@ -1046,8 +1046,45 @@ async function lerPlanilha(arq) {
   } else throw new Error("use um arquivo .xlsx ou .csv");
   linhas = linhas.filter(l => l.some(x => String(x).trim() !== ""));
   if (linhas.length < 2) throw new Error("a planilha precisa ter a linha de títulos e pelo menos uma linha de dados");
-  const cab = linhas[0].map(chaveCol);
-  return { cab, regs: linhas.slice(1).map((l, i) => { const o = { _linha: i + 2 }; cab.forEach((k, j) => { if (k && o[k] === undefined) o[k] = String(l[j] ?? "").trim(); }); return o; }) };
+  const n = Math.max(...linhas.map(l => l.length));
+  const rot = Array.from({ length: n }, (_, j) => String(linhas[0][j] ?? "").trim() || `Coluna ${j + 1}`);
+  return { rot, dados: linhas.slice(1).map(l => Array.from({ length: n }, (_, j) => String(l[j] ?? "").trim())) };
+}
+// Campos do sistema: [chave usada no preparo, rótulo, apelidos para casar com o título da coluna, obrigatório]
+const S_CAMPOS = () => [["nome", "Nome do serviço", C_NOME, true], ["categoria", "Categoria", C_CAT], ["duracaomin", "Duração (min)", C_DUR], ["precor", "Preço (R$)", C_PRECO], ["descricao", "Descrição para a IA", C_DESC], ["ativo", "Ativo (Sim/Não)", C_ATIVO]];
+const P_CAMPOS = () => [["nome", "Nome do profissional", C_NOME, true], ["comissao", "Comissão (%)", C_COM], ["cor", "Cor na agenda", C_COR], ["servicos", "Serviços que faz (separados por ;)", C_SERV], ["ativo", "Ativo (Sim/Não)", C_ATIVO]];
+function sugerirMapa(campos, rot) {
+  const usadas = new Set(), mapa = {};
+  for (const [k, , apelidos] of campos) {
+    const j = rot.findIndex((r, i) => !usadas.has(i) && apelidos.includes(chaveCol(r)));
+    mapa[k] = j; if (j >= 0) usadas.add(j);
+  }
+  return mapa;
+}
+function aplicarMapa(plan, mapa) {
+  const cab = Object.keys(mapa).filter(k => mapa[k] >= 0);
+  return { cab, regs: plan.dados.map((l, i) => { const o = { _linha: i + 2 }; for (const k of cab) o[k] = l[mapa[k]]; return o; }) };
+}
+function mostrarMapa(pref, plan, campos, mapa, seguir) {
+  const box = pref + "Previa", ex = (j) => { const v = plan.dados.map(l => l[j]).find(x => x); return v ? esc(String(v).slice(0, 40)) : '<span class="muted">vazio</span>'; };
+  $(box).innerHTML = `<div class="pj-aviso" style="background:var(--bg);color:var(--ink)"><b>1. Confira os campos:</b> escolha de qual coluna da planilha vem cada campo do sistema (${plan.dados.length} linha${plan.dados.length === 1 ? "" : "s"} na planilha). Campo marcado "não importar" fica como está.
+    <table class="pj" style="margin-top:6px"><thead><tr><th>Campo do sistema</th><th>Coluna da planilha</th><th>Exemplo da 1ª linha</th></tr></thead><tbody>
+    ${campos.map(([k, rotulo, , obrig]) => `<tr><td><b>${rotulo}</b>${obrig ? ' <span class="ruim">*</span>' : ""}</td>
+      <td><select data-mapa="${k}" style="width:240px"><option value="-1">— não importar —</option>${plan.rot.map((r, j) => `<option value="${j}" ${mapa[k] === j ? "selected" : ""}>${esc(r)}</option>`).join("")}</select></td>
+      <td data-ex="${k}">${mapa[k] >= 0 ? ex(mapa[k]) : ""}</td></tr>`).join("")}
+    </tbody></table>
+    <div class="actions"><button data-mapa-ok>Ver prévia</button><button class="ghost" data-imp-cancel>Cancelar</button></div></div>`;
+  $(box).querySelectorAll("[data-mapa]").forEach(sel => sel.onchange = () => {
+    const k = sel.dataset.mapa, j = Number(sel.value);
+    if (j >= 0) for (const [k2] of campos) if (k2 !== k && mapa[k2] === j) { mapa[k2] = -1; const o = $(box).querySelector(`[data-mapa="${k2}"]`); o.value = "-1"; $(box).querySelector(`[data-ex="${k2}"]`).innerHTML = ""; }
+    mapa[k] = j; $(box).querySelector(`[data-ex="${k}"]`).innerHTML = j >= 0 ? ex(j) : "";
+  });
+  $(box).querySelector("[data-imp-cancel]").onclick = () => { $(box).innerHTML = ""; };
+  $(box).querySelector("[data-mapa-ok]").onclick = () => {
+    const falta = campos.filter(([k, , , ob]) => ob && !(mapa[k] >= 0)).map(c => c[1]);
+    if (falta.length) return aviso(`Escolha a coluna de: ${falta.join(", ")}.`, "err");
+    seguir();
+  };
 }
 const colP = (o, ...nomes) => { for (const n of nomes) if (o[n] !== undefined && o[n] !== "") return o[n]; return ""; };
 const temCol = (cab, ...nomes) => nomes.some(n => cab.includes(n));
@@ -1059,8 +1096,8 @@ function numeroBr(v) {
   else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
   const n = Number(t); return Number.isFinite(n) ? n : NaN;
 }
-const C_NOME = ["nome", "servico", "nomedoservico", "profissional", "nomedoprofissional"];
-const C_CAT = ["categoria"], C_DUR = ["duracaomin", "duracao", "duracaominutos", "minutos", "tempo", "tempomin"];
+const C_NOME = ["nome", "servico", "nomedoservico", "procedimento", "profissional", "nomedoprofissional"];
+const C_CAT = ["categoria", "grupo"], C_DUR = ["duracaomin", "duracao", "duracaominutos", "minutos", "tempo", "tempomin"];
 const C_PRECO = ["precor", "preco", "valor", "valorr", "precors"], C_DESC = ["descricao", "descricaoparaaia", "descricaoparaarecepcionistaia", "descricaoopcional"];
 const C_ATIVO = ["ativo", "status", "situacao"], C_COM = ["comissao", "comissaopct", "comissaosobreservicos"], C_COR = ["cor", "cornaagenda"], C_SERV = ["servicos", "servicosquefaz"];
 
@@ -1114,14 +1151,15 @@ function prepararProfissionais({ cab, regs }) {
     return { ...r, row, servIds, id: atual?.id, acao: atual ? "atualizar" : "novo", det, detHtml: true };
   });
 }
-function mostrarPrevia(box, itens, confirmar) {
+function mostrarPrevia(box, itens, confirmar, voltar) {
   const ok = itens.filter(x => !x.erro), novos = ok.filter(x => x.acao === "novo").length, atu = ok.length - novos, err = itens.length - ok.length;
-  $(box).innerHTML = `<div class="pj-aviso" style="background:var(--bg);color:var(--ink)"><b>Prévia:</b> ${novos} novo${novos === 1 ? "" : "s"}, ${atu} para atualizar${err ? `, <span class="ruim">${err} com erro (serão ignorados)</span>` : ""}.
+  $(box).innerHTML = `<div class="pj-aviso" style="background:var(--bg);color:var(--ink)"><b>2. Prévia:</b> ${novos} novo${novos === 1 ? "" : "s"}, ${atu} para atualizar${err ? `, <span class="ruim">${err} com erro (serão ignorados)</span>` : ""}.
     <div class="tabela-wrap" style="max-height:340px;overflow:auto;margin-top:6px"><table class="pj"><thead><tr><th>Linha</th><th>Nome</th><th>O que acontece</th><th>Detalhes</th></tr></thead><tbody>
     ${itens.map(x => `<tr><td>${x.linha}</td><td>${esc(x.nome || "")}</td><td class="${x.erro ? "ruim" : "ok"}">${x.erro ? "erro: " + esc(x.erro) : x.acao === "novo" ? "novo" : "atualizar"}</td><td>${x.det ? (x.detHtml ? x.det : esc(x.det)) : ""}</td></tr>`).join("")}
     </tbody></table></div>
-    <div class="actions"><button data-imp-ok ${ok.length ? "" : "disabled"}>Confirmar importação (${ok.length})</button><button class="ghost" data-imp-cancel>Cancelar</button></div></div>`;
+    <div class="actions"><button data-imp-ok ${ok.length ? "" : "disabled"}>Confirmar importação (${ok.length})</button>${voltar ? '<button class="ghost" data-imp-voltar>Voltar aos campos</button>' : ""}<button class="ghost" data-imp-cancel>Cancelar</button></div></div>`;
   $(box).querySelector("[data-imp-cancel]").onclick = () => { $(box).innerHTML = ""; };
+  if (voltar) $(box).querySelector("[data-imp-voltar]").onclick = voltar;
   $(box).querySelector("[data-imp-ok]").onclick = async (e) => {
     e.target.disabled = true; e.target.textContent = "Importando...";
     try { await confirmar(ok); $(box).innerHTML = ""; } catch (er) { erro(er); e.target.disabled = false; e.target.textContent = `Confirmar importação (${ok.length})`; }
@@ -1153,16 +1191,23 @@ async function importarProfissionais(ok) {
   await carregar();
   aviso(`Importação concluída: ${novos} profissional(is) novo(s) e ${ok.length - novos} atualizado(s).`);
 }
-function ligarImportacao(pref, preparar, importar) {
+function ligarImportacao(pref, campos, preparar, importar) {
   $(pref + "Importar").onclick = () => { $(pref + "Arq").value = ""; $(pref + "Arq").click(); };
   $(pref + "Arq").onchange = async () => {
     const arq = $(pref + "Arq").files[0]; if (!arq) return;
-    try { mostrarPrevia(pref + "Previa", preparar(await lerPlanilha(arq)), importar); }
-    catch (e) { $(pref + "Previa").innerHTML = ""; aviso("Não consegui ler a planilha: " + (e.message || e), "err"); }
+    let plan;
+    try { plan = await lerPlanilha(arq); }
+    catch (e) { $(pref + "Previa").innerHTML = ""; return aviso("Não consegui ler a planilha: " + (e.message || e), "err"); }
+    const cs = campos(), mapa = sugerirMapa(cs, plan.rot);
+    const etapaMapa = () => mostrarMapa(pref, plan, cs, mapa, () => {
+      try { mostrarPrevia(pref + "Previa", preparar(aplicarMapa(plan, mapa)), importar, etapaMapa); }
+      catch (e) { aviso("Não consegui preparar a importação: " + (e.message || e), "err"); }
+    });
+    etapaMapa();
   };
 }
-ligarImportacao("s", prepararServicos, importarServicos);
-ligarImportacao("p", prepararProfissionais, importarProfissionais);
+ligarImportacao("s", S_CAMPOS, prepararServicos, importarServicos);
+ligarImportacao("p", P_CAMPOS, prepararProfissionais, importarProfissionais);
 async function baixarModelo(nomeArq, aba, cabecalho, linhas, nota) {
   try { await carregarExcelJS(); } catch (e) { return erro(e); }
   const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet(aba);
