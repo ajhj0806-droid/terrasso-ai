@@ -460,7 +460,7 @@
 
       <div class="card tabela-wrap">
         <b>4. Profissional x Serviço</b> <span class="muted" style="font-size:13px">Uma linha para cada serviço do profissional, com a meta de quantidade no período. O mesmo profissional pode aparecer em várias linhas.</span>
-        <table class="pj" style="margin-top:6px"><thead><tr><th>Profissional</th><th>Serviço</th><th>Meta (qtde)</th><th class="n">Total de horas</th><th class="n">Valor dos serviços</th><th class="n">Qtde agendada</th><th class="n">Falta agendar</th><th class="n">Valor que falta</th><th class="n">Resultado líquido</th><th></th></tr></thead><tbody id="pjCap"></tbody></table>
+        <table class="pj" style="margin-top:6px"><thead><tr><th>Profissional</th><th>Serviço</th><th>Meta (qtde)</th><th class="n">Total de horas</th><th class="n">Valor dos serviços</th><th class="n">Qtde agendada</th><th class="n">Falta agendar</th><th class="n">Valor que falta</th><th class="n">Comissão</th><th class="n">Impostos e cartão</th><th class="n">Resultado líquido</th><th></th></tr></thead><tbody id="pjCap"></tbody></table>
         <div class="actions"><button class="ghost" id="pjCapAdd">+ linha</button><button class="ghost" id="pjCapGerar">Criar linhas dos serviços escolhidos</button></div>
         <div id="pjCapAvisos"></div>
         <table class="pj" style="margin-top:12px"><thead><tr><th>Produto (opcional)</th><th>Meta (qtde)</th><th class="n">Receita</th><th class="n">Resultado líquido</th><th>Estoque</th></tr></thead><tbody id="pjResP"></tbody></table>
@@ -2787,12 +2787,12 @@ function calcularProjecao() {
   const linhas = pj.metas.map((m, i) => {
     const s = serv[m.serv], p = prof[m.prof], qtd = Math.max(0, Math.round(pjNum(m.qtd)));
     const l = { i, m, s, p, qtd, ok: !!(s && p), escolhido: !!(s && pj.sel[s.id]) };
-    if (!l.ok) return Object.assign(l, { horas: 0, valor: 0, agend: 0, falta: 0, valorFalta: 0, com: 0, liq: 0 });
+    if (!l.ok) return Object.assign(l, { horas: 0, valor: 0, agend: 0, falta: 0, valorFalta: 0, com: 0, imp: 0, pct: 0, liq: 0 });
     l.horas = qtd * s.dur / 60; l.valor = qtd * s.preco;
     l.agend = pjAg.porPS[p.id + "|" + s.id] || 0;
     l.falta = Math.max(0, qtd - l.agend); l.valorFalta = l.falta * s.preco;
     l.pct = comissaoDe(p.id, s.id) / 100;
-    l.com = l.valor * l.pct; l.liq = l.valor * (1 - l.pct - ins - imp);
+    l.com = l.valor * l.pct; l.imp = l.valor * imp; l.liq = l.valor - l.com - l.imp - l.valor * ins;
     return l;
   });
   const validas = linhas.filter(l => l.ok);
@@ -2823,7 +2823,7 @@ function calcularProjecao() {
   for (const id of Object.keys(pj.sel)) if (pj.sel[id] && serv[id] && !validas.some(l => l.s.id === id)) alertas.push(`${serv[id].nome}: escolhido, mas sem meta no quadro 4.`);
   for (const p of prod) if (p.qtd > p.estoque) alertas.push(`${p.nome}: estoque de ${p.estoque}, comprar mais ${p.qtd - p.estoque}.`);
   return { P, serv, prof, linhas, validas, prod, fixos, dre, atingido, faltaMeta, cargas, problemas, alertas,
-    totais: { qtd: soma(validas, "qtd"), horas: soma(validas, "horas"), valor: soma(validas, "valor"), agend: soma(validas, "agend"), falta: soma(validas, "falta"), valorFalta: soma(validas, "valorFalta"), liq: soma(validas, "liq") } };
+    totais: { qtd: soma(validas, "qtd"), horas: soma(validas, "horas"), valor: soma(validas, "valor"), agend: soma(validas, "agend"), falta: soma(validas, "falta"), valorFalta: soma(validas, "valorFalta"), com: soma(validas, "com"), imp: soma(validas, "imp"), liq: soma(validas, "liq") } };
 }
 
 function pjInput(valor, attrs, step) { return `<input class="ed" type="number" step="${step || "any"}" min="0" value="${valor ?? ""}" ${attrs}>`; }
@@ -2867,10 +2867,10 @@ function desenharProjecao() {
     <td><select class="ed" data-pjk="${l.i}:serv">${optServ(l.m.prof, l.m.serv)}</select></td>
     <td>${pjInput(l.m.qtd || "", `data-pjk="${l.i}:qtd" placeholder="0"`, 1)}</td>
     <td class="n">${pjF(l.horas)}</td><td class="n">${pjR(l.valor)}</td><td class="n">${l.agend}</td>
-    <td class="n ${l.falta > 0 ? "ruim" : "ok"}">${l.ok ? l.falta : ""}</td><td class="n">${pjR(l.valorFalta)}</td><td class="n">${pjR(l.liq)}${l.ok ? `<br><span class="muted" style="font-size:11px">comissão ${pjF(l.pct * 100)}%</span>` : ""}</td>
+    <td class="n ${l.falta > 0 ? "ruim" : "ok"}">${l.ok ? l.falta : ""}</td><td class="n">${pjR(l.valorFalta)}</td><td class="n">${pjR(l.com)}${l.ok ? `<br><span class="muted" style="font-size:11px">${pjF(l.pct * 100)}%</span>` : ""}</td><td class="n">${pjR(l.imp)}${l.ok ? `<br><span class="muted" style="font-size:11px">${pjF(P.imposto)}%</span>` : ""}</td><td class="n"><b>${pjR(l.liq)}</b></td>
     <td><button class="danger" data-pjkrm="${l.i}">Remover</button></td></tr>`).join("")
-    + (r.linhas.length ? "" : '<tr><td colspan="10" class="muted">Nenhuma linha. Escolha os serviços no quadro 3 e clique em "Criar linhas dos serviços escolhidos" ou "+ linha".</td></tr>')
-    + `<tr class="tot"><td>Total</td><td></td><td>${t.qtd}</td><td class="n">${pjF(t.horas)}</td><td class="n">${pjR(t.valor)}</td><td class="n">${t.agend}</td><td class="n">${t.falta}</td><td class="n">${pjR(t.valorFalta)}</td><td class="n">${pjR(t.liq)}</td><td></td></tr>`;
+    + (r.linhas.length ? "" : '<tr><td colspan="12" class="muted">Nenhuma linha. Escolha os serviços no quadro 3 e clique em "Criar linhas dos serviços escolhidos" ou "+ linha".</td></tr>')
+    + `<tr class="tot"><td>Total</td><td></td><td>${t.qtd}</td><td class="n">${pjF(t.horas)}</td><td class="n">${pjR(t.valor)}</td><td class="n">${t.agend}</td><td class="n">${t.falta}</td><td class="n">${pjR(t.valorFalta)}</td><td class="n">${pjR(t.com)}</td><td class="n">${pjR(t.imp)}</td><td class="n">${pjR(t.liq)}</td><td></td></tr>`;
   $("pjCapAvisos").innerHTML = r.cargas.length ? `<table class="pj" style="margin-top:10px"><thead><tr><th>Profissional</th><th class="n">Horas da meta</th><th class="n">Horas na escala do período (ocupação ${pjF(P.ocupacao, 0)}%)</th><th>Situação</th></tr></thead><tbody>`
     + r.cargas.map(c => `<tr><td>${esc(c.p.nome)}</td><td class="n">${pjF(c.horas)}</td><td class="n">${pjF(c.disp)}</td><td class="${c.disp === 0 ? (c.horas ? "ruim" : "muted") : c.ok ? "ok" : "ruim"}">${c.disp === 0 ? "sem horário cadastrado" : c.ok ? `ok, sobram ${pjF(c.disp - c.horas)} h` : `faltam ${pjF(c.horas - c.disp)} h`}</td></tr>`).join("") + "</tbody></table>" : "";
   $("pjResP").innerHTML = r.prod.map(p => `<tr><td><b>${esc(p.nome)}</b></td><td>${pjInput(p.qtd || "", `data-pjq="${p.id}" placeholder="0"`, 1)}</td><td class="n">${pjR(p.bruto)}</td><td class="n">${pjR(p.liq)}</td>
@@ -2971,7 +2971,7 @@ $("pjXlsx").onclick = async () => {
   wp.getColumn(1).width = 30; wp.getColumn(2).width = 20;
   // Metas
   const wm = wb.addWorksheet("Metas"); tit(wm, `Profissional x Serviço · ${per.ini.split("-").reverse().join("/")} a ${per.fimIncl.split("-").reverse().join("/")}`);
-  cab(wm, 2, ["Profissional", "Serviço", "Preço", "Duração (min)", "Comissão", "Meta (qtde)", "Total de horas", "Valor dos serviços", "Qtde agendada", "Falta agendar", "Valor que falta", "Resultado líquido"]);
+  cab(wm, 2, ["Profissional", "Serviço", "Preço", "Duração (min)", "Comissão", "Meta (qtde)", "Total de horas", "Valor dos serviços", "Qtde agendada", "Falta agendar", "Valor que falta", "Resultado líquido", "Comissão (R$)", "Impostos e cartão (R$)"]);
   let n = 3; const i0 = n;
   for (const l of r.validas) {
     wm.getCell(`A${n}`).value = l.p.nome; wm.getCell(`B${n}`).value = l.s.nome;
@@ -2980,12 +2980,14 @@ $("pjXlsx").onclick = async () => {
     wm.getCell(`G${n}`).value = f(`F${n}*D${n}/60`, l.horas); wm.getCell(`H${n}`).value = f(`F${n}*C${n}`, l.valor); wm.getCell(`H${n}`).numFmt = BRL;
     wm.getCell(`I${n}`).value = l.agend; wm.getCell(`J${n}`).value = f(`MAX(0,F${n}-I${n})`, l.falta);
     wm.getCell(`K${n}`).value = f(`J${n}*C${n}`, l.valorFalta); wm.getCell(`K${n}`).numFmt = BRL;
-    wm.getCell(`L${n}`).value = f(`H${n}*(1-E${n}-${PR.imposto})`, l.liq); wm.getCell(`L${n}`).numFmt = BRL; n++;
+    wm.getCell(`M${n}`).value = f(`H${n}*E${n}`, l.com); wm.getCell(`M${n}`).numFmt = BRL;
+    wm.getCell(`N${n}`).value = f(`H${n}*${PR.imposto}`, l.imp); wm.getCell(`N${n}`).numFmt = BRL;
+    wm.getCell(`L${n}`).value = f(`H${n}-M${n}-N${n}`, l.liq); wm.getCell(`L${n}`).numFmt = BRL; n++;
   }
   const i1 = Math.max(n - 1, i0), tot = Math.max(n, i0 + 1), t = r.totais;
   wm.getCell(`A${tot}`).value = "Total"; wm.getRow(tot).font = { bold: true };
-  for (const [c, v, fmt] of [["F", t.qtd], ["G", t.horas], ["H", t.valor, BRL], ["I", t.agend], ["J", t.falta], ["K", t.valorFalta, BRL], ["L", t.liq, BRL]]) { wm.getCell(`${c}${tot}`).value = f(`SUM(${c}${i0}:${c}${i1})`, v); if (fmt) wm.getCell(`${c}${tot}`).numFmt = fmt; }
-  [22, 34, 12, 12, 11, 12, 12, 16, 13, 12, 16, 16].forEach((w, i) => wm.getColumn(i + 1).width = w);
+  for (const [c, v, fmt] of [["F", t.qtd], ["G", t.horas], ["H", t.valor, BRL], ["I", t.agend], ["J", t.falta], ["K", t.valorFalta, BRL], ["L", t.liq, BRL], ["M", t.com, BRL], ["N", t.imp, BRL]]) { wm.getCell(`${c}${tot}`).value = f(`SUM(${c}${i0}:${c}${i1})`, v); if (fmt) wm.getCell(`${c}${tot}`).numFmt = fmt; }
+  [22, 34, 12, 12, 11, 12, 12, 16, 13, 12, 16, 16, 15, 18].forEach((w, i) => wm.getColumn(i + 1).width = w);
   // Produtos
   const wq = wb.addWorksheet("Produtos"); tit(wq, "Produtos"); cab(wq, 2, ["Produto", "Preço", "Custo", "Meta (qtde)", "Receita", "Resultado líquido"]);
   let k = 3; const k0 = k;
@@ -2999,7 +3001,7 @@ $("pjXlsx").onclick = async () => {
   const wd = wb.addWorksheet("DRE"); tit(wd, "DRE projetada"); cab(wd, 2, ["Linha", "Valor"]);
   const d = r.dre;
   const dl = [["Receita de serviços", f(`Metas!H${tot}`, d.servBruto)], ["Receita de produtos", f(`Produtos!E${ktot}`, d.prodBruto)], ["Receita bruta", f("B3+B4", d.bruto)],
-    ["(−) Comissões", f(`-SUMPRODUCT(Metas!H${i0}:H${i1},Metas!E${i0}:E${i1})`, d.com)], ["(−) Impostos e cartão", f(`-B5*${PR.imposto}`, d.imp)],
+    ["(−) Comissões", f(`-Metas!M${tot}`, d.com)], ["(−) Impostos e cartão", f(`-B5*${PR.imposto}`, d.imp)],
     ["(−) Custo dos produtos", f(`-SUMPRODUCT(Produtos!C${k0}:C${k1},Produtos!D${k0}:D${k1})`, d.cmv)], ["Margem de contribuição", f("SUM(B5:B8)", d.margem)],
     ["(−) Estrutura", f(`-${PR.estrutura}*${PR.prazo}/30`, d.estrutura)], ["(−) Extras", f(`-${PR.extras}*${PR.prazo}/30`, d.extras)], ["Resultado líquido", f("B9+B10+B11", d.liquido)],
     ["Meta", f(PR.meta, P.meta)], ["Falta para a meta", f(`MAX(0,B13-IF(${PR.metaTipo}="Faturamento",B5,B12))`, Math.max(0, r.faltaMeta))]];
