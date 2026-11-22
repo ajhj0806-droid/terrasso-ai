@@ -3,19 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Painel Terrasso</title>
+<title>Painel</title>
 <style>
   :root { --bg:#f7f5f2; --card:#fff; --ink:#2b2622; --muted:#7a716a; --line:#e6e0d9; --brand:#8a5a3c; --brand-ink:#fff; --danger:#b3261e; --ok:#2e7d32; }
   * { box-sizing:border-box; }
   body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); font-size:15px; }
   header { background:var(--card); border-bottom:1px solid var(--line); padding:12px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-  header h1 { font-size:18px; margin:0; flex:1; }
+  header { position:sticky; top:0; z-index:30; }
+  header h1 { font-size:18px; margin:0 8px 0 0; }
+  header .who { margin-left:auto; }
   header .who { color:var(--muted); font-size:13px; }
   main { max-width:1200px; margin:0 auto; padding:16px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
-  .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-  .tabs button { background:var(--card); border:1px solid var(--line); color:var(--ink); }
-  .tabs button.on { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .grp { position:relative; }
+  .grp-bt { background:transparent; border:1px solid transparent; color:var(--ink); font-weight:600; padding:7px 12px; }
+  .grp-bt::after { content:" ▾"; font-size:11px; color:var(--muted); }
+  .grp-bt:hover, .grp.aberto .grp-bt { background:var(--bg); }
+  .grp.on .grp-bt { background:var(--brand); color:var(--brand-ink); }
+  .grp.on .grp-bt::after { color:var(--brand-ink); }
+  .grp-bt small { font-weight:400; opacity:.85; }
+  .grp-menu { display:none; position:absolute; top:calc(100% + 4px); left:0; min-width:190px; background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:6px; z-index:40; flex-direction:column; gap:2px; }
+  .grp.aberto .grp-menu { display:flex; }
+  .grp-menu button { text-align:left; background:none !important; border:0 !important; color:var(--ink) !important; padding:8px 10px; border-radius:6px; font-weight:400; }
+  .grp-menu button:hover { background:var(--bg) !important; }
+  .grp-menu button.on { font-weight:700; background:#f3ebe3 !important; }
+  @media (max-width:700px) { header { position:static; } header h1 { width:100%; } .tabs { order:5; width:100%; } }
   button { font:inherit; border:0; border-radius:8px; padding:9px 14px; cursor:pointer; background:var(--brand); color:var(--brand-ink); }
   button.ghost { background:transparent; color:var(--brand); border:1px solid var(--line); }
   button.danger { background:transparent; color:var(--danger); border:1px solid var(--line); }
@@ -31,9 +44,13 @@
   .pill { font-size:12px; padding:2px 8px; border-radius:999px; background:#eee; }
   .pill.off { background:#f3e3e2; color:var(--danger); }
   .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
-  .msg { padding:10px 12px; border-radius:8px; margin-bottom:12px; display:none; }
-  .msg.err { display:block; background:#fbe9e7; color:var(--danger); }
-  .msg.ok { display:block; background:#e8f5e9; color:var(--ok); }
+  .msg { position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:100; max-width:min(560px, calc(100vw - 32px)); padding:14px 44px 14px 18px; border-radius:12px; font-size:16px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,.25); display:none; cursor:pointer; }
+  .msg::before { margin-right:8px; }
+  .msg.err { display:block; background:var(--danger); color:#fff; } .msg.err::before { content:"⚠"; }
+  .msg.ok { display:block; background:var(--ok); color:#fff; } .msg.ok::before { content:"✓"; }
+  .msg::after { content:"×"; position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:20px; opacity:.8; }
+  .msg.entra { animation:msgEntra .25s ease-out; }
+  @keyframes msgEntra { from { opacity:0; transform:translate(-50%, -12px); } to { opacity:1; transform:translate(-50%, 0); } }
   .checks { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:6px; }
   .checks label { display:flex; gap:8px; align-items:center; color:var(--ink); font-size:14px; margin:0; }
   .checks input { width:auto; }
@@ -47,7 +64,23 @@
   .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:8px; margin-top:12px; }
   .kpi { background:var(--bg); border-radius:10px; padding:8px 10px; font-size:12px; color:var(--muted); }
   .kpi b { display:block; font-size:19px; color:var(--ink); }
-  .grade-wrap { overflow-x:auto; }
+  .grade-wrap { overflow-x:auto; scroll-behavior:smooth; }
+  .grade-box { position:relative; }
+  .ag-seta { position:absolute; top:0; z-index:6; width:38px; height:38px; border-radius:50%; padding:0; font-size:24px; line-height:1; background:#cfe6f5; color:#1d5f8a; border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.18); }
+  .ag-seta:hover { background:#a9d3ef; } .ag-seta:disabled { opacity:.35; cursor:default; }
+  .ag-seta.esq { left:-6px; } .ag-seta.dir { right:-6px; }
+  .ag-vis { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .seg button { background:transparent; color:var(--ink); border-radius:0; padding:7px 12px; }
+  .seg button.on { background:var(--brand); color:var(--brand-ink); }
+  #agCompacto.on { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); }
+  .grade.compacto { gap:0 2px; }
+  .grade.compacto .gh { font-size:11px; padding:4px 2px; cursor:zoom-in; }
+  .grade.compacto .ap { font-size:10px; line-height:1.2; padding:1px 3px; border-left-width:3px; cursor:zoom-in; }
+  .grade.compacto .ap b { font-size:10px; }
+  .grade.compacto .ap .ap-bt, .grade.compacto .ap .xcanc, .grade.compacto .ap .st, .grade.compacto .ap .ap-det { display:none; }
+  .grade.compacto .cel, .grade.compacto .bloq { cursor:zoom-in; }
+  .ap .ap-prof { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:3px; }
   .grade { display:grid; gap:0 6px; }
   .gh { font-weight:600; font-size:14px; padding:6px 4px; border-bottom:2px solid var(--line); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .horas, .col { position:relative; }
@@ -143,7 +176,29 @@
 <body>
 
 <header>
-  <h1>Terrasso · Painel</h1>
+  <h1>Painel</h1>
+  <nav class="tabs hidden" id="menu">
+    <div class="grp" data-grp="agenda"><button type="button" class="grp-bt">Agenda</button><div class="grp-menu">
+      <button data-tab="agenda" class="on">Agenda</button>
+      <button data-tab="horarios">Horários</button>
+      <button data-tab="clientes">Clientes</button>
+    </div></div>
+    <div class="grp" data-grp="financas"><button type="button" class="grp-bt">Finanças</button><div class="grp-menu">
+      <button data-tab="comandas">Comandas</button>
+      <button data-tab="caixa">Caixa</button>
+      <button data-tab="comissoes">Comissões</button>
+    </div></div>
+    <div class="grp" data-grp="servicos"><button type="button" class="grp-bt">Serviços</button><div class="grp-menu">
+      <button data-tab="profissionais">Profissionais</button>
+      <button data-tab="equipe">Equipe</button>
+      <button data-tab="servicos">Serviços</button>
+      <button data-tab="produtos">Produtos</button>
+    </div></div>
+    <div class="grp" data-grp="ia"><button type="button" class="grp-bt">Perfil de IA<span class="badge hidden" id="cBadgeGrp"></span></button><div class="grp-menu">
+      <button data-tab="perfil">Perfil da IA</button>
+      <button data-tab="conversas">Conversas<span class="badge hidden" id="cBadge"></span></button>
+    </div></div>
+  </nav>
   <button class="hidden" id="btnKiara" title="Liga ou desliga as respostas automáticas no WhatsApp"></button>
   <span class="who" id="who"></span>
   <button class="ghost hidden" id="btnSair">Sair</button>
@@ -174,20 +229,6 @@
 
   <!-- App -->
   <section id="vApp" class="hidden">
-    <nav class="tabs">
-      <button data-tab="agenda" class="on">Agenda</button>
-      <button data-tab="comandas">Comandas</button>
-      <button data-tab="caixa">Caixa</button>
-      <button data-tab="comissoes">Comissões</button>
-      <button data-tab="clientes">Clientes</button>
-      <button data-tab="produtos">Produtos</button>
-      <button data-tab="servicos">Serviços</button>
-      <button data-tab="profissionais">Profissionais</button>
-      <button data-tab="horarios">Horários</button>
-      <button data-tab="conversas">Conversas<span class="badge hidden" id="cBadge"></span></button>
-      <button data-tab="perfil">Perfil da IA</button>
-      <button data-tab="equipe">Equipe</button>
-    </nav>
 
     <!-- Agenda do dia -->
     <div id="tab-agenda">
@@ -258,8 +299,16 @@
       </div>
 
       <div class="card">
-        <div class="grade-wrap"><div class="grade" id="agGrade"></div></div>
-        <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. Arraste um horário para remarcar. Clique num bloqueio cinza para removê-lo. Clique na situação para avançar: Agendado → Atendendo → Concluído ("Atrasado" é agendado com o horário já passado). "Feito" abre a comanda para lançar no caixa; o ✕ cancela o horário e conta na classificação da cliente. Clique no horário para ver mais opções. Áreas listradas ficam fora do horário de trabalho. A agenda se atualiza sozinha a cada minuto.</p>
+        <div class="ag-vis">
+          <span class="seg"><button type="button" data-agvis="prof" class="on">Por profissional</button><button type="button" data-agvis="serv">Por serviço</button></span>
+          <button type="button" class="ghost" id="agCompacto" title="Mostra todas as colunas na tela. Clique num horário ou coluna para ampliar de novo.">Ver todos</button>
+        </div>
+        <div class="grade-box">
+          <button type="button" class="ag-seta esq hidden" id="agEsq" aria-label="Voltar colunas">‹</button>
+          <div class="grade-wrap" id="agWrap"><div class="grade" id="agGrade"></div></div>
+          <button type="button" class="ag-seta dir hidden" id="agDir" aria-label="Avançar colunas">›</button>
+        </div>
+        <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. Arraste um horário para remarcar. Clique num bloqueio cinza para removê-lo. Clique na situação para avançar: Agendado → Atendendo → Concluído ("Atrasado" é agendado com o horário já passado). "Feito" abre a comanda para lançar no caixa; o ✕ cancela o horário e conta na classificação da cliente. Clique no horário para ver mais opções. Áreas listradas ficam fora do horário de trabalho. "Ver todos" encolhe a grade para caber todas as colunas; clique numa coluna ou horário para ampliar de novo. As setas azuis passam as colunas para os lados. "Por serviço" mostra uma coluna para cada serviço marcado no dia, com o profissional em cada horário. A agenda se atualiza sozinha a cada minuto.</p>
       </div>
     </div>
 
@@ -691,10 +740,14 @@ const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const $ = (id) => document.getElementById(id);
 let kiaraLigada = true, equipe = [], cats = [], meuPapel = null, produtos = [], tenantId = null, usuarioId = null, TZ = "America/Sao_Paulo", servicos = [], profissionais = [], vinculos = [];
 
+let avisoTimer = null;
 function aviso(texto, tipo) {
   const m = $("msg"); m.textContent = texto; m.className = "msg " + (tipo || "ok");
-  if (tipo !== "err") setTimeout(() => { m.className = "msg"; }, 3500);
+  void m.offsetWidth; m.classList.add("entra");
+  clearTimeout(avisoTimer);
+  avisoTimer = setTimeout(() => { m.className = "msg"; }, tipo === "err" ? 12000 : 4000);
 }
+$("msg").onclick = () => { clearTimeout(avisoTimer); $("msg").className = "msg"; };
 function erro(e) { console.error(e); aviso("Algo deu errado: " + (e.message || e), "err"); }
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function reais(c) { return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
@@ -702,7 +755,7 @@ function paraCentavos(t) {
   const n = Number(String(t).replace(/\s|R\$/g, "").replace(/\./g, "").replace(",", "."));
   return Number.isFinite(n) ? Math.round(n * 100) : NaN;
 }
-function mostrar(v) { for (const id of ["vLogin","vSemAcesso","vApp"]) $(id).classList.toggle("hidden", id !== v); }
+function mostrar(v) { for (const id of ["vLogin","vSemAcesso","vApp"]) $(id).classList.toggle("hidden", id !== v); $("menu").classList.toggle("hidden", v !== "vApp"); }
 
 // ---------- Login ----------
 $("btnEntrar").onclick = async () => {
@@ -751,8 +804,29 @@ async function iniciar() {
 }
 
 // ---------- Abas ----------
-document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
-  document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
+// Menu em grupos: clicar no grupo abre as opções; escolher uma opção fecha o menu.
+document.querySelectorAll(".grp-bt").forEach(g => g.onclick = (ev) => {
+  ev.stopPropagation();
+  const grp = g.parentElement, abrir = !grp.classList.contains("aberto");
+  document.querySelectorAll(".grp").forEach(x => x.classList.remove("aberto"));
+  if (abrir) grp.classList.add("aberto");
+});
+document.addEventListener("click", (ev) => { if (!ev.target.closest(".grp")) document.querySelectorAll(".grp").forEach(x => x.classList.remove("aberto")); });
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") document.querySelectorAll(".grp").forEach(x => x.classList.remove("aberto")); });
+function marcarGrupo() {
+  document.querySelectorAll(".grp").forEach(g => {
+    const on = g.querySelector("button[data-tab].on"), bt = g.querySelector(".grp-bt"), nome = { agenda: "Agenda", financas: "Finanças", servicos: "Serviços", ia: "Perfil de IA" }[g.dataset.grp];
+    g.classList.toggle("on", !!on);
+    const badge = bt.querySelector(".badge");
+    bt.textContent = ""; bt.append(nome);
+    if (on && on.firstChild.textContent.trim() !== nome) { const sm = document.createElement("small"); sm.textContent = " · " + on.firstChild.textContent.trim(); bt.append(sm); }
+    if (badge) bt.append(badge);
+    g.classList.toggle("hidden", ![...g.querySelectorAll("button[data-tab]")].some(b => !b.classList.contains("hidden")));
+  });
+}
+document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button[data-tab]").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".grp").forEach(x => x.classList.remove("aberto")); marcarGrupo();
   for (const t of TODAS_ABAS) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
   if (b.dataset.tab === "agenda") carregarAgenda();
   if (b.dataset.tab === "comandas") { if (!manterComanda) comandaAberta = null; manterComanda = false; carregarComandas(); }
@@ -777,7 +851,8 @@ const meusProfs = () => profissionais.filter(p => p.user_id === usuarioId).map(p
 const telVisivel = (t) => ehAdmin() ? (t || "") : "";
 const podeVer = (t) => !ABAS_POR_FUNCAO[meuPapel] || ABAS_POR_FUNCAO[meuPapel].includes(t);
 function aplicarPermissoes() {
-  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("hidden", !podeVer(b.dataset.tab)));
+  document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.classList.toggle("hidden", !podeVer(b.dataset.tab)));
+  marcarGrupo();
   $("eConvite").classList.toggle("hidden", !["owner", "manager"].includes(meuPapel));
   for (const id of ["agNovoBtn", "agBloqBtn"]) $(id).classList.toggle("hidden", ehProf());
   $("btnKiara").classList.toggle("hidden", ehProf());
@@ -1470,6 +1545,7 @@ async function vigiarConversas() {
   if (error) return console.error(error);
   const n = data.filter(c => !c.clients?.blocked_at).filter(c => esperando(c) || (c.handoff_reason && !c.ai_paused && !c.assigned_user_id)).length;
   $("cBadge").textContent = n; $("cBadge").classList.toggle("hidden", !n);
+  $("cBadgeGrp").textContent = n; $("cBadgeGrp").classList.toggle("hidden", !n);
   document.title = (n ? `(${n}) ` : "") + "Painel Terrasso";
   if (n > ultimoPendente) {
     bip();
@@ -1614,54 +1690,123 @@ function desenharKpis() {
 function escalaDo(profId, wd) { return agenda.escalas.filter(s => s.professional_id === profId && s.weekday === wd).map(s => [hm(s.start_time), hm(s.end_time)]); }
 function hm(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
 
+let agVis = "prof", agCompacto = false;
+try { agVis = localStorage.getItem("agVis") === "serv" ? "serv" : "prof"; agCompacto = localStorage.getItem("agCompacto") === "1"; } catch (e) {}
+document.querySelectorAll("[data-agvis]").forEach(b => b.onclick = () => {
+  agVis = b.dataset.agvis; try { localStorage.setItem("agVis", agVis); } catch (e) {}
+  $("agWrap").scrollLeft = 0; desenharGrade();
+});
+$("agCompacto").onclick = () => { agCompacto = !agCompacto; try { localStorage.setItem("agCompacto", agCompacto ? "1" : "0"); } catch (e) {} desenharGrade(); };
+function setasAgenda() {
+  const w = $("agWrap"), sobra = w.scrollWidth - w.clientWidth > 4;
+  $("agEsq").classList.toggle("hidden", !sobra); $("agDir").classList.toggle("hidden", !sobra);
+  $("agEsq").disabled = w.scrollLeft <= 2; $("agDir").disabled = w.scrollLeft >= w.scrollWidth - w.clientWidth - 2;
+}
+$("agWrap").addEventListener("scroll", setasAgenda);
+window.addEventListener("resize", setasAgenda);
+const passoAgenda = () => Math.max(160, $("agWrap").clientWidth - 48 - 40);
+$("agEsq").onclick = () => { $("agWrap").scrollLeft -= passoAgenda(); };
+$("agDir").onclick = () => { $("agWrap").scrollLeft += passoAgenda(); };
+// No modo "Ver todos", qualquer clique na grade amplia de novo e leva até a coluna clicada.
+$("agGrade").addEventListener("click", (ev) => {
+  if (!agCompacto) return;
+  const col = ev.target.closest("[data-colidx]"); if (!col) return;
+  ev.stopPropagation(); ev.preventDefault();
+  const idx = Number(col.dataset.colidx), ag = ev.target.closest("[data-ag]")?.dataset.ag;
+  agCompacto = false; try { localStorage.setItem("agCompacto", "0"); } catch (e) {}
+  desenharGrade();
+  const alvo = $("agGrade").querySelector(`.gh[data-colidx="${idx}"]`);
+  if (alvo) { $("agWrap").style.scrollBehavior = "auto"; $("agWrap").scrollLeft = Math.max(0, alvo.offsetLeft - 56); $("agWrap").style.scrollBehavior = ""; setasAgenda(); }
+  if (ag) abrirAgendamento(ag);
+}, true);
+// Atendimentos que se sobrepõem na mesma coluna ficam lado a lado
+function emFaixas(lista) {
+  const ord = [...lista].sort((x, y) => x.ini - y.ini || x.fim - y.fim);
+  let grupo = [], fimGrupo = -Infinity;
+  const fechar = () => { const n = Math.max(1, ...grupo.map(g => g.faixa + 1)); grupo.forEach(g => g.nFaixas = n); grupo = []; };
+  for (const a of ord) {
+    if (a.ini >= fimGrupo && grupo.length) { fechar(); fimGrupo = -Infinity; }
+    const usadas = grupo.filter(g => g.fim > a.ini).map(g => g.faixa);
+    let f = 0; while (usadas.includes(f)) f++;
+    a.faixa = f; grupo.push(a); fimGrupo = Math.max(fimGrupo, a.fim);
+  }
+  if (grupo.length) fechar();
+  return ord;
+}
+
 function desenharGrade() {
-  const wd = diaSemana(agenda.data);
+  const wd = diaSemana(agenda.data), px = agCompacto ? PX * 0.7 : PX;
+  document.querySelectorAll("[data-agvis]").forEach(b => b.classList.toggle("on", b.dataset.agvis === agVis));
+  $("agCompacto").classList.toggle("on", agCompacto); $("agCompacto").textContent = agCompacto ? "Ampliar" : "Ver todos";
+  $("agGrade").classList.toggle("compacto", agCompacto);
   const comAg = new Set(agenda.ags.map(a => a.professional_id));
   const profs = profissionais.filter(p => (p.active || comAg.has(p.id)) && (!ehProf() || meusProfs().includes(p.id)));
-  if (!profs.length) { $("agGrade").innerHTML = ehProf() ? '<p class="muted">Seu login ainda não está ligado a um profissional. Peça ao administrador para ligar na aba Profissionais.</p>' : '<p class="muted">Cadastre os profissionais na aba Profissionais.</p>'; return; }
-  const balcao = !ehProf();
+  if (!profs.length) { $("agGrade").innerHTML = ehProf() ? '<p class="muted">Seu login ainda não está ligado a um profissional. Peça ao administrador para ligar na aba Profissionais.</p>' : '<p class="muted">Cadastre os profissionais na aba Profissionais.</p>'; setasAgenda(); return; }
+  const balcao = !ehProf(), porServ = agVis === "serv";
+  const visiveis = agenda.ags.filter(a => a.status !== "cancelled" && profs.some(p => p.id === a.professional_id));
   // faixa de horas: do primeiro turno ao último, cobrindo os atendimentos
   let de = Infinity, ate = -Infinity;
   for (const p of profs) for (const [a, b] of escalaDo(p.id, wd)) { de = Math.min(de, a); ate = Math.max(ate, b); }
   for (const a of agenda.ags) { de = Math.min(de, minutoNoDia(a.ini, agenda.ini)); ate = Math.max(ate, minutoNoDia(a.fim, agenda.ini)); }
   if (!isFinite(de)) { de = 8 * 60; ate = 20 * 60; }
   de = Math.max(0, Math.floor(de / 60) * 60); ate = Math.min(24 * 60, Math.ceil(ate / 60) * 60);
-  const altura = (ate - de) * PX, top = (min) => (min - de) * PX;
+  const altura = (ate - de) * px, top = (min) => (min - de) * px;
 
   const horas = []; for (let m = de; m < ate; m += 60) horas.push(`<div class="hora" style="top:${top(m)}px">${hhmm(m)}</div>`);
   const agoraMin = agenda.data === hojeLocal() ? minutoNoDia(new Date(), agenda.ini) : null;
   const linhaAgora = agoraMin !== null && agoraMin >= de && agoraMin <= ate ? `<div class="agora" style="top:${top(agoraMin)}px"></div>` : "";
 
-  const colunas = profs.map(p => {
-    const turnos = escalaDo(p.id, wd);
-    const cels = [];
-    for (let m = de; m < ate; m += 30) {
-      const dentro = turnos.some(([a, b]) => m >= a && m < b);
-      cels.push(`<div class="cel ${dentro ? "" : "fora"}" style="top:${top(m)}px;height:${30 * PX}px;${balcao ? "" : "cursor:default"}" ${balcao ? `data-livre="${p.id}|${m}"` : ""} title="${hhmm(m)}"></div>`);
-    }
-    const bloq = agenda.bloqueios.filter(b => b.professional_id === p.id).map(b => {
-      const a = Math.max(de, minutoNoDia(b.ini, agenda.ini)), z = Math.min(ate, minutoNoDia(b.fim, agenda.ini));
-      return `<div class="bloq" ${balcao ? `data-bloq="${b.id}" title="Clique para remover o bloqueio"` : ""} style="top:${top(a)}px;height:${(z - a) * PX}px">${esc(b.reason || "Bloqueado")}</div>`;
-    }).join("");
-    const ags = agenda.ags.filter(a => a.professional_id === p.id && a.status !== "cancelled")
-      .sort((x, y) => x.ini - y.ini).map(a => {
-        const ini = Math.max(de, minutoNoDia(a.ini, agenda.ini)), fim = Math.min(ate, minutoNoDia(a.fim, agenda.ini));
-        const arrasta = balcao && ["scheduled", "confirmed"].includes(a.status), aberto = balcao && ["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status);
-        return `<div class="ap ${a.status} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" ${arrasta ? 'draggable="true"' : ""} style="top:${top(ini)}px;height:${Math.max(18, (fim - ini) * PX - 2)}px;border-left-color:${esc(p.color || "#8a5a3c")}">
-          ${aberto ? `<span class="ap-bt"><button class="feito" data-feito="${a.id}" title="Lançar na comanda">Feito</button></span>` : ""}
-          <b>${hhmm(minutoNoDia(a.ini, agenda.ini))} ${esc(a.clients?.full_name || "Cliente")}</b> ${estrela(a.client_id)}<br>
-          ${esc(a.services?.name || "")} ${seloStatus(a)}${aberto ? `<button class="xcanc" data-canc="${a.id}" title="Cancelar horário">✕</button>` : ""}${a.source === "whatsapp_ai" ? " 💬" : ""}</div>`;
-      }).join("");
-    return `<div class="col" style="height:${altura}px">${cels.join("")}${bloq}${ags}${linhaAgora}</div>`;
-  });
+  const cartao = (a, p, extra) => {
+    const ini = Math.max(de, minutoNoDia(a.ini, agenda.ini)), fim = Math.min(ate, minutoNoDia(a.fim, agenda.ini));
+    const arrasta = !porServ && balcao && ["scheduled", "confirmed"].includes(a.status), aberto = balcao && ["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status);
+    const n = porServ ? (a.nFaixas || 1) : 1, larg = 100 / n, pos = porServ ? `left:calc(${(a.faixa || 0) * larg}% + 2px);right:auto;width:calc(${larg}% - 4px);` : "";
+    return `<div class="ap ${a.status} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" ${arrasta ? 'draggable="true"' : ""} style="${pos}top:${top(ini)}px;height:${Math.max(18, (fim - ini) * px - 2)}px;border-left-color:${esc(p?.color || "#8a5a3c")}">
+      ${aberto && n === 1 ? `<span class="ap-bt"><button class="feito" data-feito="${a.id}" title="Lançar na comanda">Feito</button></span>` : ""}
+      <b>${hhmm(minutoNoDia(a.ini, agenda.ini))} ${esc(a.clients?.full_name || "Cliente")}</b> ${estrela(a.client_id)}<br>
+      ${extra} ${seloStatus(a)}${aberto ? `<button class="xcanc" data-canc="${a.id}" title="Cancelar horário">✕</button>` : ""}${a.source === "whatsapp_ai" ? " 💬" : ""}</div>`;
+  };
 
-  $("agGrade").style.gridTemplateColumns = `48px repeat(${profs.length}, minmax(150px, 1fr))`;
-  $("agGrade").innerHTML = `<div></div>` + profs.map(p => `<div class="gh"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(p.color || "#ccc")}"></span> ${esc(p.name)}</div>`).join("")
-    + `<div class="horas" style="height:${altura}px">${horas.join("")}</div>` + colunas.join("");
+  let titulos, colunas;
+  if (!porServ) {
+    titulos = profs.map(p => `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(p.color || "#ccc")}"></span> ${esc(p.name)}`);
+    colunas = profs.map(p => {
+      const turnos = escalaDo(p.id, wd);
+      const cels = [];
+      for (let m = de; m < ate; m += 30) {
+        const dentro = turnos.some(([a, b]) => m >= a && m < b);
+        cels.push(`<div class="cel ${dentro ? "" : "fora"}" style="top:${top(m)}px;height:${30 * px}px;${balcao ? "" : "cursor:default"}" ${balcao ? `data-livre="${p.id}|${m}"` : ""} title="${hhmm(m)}"></div>`);
+      }
+      const bloq = agenda.bloqueios.filter(b => b.professional_id === p.id).map(b => {
+        const a = Math.max(de, minutoNoDia(b.ini, agenda.ini)), z = Math.min(ate, minutoNoDia(b.fim, agenda.ini));
+        return `<div class="bloq" ${balcao ? `data-bloq="${b.id}" title="Clique para remover o bloqueio"` : ""} style="top:${top(a)}px;height:${(z - a) * px}px">${esc(b.reason || "Bloqueado")}</div>`;
+      }).join("");
+      const ags = visiveis.filter(a => a.professional_id === p.id).sort((x, y) => x.ini - y.ini).map(a => cartao(a, p, `<span class="ap-det">${esc(a.services?.name || "")}</span>`)).join("");
+      return { html: cels.join("") + bloq + ags };
+    });
+  } else {
+    // Agenda por serviço: uma coluna para cada serviço com horário marcado no dia
+    const ids = [...new Set(visiveis.map(a => a.service_id))];
+    const lista = ids.map(id => servicos.find(s => s.id === id) || { id, name: visiveis.find(a => a.service_id === id)?.services?.name || "Serviço", category: "" })
+      .sort((a, b) => (a.category || "").localeCompare(b.category || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR"));
+    if (!lista.length) { $("agGrade").style.gridTemplateColumns = "1fr"; $("agGrade").innerHTML = '<p class="muted">Nenhum serviço marcado neste dia.</p>'; setasAgenda(); return; }
+    titulos = lista.map(sv => `${esc(sv.name)}${sv.category ? ` <span class="muted" style="font-weight:400;font-size:11px">${esc(sv.category)}</span>` : ""}`);
+    colunas = lista.map(sv => {
+      const cels = [];
+      for (let m = de; m < ate; m += 30) cels.push(`<div class="cel" style="top:${top(m)}px;height:${30 * px}px;${balcao ? "" : "cursor:default"}" ${balcao ? `data-livreserv="${sv.id}|${m}"` : ""} title="${hhmm(m)}"></div>`);
+      const meus = emFaixas(visiveis.filter(a => a.service_id === sv.id).map(a => Object.assign(a, { faixa: 0, nFaixas: 1 })));
+      const ags = meus.map(a => { const p = profissionais.find(x => x.id === a.professional_id); return cartao(a, p, `<span class="ap-det"><span class="ap-prof" style="background:${esc(p?.color || "#ccc")}"></span>${esc(p?.name || "")}</span>`); }).join("");
+      return { html: cels.join("") + ags };
+    });
+  }
+
+  $("agGrade").style.gridTemplateColumns = agCompacto ? `40px repeat(${colunas.length}, minmax(0, 1fr))` : `48px repeat(${colunas.length}, minmax(${porServ ? 170 : 150}px, 1fr))`;
+  $("agGrade").innerHTML = `<div></div>` + titulos.map((t, i) => `<div class="gh" data-colidx="${i}" title="${agCompacto ? "Clique para ampliar" : ""}">${t}</div>`).join("")
+    + `<div class="horas" style="height:${altura}px">${horas.join("")}</div>` + colunas.map((c, i) => `<div class="col" data-colidx="${i}" style="height:${altura}px">${c.html}${linhaAgora}</div>`).join("");
   $("agGrade").querySelectorAll("[data-ag]").forEach(el => el.onclick = () => abrirAgendamento(el.dataset.ag));
   $("agGrade").querySelectorAll("[data-feito]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); comandaDoAgendamento(agenda.ags.find(x => x.id === el.dataset.feito)); });
   $("agGrade").querySelectorAll("[data-prox]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); const a = agenda.ags.find(x => x.id === el.dataset.prox); mudarStatus(a, PROXIMO_CLIQUE[a.status]); });
   $("agGrade").querySelectorAll("[data-canc]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); mudarStatus(agenda.ags.find(x => x.id === el.dataset.canc), "cancelled"); });
+  $("agGrade").querySelectorAll("[data-livreserv]").forEach(el => el.onclick = () => { const [sv, m] = el.dataset.livreserv.split("|"); novoHorario(null, hhmm(Number(m)), sv); });
   $("agGrade").querySelectorAll("[data-livre]").forEach(el => {
     el.onclick = () => { const [p, m] = el.dataset.livre.split("|"); novoHorario(p, hhmm(Number(m))); };
     el.ondragover = (ev) => { ev.preventDefault(); el.classList.add("alvo"); };
@@ -1682,6 +1827,7 @@ function desenharGrade() {
     if (error) return erro(error);
     aviso("Bloqueio removido."); carregarAgenda();
   });
+  requestAnimationFrame(setasAgenda);
 }
 
 // ---------- Remarcar ----------
@@ -1823,14 +1969,15 @@ $("nServ").onchange = () => {
   if (s) $("nPreco").value = (s.price_cents / 100).toFixed(2).replace(".", ",");
   preencherProfs($("nProf").value);
 };
-function novoHorario(profId, hora) {
+function novoHorario(profId, hora, servId) {
   agSel = null; $("agDetalhe").classList.add("hidden"); $("agBloq").classList.add("hidden");
   remarcando = null; $("nTitulo").textContent = "Novo horário"; $("nSalvar").textContent = "Marcar horário";
   $("nClienteBox").classList.remove("hidden"); $("nClienteInfo").textContent = "";
   const ativos = servicos.filter(s => s.active);
   if (!ativos.length) return aviso("Cadastre os serviços primeiro, na aba Serviços.", "err");
   $("nServ").innerHTML = ativos.map(s => `<option value="${s.id}">${esc(s.name)} · ${s.duration_min} min</option>`).join("");
-  if (profId) { const v = vinculos.find(x => x.professional_id === profId && ativos.some(s => s.id === x.service_id)); if (v) $("nServ").value = v.service_id; }
+  if (servId && ativos.some(s => s.id === servId)) $("nServ").value = servId;
+  else if (profId) { const v = vinculos.find(x => x.professional_id === profId && ativos.some(s => s.id === x.service_id)); if (v) $("nServ").value = v.service_id; }
   $("nServ").onchange(); preencherProfs(profId);
   $("nData").value = agenda.data || hojeLocal();
   $("nHora").value = hora || "";
