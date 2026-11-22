@@ -50,6 +50,10 @@
   .msg.ok { display:block; background:var(--ok); color:#fff; } .msg.ok::before { content:"✓"; }
   .msg::after { content:"×"; position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:20px; opacity:.8; }
   .ajuda-box { margin:8px 0 0; }
+  .sug { position:absolute; left:0; right:0; top:100%; z-index:20; background:var(--card); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 20px rgba(0,0,0,.12); max-height:280px; overflow:auto; }
+  .sug button { display:flex; justify-content:space-between; gap:10px; width:100%; text-align:left; background:none; color:var(--ink); border-radius:0; padding:8px 10px; border-bottom:1px solid var(--line); }
+  .sug button:hover, .sug button.ativo { background:#f3ebe3; }
+  .sug .muted { font-size:13px; white-space:nowrap; }
   .info-bt { width:22px; height:22px; padding:0; border-radius:50%; background:#e3eef7; color:#1d5f8a; border:1px solid #bcd6ea; font:italic 700 13px Georgia, serif; line-height:20px; text-align:center; }
   .info-bt:hover, .ajuda-box.aberta .info-bt { background:#1d5f8a; color:#fff; }
   .ajuda-box > p { display:none; margin:6px 0 0 !important; }
@@ -345,8 +349,8 @@
         </div>
         <div class="hidden" id="kNova" style="margin-top:8px">
           <div class="row">
-            <div><label for="kTel">WhatsApp da cliente</label><input id="kTel" inputmode="tel" placeholder="41 99999-9999"></div>
-            <div><label for="kNome">Nome da cliente</label><input id="kNome" placeholder="Nome e sobrenome"></div>
+            <div style="position:relative"><label for="kNome">Cliente (digite o nome)</label><input id="kNome" placeholder="Nome e sobrenome" autocomplete="off"><div id="kSug" class="sug hidden"></div></div>
+            <div><label for="kTel">Celular (WhatsApp)</label><input id="kTel" inputmode="tel" placeholder="41 99999-9999"></div>
           </div>
           <div class="actions"><button id="kCriar">Abrir comanda</button><button class="ghost" id="kCancelarNova">Fechar</button></div>
         </div>
@@ -364,7 +368,7 @@
             <div><label for="iTipo">Tipo</label><select id="iTipo"><option value="servico">Serviço</option><option value="produto">Produto</option></select></div>
             <div><label for="iItem">Item</label><select id="iItem"></select></div>
             <div id="iProfBox"><label for="iProf">Profissional</label><select id="iProf"></select></div>
-            <div><label for="iQtd">Qtd</label><input id="iQtd" type="number" min="1" value="1"></div>
+            <div><label for="iQtd">Qtd</label><input id="iQtd" inputmode="decimal" value="1"></div>
             <div><label for="iPreco">Preço unit. (R$)</label><input id="iPreco" inputmode="decimal"></div>
             <div><label for="iDesc">Desconto (R$)</label><input id="iDesc" inputmode="decimal" placeholder="0,00"></div>
           </div>
@@ -461,7 +465,7 @@
       <div class="card tabela-wrap">
         <b>4. Profissional x Serviço</b> <span class="muted" style="font-size:13px">Uma linha para cada serviço do profissional, com a meta de quantidade no período. O mesmo profissional pode aparecer em várias linhas.</span>
         <table class="pj" style="margin-top:6px"><thead><tr><th>Profissional</th><th>Serviço</th><th>Meta (qtde)</th><th class="n">Total de horas</th><th class="n">Valor dos serviços</th><th class="n">Qtde agendada</th><th class="n">Falta agendar</th><th class="n">Valor que falta</th><th class="n">Comissão</th><th class="n">Impostos e cartão</th><th class="n">Resultado líquido</th><th></th></tr></thead><tbody id="pjCap"></tbody></table>
-        <div class="actions"><button class="ghost" id="pjCapAdd">+ linha</button><button class="ghost" id="pjCapGerar">Criar linhas dos serviços escolhidos</button></div>
+        <div class="actions"><button class="ghost" id="pjCapAdd">+ linha</button><button class="ghost" id="pjCapGerar">Criar linhas dos serviços escolhidos</button><button id="pjCalcular" title="Distribui a meta entre as linhas conforme as horas livres de cada profissional">Calcular quantidades para a meta</button></div>
         <div id="pjCapAvisos"></div>
         <table class="pj" style="margin-top:12px"><thead><tr><th>Produto (opcional)</th><th>Meta (qtde)</th><th class="n">Receita</th><th class="n">Resultado líquido</th><th>Estoque</th></tr></thead><tbody id="pjResP"></tbody></table>
       </div>
@@ -563,8 +567,8 @@
           <div><label for="prCat">Categoria <a href="#" class="gerCat" style="font-size:12px;color:var(--brand)">gerenciar</a></label><select id="prCat"></select></div>
           <div><label for="prPreco">Preço de venda (R$)</label><input id="prPreco" inputmode="decimal" placeholder="89,90"></div>
           <div><label for="prCusto">Custo (R$, opcional)</label><input id="prCusto" inputmode="decimal"></div>
-          <div id="prEstBox"><label for="prEst">Estoque atual</label><input id="prEst" type="number" min="0" value="0"></div>
-          <div><label for="prMin">Avisar quando ficar com</label><input id="prMin" type="number" min="0" value="2"></div>
+          <div id="prEstBox"><label for="prEst">Estoque atual</label><input id="prEst" inputmode="decimal" value="0"></div>
+          <div><label for="prMin">Avisar quando ficar com</label><input id="prMin" inputmode="decimal" value="2"></div>
         </div>
         <label class="checks"><span><input type="checkbox" id="prAtivo" checked> Ativo (aparece na comanda)</span></label>
         <div class="actions">
@@ -2087,7 +2091,10 @@ async function acharOuCriarCliente(tel, nome) {
 const METODOS = { pix: "Pix", cash: "Dinheiro", debit: "Débito", credit: "Crédito", voucher: "Vale-presente", package: "Pacote", other: "Outro" };
 const podeDesconto = () => ["owner", "manager"].includes(meuPapel);
 let comandas = [], comandaAberta = null, kItens = [], kPags = [];
-const totalItem = (i) => i.quantity * i.unit_price_cents - i.discount_cents;
+const totalItem = (i) => Math.round(i.quantity * i.unit_price_cents) - i.discount_cents;
+// Quantidade de produto aceita decimais (até 3 casas, ex.: 0,5 ou 1,25)
+const qtdBr = (v) => { const n = Number(String(v ?? "").trim().replace(/\./g, "").replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 1000) / 1000 : NaN; };
+const fmtQ = (n) => Number(n || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 
 $("gMetodo").innerHTML = Object.entries(METODOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 $("gMetodo").onchange = () => $("gParcBox").classList.toggle("hidden", $("gMetodo").value !== "credit");
@@ -2152,7 +2159,7 @@ async function abrirComanda() {
   $("kItens").innerHTML = kItens.length ? kItens.map(x => `<tr>
       <td><b>${esc(x.description)}</b>${x.professionals ? ` <span class="muted">· ${esc(x.professionals.name)}</span>` : ""}${x.product_id ? ' <span class="pill">produto</span>' : ""}
         ${x.discount_cents ? `<br><span class="muted">desconto de ${reais(x.discount_cents)}</span>` : ""}</td>
-      <td>${x.quantity}</td><td>${x.discount_cents ? `<s class="muted" style="font-size:12px">${reais(x.quantity * x.unit_price_cents)}</s><br>` : ""}${reais(totalItem(x))}</td>
+      <td>${fmtQ(x.quantity)}</td><td>${x.discount_cents ? `<s class="muted" style="font-size:12px">${reais(Math.round(x.quantity * x.unit_price_cents))}</s><br>` : ""}${reais(totalItem(x))}</td>
       <td>${aberta ? `<button class="danger" data-rmi="${x.id}">Remover</button>` : ""}</td></tr>`).join("")
     : '<tr><td colspan="4" class="muted">Sem itens ainda.</td></tr>';
   $("kPags").innerHTML = kPags.map(g => `<tr><td>${METODOS[g.method]}${g.installments > 1 ? ` em ${g.installments}x` : ""}</td><td class="muted">${quando(g.paid_at)}</td><td>${reais(g.amount_cents)}</td>
@@ -2179,7 +2186,7 @@ async function abrirComanda() {
 function preencherItens() {
   const tipo = $("iTipo").value;
   const lista = tipo === "servico" ? servicos.filter(s => s.active) : produtos.filter(p => p.active);
-  $("iItem").innerHTML = lista.map(x => `<option value="${x.id}">${esc(x.name)}${tipo === "produto" ? ` (estoque ${x.stock_qty})` : ""}</option>`).join("")
+  $("iItem").innerHTML = lista.map(x => `<option value="${x.id}">${esc(x.name)}${tipo === "produto" ? ` (estoque ${fmtQ(x.stock_qty)})` : ""}</option>`).join("")
     || `<option value="">${tipo === "servico" ? "Cadastre serviços" : "Cadastre produtos na aba Produtos"}</option>`;
   $("iProfBox").classList.toggle("hidden", tipo !== "servico");
   $("iItem").onchange();
@@ -2197,14 +2204,15 @@ $("iItem").onchange = () => {
 $("iAdd").onclick = async () => {
   const tipo = $("iTipo").value, id = $("iItem").value;
   const x = (tipo === "servico" ? servicos : produtos).find(y => y.id === id);
-  const qtd = parseInt($("iQtd").value, 10), preco = paraCentavos($("iPreco").value);
+  const qtd = qtdBr($("iQtd").value), preco = paraCentavos($("iPreco").value);
   const desc = $("iDesc").value.trim() ? paraCentavos($("iDesc").value) : 0;
   if (!x) return aviso("Escolha o item.", "err");
-  if (!(qtd > 0)) return aviso("Informe a quantidade.", "err");
+  if (!(qtd > 0)) return aviso("Informe a quantidade (pode usar vírgula, ex.: 0,5).", "err");
+  if (tipo === "servico" && !Number.isInteger(qtd)) return aviso("Serviço vai em quantidade inteira.", "err");
   if (!(preco >= 0)) return aviso("Confira o preço, por exemplo 89,90.", "err");
-  if (!(desc >= 0) || desc > qtd * preco) return aviso("O desconto não pode passar do valor do item.", "err");
+  if (!(desc >= 0) || desc > Math.round(qtd * preco)) return aviso("O desconto não pode passar do valor do item.", "err");
   if (desc > 0 && !podeDesconto()) return aviso("Só o dono ou o gerente pode dar desconto.", "err");
-  if (tipo === "produto" && x.stock_qty < qtd && !confirm(`O estoque de ${x.name} é ${x.stock_qty}. Lançar mesmo assim?`)) return;
+  if (tipo === "produto" && x.stock_qty < qtd && !confirm(`O estoque de ${x.name} é ${fmtQ(x.stock_qty)}. Lançar mesmo assim?`)) return;
   const { error } = await sb.from("comanda_items").insert({
     tenant_id: tenantId, comanda_id: comandaAberta, description: x.name, quantity: qtd, unit_price_cents: preco,
     discount_cents: desc, discount_approved_by: desc > 0 ? usuarioId : null,
@@ -2242,16 +2250,44 @@ $("kCancelar").onclick = async () => {
 };
 $("kFecharDet").onclick = () => { comandaAberta = null; $("kDet").classList.add("hidden"); };
 $("kAtualizar").onclick = carregarComandas;
-$("kNovaBtn").onclick = () => $("kNova").classList.toggle("hidden");
+$("kNovaBtn").onclick = () => { $("kNova").classList.toggle("hidden"); if (!$("kNova").classList.contains("hidden")) $("kNome").focus(); };
+// Nova comanda: procura a cliente pelo nome e mostra o celular; escolhida, o celular é preenchido.
+const telBonito = (e) => { const d = String(e || "").replace(/^\+55/, "").replace(/\D/g, ""); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : (e || ""); };
+const telDaLista = (e) => ehAdmin() ? telBonito(e) : (e ? "•••• " + String(e).slice(-4) : "");
+let kCliente = null, kSugTimer = null, kSugLista = [];
+$("kNome").oninput = () => {
+  if (kCliente) { kCliente = null; $("kTel").value = ""; $("kTel").readOnly = false; }
+  clearTimeout(kSugTimer);
+  const t = $("kNome").value.trim();
+  if (t.length < 2) { $("kSug").classList.add("hidden"); return; }
+  kSugTimer = setTimeout(async () => {
+    const termo = t.replace(/[%_,()]/g, " ").trim();
+    const { data, error } = await sb.from("clients").select("id, full_name, phone_e164").eq("tenant_id", tenantId).ilike("full_name", `%${termo}%`).order("full_name").limit(8);
+    if (error || $("kNome").value.trim() !== t) return;
+    kSugLista = data || [];
+    $("kSug").innerHTML = kSugLista.length ? kSugLista.map((c, i) => `<button type="button" data-ksug="${i}"><span>${esc(c.full_name || "Sem nome")}</span><span class="muted">${esc(telDaLista(c.phone_e164))}</span></button>`).join("")
+      : '<div class="muted" style="padding:8px 10px;font-size:13px">Nenhuma cliente com esse nome. Informe o celular para cadastrar.</div>';
+    $("kSug").classList.remove("hidden");
+    $("kSug").querySelectorAll("[data-ksug]").forEach(b => b.onmousedown = (ev) => { ev.preventDefault(); escolherClienteComanda(kSugLista[Number(b.dataset.ksug)]); });
+  }, 250);
+};
+$("kNome").onblur = () => setTimeout(() => $("kSug").classList.add("hidden"), 150);
+$("kNome").onkeydown = (ev) => { if (ev.key === "Enter" && kSugLista.length === 1 && !$("kSug").classList.contains("hidden")) { ev.preventDefault(); escolherClienteComanda(kSugLista[0]); } };
+function escolherClienteComanda(c) {
+  kCliente = c; $("kNome").value = c.full_name || ""; $("kTel").value = telDaLista(c.phone_e164); $("kTel").readOnly = true;
+  $("kSug").classList.add("hidden"); $("kCriar").focus();
+}
 $("kCancelarNova").onclick = () => $("kNova").classList.add("hidden");
 $("kCriar").onclick = async () => {
-  const tel = normalizarTel($("kTel").value);
-  if (!tel) return aviso("Informe o WhatsApp da cliente com DDD.", "err");
-  let clientId;
-  try { clientId = await acharOuCriarCliente(tel, $("kNome").value.trim()); } catch (e) { return aviso("Não deu para abrir: " + e.message, "err"); }
+  let clientId = kCliente?.id;
+  if (!clientId) {
+    const tel = normalizarTel($("kTel").value);
+    if (!tel) return aviso("Escolha a cliente na lista pelo nome, ou informe o celular com DDD para cadastrar.", "err");
+    try { clientId = await acharOuCriarCliente(tel, $("kNome").value.trim()); } catch (e) { return aviso("Não deu para abrir: " + e.message, "err"); }
+  }
   const n = await sb.from("comandas").insert({ tenant_id: tenantId, client_id: clientId, opened_by: usuarioId }).select("id").single();
   if (n.error) return erro(n.error);
-  $("kTel").value = ""; $("kNome").value = ""; $("kNova").classList.add("hidden");
+  $("kTel").value = ""; $("kNome").value = ""; $("kTel").readOnly = false; kCliente = null; $("kNova").classList.add("hidden");
   comandaAberta = n.data.id; carregarComandas();
 };
 // ---------- Caixa: relatório de faturamento ----------
@@ -2292,7 +2328,7 @@ async function carregarCaixa() {
     if (itens.length) nComandas++;
     for (const i of itens) {
       const v = totalItem(i); total += v; desc += i.discount_cents; i.product_id ? prods += v : servs += v;
-      relatorio.push({ comanda: c.id, data: c.closed_at, cliente: c.clients?.full_name || "Cliente", item: i.description + (i.quantity > 1 ? ` (${i.quantity}x)` : ""),
+      relatorio.push({ comanda: c.id, data: c.closed_at, cliente: c.clients?.full_name || "Cliente", item: i.description + (Number(i.quantity) !== 1 ? ` (${fmtQ(i.quantity)}x)` : ""),
         tipo: i.product_id ? "Produto" : "Serviço", prof: i.professionals?.name || "", valor: v, desconto: i.discount_cents, forma });
     }
   }
@@ -2361,7 +2397,7 @@ async function carregarComissoes() {
     return `<tr><td><b>${esc(profissionais.find(p => p.id === id)?.name || "")}</b></td><td>${l.length}</td><td>${reais(tot(l, "valor"))}</td>
       <td><b>${reais(tot(l, "commission_cents"))}</b></td><td>${media(n)}</td><td>${t.data.filter(c => c.referred_by_professional_id === id).length}</td></tr>`;
   }).join("") || '<tr><td colspan="6" class="muted">Nenhum atendimento no período.</td></tr>';
-  $("mItens").innerHTML = comissoes.map(i => `<tr><td class="muted">${quando(i.data)}</td><td>${esc(i.cliente)}</td><td>${esc(i.description)}${i.quantity > 1 ? ` (${i.quantity}x)` : ""}</td>
+  $("mItens").innerHTML = comissoes.map(i => `<tr><td class="muted">${quando(i.data)}</td><td>${esc(i.cliente)}</td><td>${esc(i.description)}${Number(i.quantity) !== 1 ? ` (${fmtQ(i.quantity)}x)` : ""}</td>
       <td>${esc(i.prof)}</td><td>${reais(i.valor)}</td><td>${i.commission_pct != null ? Number(i.commission_pct).toLocaleString("pt-BR") + "%" : "—"}</td><td><b>${reais(i.commission_cents || 0)}</b></td>
       <td>${!i.commission_cents ? "" : i.commission_paid_at ? `<span class="pill">Paga ${new Date(i.commission_paid_at).toLocaleDateString("pt-BR")}</span>${ehAdmin() ? ` <button class="ghost" data-mpago="${i.id}" data-v="0" title="Desfazer pagamento">↺</button>` : ""}`
         : ehAdmin() ? `<button class="ghost" data-mpago="${i.id}" data-v="1">Marcar paga</button>` : '<span class="muted">A receber</span>'}</td></tr>`).join("")
@@ -2555,7 +2591,7 @@ function desenharProdutos() {
   $("prLista").innerHTML = produtos.length ? produtos.map(p => `<tr>
       <td><b>${esc(p.name)}</b>${p.category ? ` <span class="muted">· ${esc(p.category)}</span>` : ""}${p.active ? "" : ' <span class="pill off">inativo</span>'}</td>
       <td>${reais(p.price_cents)}${p.cost_cents != null ? `<br><span class="muted" style="font-size:12px">custo ${reais(p.cost_cents)}</span>` : ""}</td>
-      <td>${p.stock_qty}${p.stock_qty <= p.min_stock ? ' <span class="pill off">repor</span>' : ""}</td>
+      <td>${fmtQ(p.stock_qty)}${Number(p.stock_qty) <= Number(p.min_stock) ? ' <span class="pill off">repor</span>' : ""}</td>
       <td><span class="actions" style="margin:0"><button class="ghost" data-ent="${p.id}">+ Entrada</button><button class="ghost" data-edit-pr="${p.id}">Editar</button></span></td></tr>`).join("")
     : '<tr><td colspan="4" class="muted">Nenhum produto ainda. Cadastre os produtos que vocês vendem no salão.</td></tr>';
   $("prLista").querySelectorAll("[data-edit-pr]").forEach(b => b.onclick = () => editarProduto(b.dataset.editPr));
@@ -2571,7 +2607,7 @@ function editarProduto(id) {
   $("prId").value = p.id; $("prNome").value = p.name; opcoesCategoria("prCat", p.category);
   $("prPreco").value = (p.price_cents / 100).toFixed(2).replace(".", ",");
   $("prCusto").value = p.cost_cents != null ? (p.cost_cents / 100).toFixed(2).replace(".", ",") : "";
-  $("prMin").value = p.min_stock; $("prAtivo").checked = p.active;
+  $("prMin").value = fmtQ(p.min_stock); $("prAtivo").checked = p.active;
   $("prEstBox").classList.add("hidden"); // estoque muda só por entrada ou venda, para ficar rastreável
   $("fprTitulo").textContent = "Editar produto"; window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -2580,7 +2616,7 @@ $("prSalvar").onclick = async () => {
   const row = {
     tenant_id: tenantId, name: $("prNome").value.trim(), category: $("prCat").value.trim() || null,
     price_cents: paraCentavos($("prPreco").value), cost_cents: $("prCusto").value.trim() ? paraCentavos($("prCusto").value) : null,
-    min_stock: parseInt($("prMin").value, 10) || 0, active: $("prAtivo").checked,
+    min_stock: Math.max(0, qtdBr($("prMin").value) || 0), active: $("prAtivo").checked,
   };
   if (!row.name) return aviso("Informe o nome do produto.", "err");
   if (!(row.price_cents >= 0)) return aviso("Informe o preço de venda, por exemplo 89,90.", "err");
@@ -2589,7 +2625,7 @@ $("prSalvar").onclick = async () => {
   if (id) {
     const { error } = await sb.from("products").update(row).eq("id", id); if (error) return erro(error);
   } else {
-    const est = parseInt($("prEst").value, 10) || 0;
+    const est = qtdBr($("prEst").value) || 0;
     const { data, error } = await sb.from("products").insert({ ...row, stock_qty: est }).select("id").single(); if (error) return erro(error);
     if (est) await sb.from("stock_movements").insert({ tenant_id: tenantId, product_id: data.id, qty_delta: est, reason: "estoque inicial", created_by: usuarioId });
   }
@@ -2597,13 +2633,14 @@ $("prSalvar").onclick = async () => {
 };
 async function entradaEstoque(id) {
   const p = produtos.find(x => x.id === id); if (!p) return;
-  const q = parseInt(prompt(`Quantas unidades de ${p.name} chegaram? (use número negativo para corrigir uma contagem)`, "1"), 10);
+  const q = qtdBr(prompt(`Quanto de ${p.name} chegou? Pode usar vírgula (ex.: 2,5). Use número negativo para corrigir uma contagem.`, "1"));
   if (!q) return;
   const m = await sb.from("stock_movements").insert({ tenant_id: tenantId, product_id: id, qty_delta: q, reason: q > 0 ? "entrada" : "ajuste", created_by: usuarioId });
   if (m.error) return erro(m.error);
-  const { error } = await sb.from("products").update({ stock_qty: p.stock_qty + q }).eq("id", id);
+  const novo = Math.round((Number(p.stock_qty) + q) * 1000) / 1000;
+  const { error } = await sb.from("products").update({ stock_qty: novo }).eq("id", id);
   if (error) return erro(error);
-  aviso(`Estoque de ${p.name}: ${p.stock_qty + q}.`); carregar();
+  aviso(`Estoque de ${p.name}: ${fmtQ(novo)}.`); carregar();
 }
 
 // ---------- Equipe ----------
@@ -2797,9 +2834,9 @@ function calcularProjecao() {
   });
   const validas = linhas.filter(l => l.ok);
   const prod = produtos.filter(p => p.active).map(p => {
-    const preco = p.price_cents / 100, custo = (p.cost_cents || 0) / 100, qtd = Math.max(0, Math.round(pjNum(pj.qtd[p.id])));
+    const preco = p.price_cents / 100, custo = (p.cost_cents || 0) / 100, qtd = Math.max(0, Math.round(pjNum(pj.qtd[p.id]) * 1000) / 1000);
     const margem = preco * (1 - imp) - custo;
-    return { id: p.id, nome: p.name, preco, custo, margem, qtd, bruto: qtd * preco, liq: qtd * margem, estoque: p.stock_qty };
+    return { id: p.id, nome: p.name, preco, custo, margem, qtd, bruto: qtd * preco, liq: qtd * margem, estoque: Number(p.stock_qty) };
   });
   const soma = (l, f) => l.reduce((a, x) => a + x[f], 0);
   const fixos = (P.estrutura + P.extras) * P.prazo / 30;
@@ -2821,7 +2858,7 @@ function calcularProjecao() {
   for (const l of linhas) if (!l.ok && (l.m.prof || l.m.serv)) alertas.push(`Linha ${l.i + 1} do quadro 4 está incompleta (escolha profissional e serviço).`);
   for (const l of validas) if (!l.escolhido) alertas.push(`${l.p.nome} · ${l.s.nome}: serviço não está marcado no quadro 3.`);
   for (const id of Object.keys(pj.sel)) if (pj.sel[id] && serv[id] && !validas.some(l => l.s.id === id)) alertas.push(`${serv[id].nome}: escolhido, mas sem meta no quadro 4.`);
-  for (const p of prod) if (p.qtd > p.estoque) alertas.push(`${p.nome}: estoque de ${p.estoque}, comprar mais ${p.qtd - p.estoque}.`);
+  for (const p of prod) if (p.qtd > p.estoque) alertas.push(`${p.nome}: estoque de ${fmtQ(p.estoque)}, comprar mais ${fmtQ(p.qtd - p.estoque)}.`);
   return { P, serv, prof, linhas, validas, prod, fixos, dre, atingido, faltaMeta, cargas, problemas, alertas,
     totais: { qtd: soma(validas, "qtd"), horas: soma(validas, "horas"), valor: soma(validas, "valor"), agend: soma(validas, "agend"), falta: soma(validas, "falta"), valorFalta: soma(validas, "valorFalta"), com: soma(validas, "com"), imp: soma(validas, "imp"), liq: soma(validas, "liq") } };
 }
@@ -2840,7 +2877,7 @@ function desenharProjecao() {
   // 2. Catálogo
   const ativos = servicos.filter(s => s.active).sort((a, b) => pjCat(a).localeCompare(pjCat(b), "pt-BR") || a.name.localeCompare(b.name, "pt-BR"));
   $("pjCatS").innerHTML = ativos.map(s => `<tr><td class="muted">${esc(pjCat(s))}</td><td><b>${esc(s.name)}</b></td><td class="n">${reais(s.price_cents)}</td><td class="n">${s.duration_min}</td><td class="n">${pjR(s.duration_min ? s.price_cents / 100 / (s.duration_min / 60) : 0)}/h</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Nenhum serviço ativo.</td></tr>';
-  $("pjCatP").innerHTML = r.prod.map(p => `<tr><td><b>${esc(p.nome)}</b></td><td class="n">${pjR(p.preco)}</td><td class="n">${pjR(p.custo)}</td><td class="n ${p.margem <= 0 ? "ruim" : ""}">${pjR(p.margem)}</td><td class="n">${p.estoque}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Nenhum produto ativo.</td></tr>';
+  $("pjCatP").innerHTML = r.prod.map(p => `<tr><td><b>${esc(p.nome)}</b></td><td class="n">${pjR(p.preco)}</td><td class="n">${pjR(p.custo)}</td><td class="n ${p.margem <= 0 ? "ruim" : ""}">${pjR(p.margem)}</td><td class="n">${fmtQ(p.estoque)}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Nenhum produto ativo.</td></tr>';
   // 3. Serviços escolhidos
   const metaServ = {}; for (const l of r.validas) metaServ[l.s.id] = (metaServ[l.s.id] || 0) + l.valor;
   const cats = {}; for (const s of ativos) (cats[pjCat(s)] ||= []).push(s);
@@ -2873,8 +2910,8 @@ function desenharProjecao() {
     + `<tr class="tot"><td>Total</td><td></td><td>${t.qtd}</td><td class="n">${pjF(t.horas)}</td><td class="n">${pjR(t.valor)}</td><td class="n">${t.agend}</td><td class="n">${t.falta}</td><td class="n">${pjR(t.valorFalta)}</td><td class="n">${pjR(t.com)}</td><td class="n">${pjR(t.imp)}</td><td class="n">${pjR(t.liq)}</td><td></td></tr>`;
   $("pjCapAvisos").innerHTML = r.cargas.length ? `<table class="pj" style="margin-top:10px"><thead><tr><th>Profissional</th><th class="n">Horas da meta</th><th class="n">Horas na escala do período (ocupação ${pjF(P.ocupacao, 0)}%)</th><th>Situação</th></tr></thead><tbody>`
     + r.cargas.map(c => `<tr><td>${esc(c.p.nome)}</td><td class="n">${pjF(c.horas)}</td><td class="n">${pjF(c.disp)}</td><td class="${c.disp === 0 ? (c.horas ? "ruim" : "muted") : c.ok ? "ok" : "ruim"}">${c.disp === 0 ? "sem horário cadastrado" : c.ok ? `ok, sobram ${pjF(c.disp - c.horas)} h` : `faltam ${pjF(c.horas - c.disp)} h`}</td></tr>`).join("") + "</tbody></table>" : "";
-  $("pjResP").innerHTML = r.prod.map(p => `<tr><td><b>${esc(p.nome)}</b></td><td>${pjInput(p.qtd || "", `data-pjq="${p.id}" placeholder="0"`, 1)}</td><td class="n">${pjR(p.bruto)}</td><td class="n">${pjR(p.liq)}</td>
-    <td class="${p.qtd > p.estoque ? "ruim" : ""}">${p.qtd > p.estoque ? `faltam ${p.qtd - p.estoque} (${p.estoque})` : p.estoque}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Nenhum produto ativo.</td></tr>';
+  $("pjResP").innerHTML = r.prod.map(p => `<tr><td><b>${esc(p.nome)}</b></td><td>${pjInput(p.qtd || "", `data-pjq="${p.id}" placeholder="0"`, "any")}</td><td class="n">${pjR(p.bruto)}</td><td class="n">${pjR(p.liq)}</td>
+    <td class="${p.qtd > p.estoque ? "ruim" : ""}">${p.qtd > p.estoque ? `faltam ${fmtQ(p.qtd - p.estoque)} (${fmtQ(p.estoque)})` : fmtQ(p.estoque)}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Nenhum produto ativo.</td></tr>';
   // Resumo
   $("pjResKpi").innerHTML = [
     [pjR(P.meta), P.metaTipo === "faturamento" ? "Meta de faturamento" : "Meta de resultado líquido"],
@@ -2899,7 +2936,7 @@ function ligarProjecao() {
   $("pjMetaTipo").onchange = () => { pj.prem.metaTipo = $("pjMetaTipo").value; desenharProjecao(); };
   $("pjInicio").onchange = async () => { pj.prem.inicio = $("pjInicio").value || hojeLocal(); await carregarAgendaProjecao(); desenharProjecao(); };
   tab.querySelectorAll("[data-pjp]").forEach(i => i.onchange = async () => { pj.prem[i.dataset.pjp] = pjNum(i.value); if (i.dataset.pjp === "prazo") await carregarAgendaProjecao(); desenharProjecao(); });
-  tab.querySelectorAll("[data-pjq]").forEach(i => i.onchange = () => { pj.qtd[i.dataset.pjq] = Math.max(0, Math.round(pjNum(i.value))); desenharProjecao(); });
+  tab.querySelectorAll("[data-pjq]").forEach(i => i.onchange = () => { pj.qtd[i.dataset.pjq] = Math.max(0, Math.round(pjNum(i.value) * 1000) / 1000); desenharProjecao(); });
   tab.querySelectorAll("[data-pjk]").forEach(i => i.onchange = () => {
     const [n, campo] = i.dataset.pjk.split(":"), m = pj.metas[n];
     if (campo === "qtd") m.qtd = Math.max(0, Math.round(pjNum(i.value)));
@@ -2907,12 +2944,14 @@ function ligarProjecao() {
     desenharProjecao();
   });
   tab.querySelectorAll("[data-pjkrm]").forEach(b => b.onclick = () => { pj.metas.splice(Number(b.dataset.pjkrm), 1); desenharProjecao(); });
-  tab.querySelectorAll("[data-pjsel]").forEach(i => i.onchange = () => { i.checked ? pj.sel[i.dataset.pjsel] = true : delete pj.sel[i.dataset.pjsel]; desenharProjecao(); });
+  tab.querySelectorAll("[data-pjsel]").forEach(i => i.onchange = () => { i.checked ? pj.sel[i.dataset.pjsel] = true : delete pj.sel[i.dataset.pjsel]; sincronizarLinhas([i.dataset.pjsel]); desenharProjecao(); });
   tab.querySelectorAll("[data-pjcatchk]").forEach(i => {
     i.onclick = (e) => e.stopPropagation();
     i.onchange = () => {
       const c = i.dataset.pjcatchk;
-      for (const s of servicos.filter(x => x.active && pjCat(x) === c)) i.checked ? pj.sel[s.id] = true : delete pj.sel[s.id];
+      const daCat = servicos.filter(x => x.active && pjCat(x) === c);
+      for (const s of daCat) i.checked ? pj.sel[s.id] = true : delete pj.sel[s.id];
+      sincronizarLinhas(daCat.map(s => s.id));
       if (i.checked) pjAbertas.add(c);
       desenharProjecao();
     };
@@ -2925,6 +2964,41 @@ $("pjCatToggle").onclick = () => { const box = $("pjCatBox"), abrir = box.classL
 $("pjVerDre").onclick = () => { if (pj) desenharProjecao(); $("pjDreDlg").showModal(); };
 $("pjDreFechar").onclick = () => $("pjDreDlg").close();
 $("pjCapAdd").onclick = () => { pj.metas.push({ prof: "", serv: "", qtd: 0 }); desenharProjecao(); };
+// Ao marcar um serviço no quadro 3, entram no quadro 4 os profissionais ativos que fazem esse serviço.
+// Ao desmarcar, saem as linhas desse serviço que ainda estão sem meta.
+function sincronizarLinhas(ids) {
+  for (const sid of ids) {
+    if (pj.sel[sid]) {
+      for (const p of profissionais.filter(x => x.active).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")))
+        if (vinculos.some(v => v.professional_id === p.id && v.service_id === sid) && !pj.metas.some(m => m.prof === p.id && m.serv === sid)) pj.metas.push({ prof: p.id, serv: sid, qtd: 0 });
+    } else pj.metas = pj.metas.filter(m => m.serv !== sid || pjNum(m.qtd) > 0);
+  }
+}
+// Distribui a meta entre as linhas do quadro 4 proporcionalmente às horas livres de cada profissional
+// (escala do período x ocupação máxima), dividindo as horas do profissional entre os serviços dele.
+$("pjCalcular").onclick = () => {
+  const r = calcularProjecao(), P = r.P, imp = P.imposto / 100;
+  const ls = r.validas; if (!ls.length) return aviso("Marque serviços no quadro 3 para criar as linhas antes de calcular.", "err");
+  if (!(P.meta > 0)) return aviso("Informe o valor da meta nas premissas.", "err");
+  const prodBruto = r.dre.prodBruto, prodMargem = prodBruto * (1 - imp) + r.dre.cmv;
+  const alvo = P.metaTipo === "faturamento" ? P.meta - prodBruto : P.meta + r.fixos - prodMargem;
+  const nLin = {}; for (const l of ls) nLin[l.p.id] = (nLin[l.p.id] || 0) + 1;
+  const disp = (id) => (pjAg.horasProf[id] || 0) * P.ocupacao / 100, temEscala = ls.some(l => disp(l.p.id) > 0);
+  const pesos = ls.map(l => {
+    const porHora = (P.metaTipo === "faturamento" ? l.s.preco : l.s.preco * (1 - l.pct - imp)) * 60 / l.s.dur;
+    const w = temEscala ? disp(l.p.id) / nLin[l.p.id] : 1;
+    return { l, porHora, w };
+  }).filter(x => x.porHora > 0 && x.w > 0);
+  const soma = pesos.reduce((a, x) => a + x.w * x.porHora, 0);
+  if (!(alvo > 0)) { aviso("Os produtos já cobrem a meta; nenhuma quantidade de serviço é necessária.", "ok"); return; }
+  if (!soma) return aviso("Não deu para calcular: os profissionais das linhas não têm horário no período.", "err");
+  const k = alvo / soma;
+  for (const x of pesos) x.l.m.qtd = Math.max(x.l.agend, Math.ceil(k * x.w * 60 / x.l.s.dur));
+  desenharProjecao();
+  const semHora = [...new Set(ls.filter(l => temEscala && !disp(l.p.id)).map(l => l.p.nome))];
+  if (semHora.length) return aviso(`Quantidades calculadas. ${semHora.join(", ")} ficou sem meta porque não tem horário cadastrado no período.`, "err");
+  aviso(temEscala && k > 1 ? `Quantidades calculadas, mas a meta pede ${pjF(k * 100, 0)}% das horas livres: a agenda não comporta. Veja os alertas.` : "Quantidades calculadas para atingir a meta. Ajuste à vontade.", temEscala && k > 1 ? "err" : "ok");
+};
 $("pjCapGerar").onclick = () => {
   let n = 0;
   for (const p of profissionais.filter(x => x.active).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")))
