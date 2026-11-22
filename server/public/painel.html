@@ -49,6 +49,11 @@
   .msg.err { display:block; background:var(--danger); color:#fff; } .msg.err::before { content:"⚠"; }
   .msg.ok { display:block; background:var(--ok); color:#fff; } .msg.ok::before { content:"✓"; }
   .msg::after { content:"×"; position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:20px; opacity:.8; }
+  .ajuda-box { margin:8px 0 0; }
+  .info-bt { width:22px; height:22px; padding:0; border-radius:50%; background:#e3eef7; color:#1d5f8a; border:1px solid #bcd6ea; font:italic 700 13px Georgia, serif; line-height:20px; text-align:center; }
+  .info-bt:hover, .ajuda-box.aberta .info-bt { background:#1d5f8a; color:#fff; }
+  .ajuda-box > p { display:none; margin:6px 0 0 !important; }
+  .ajuda-box.aberta > p { display:block; }
   .msg.entra { animation:msgEntra .25s ease-out; }
   @keyframes msgEntra { from { opacity:0; transform:translate(-50%, -12px); } to { opacity:1; transform:translate(-50%, 0); } }
   .checks { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:6px; }
@@ -170,6 +175,8 @@
   .pj-ro td { color:var(--ink); }
   #pjDreDlg { border:1px solid var(--line); border-radius:12px; padding:16px 18px; min-width:min(460px, 92vw); }
   #pjDreDlg::backdrop { background:rgba(0,0,0,.35); }
+  .pj-estudo { display:flex; gap:10px; align-items:end; flex-wrap:wrap; margin-top:10px; }
+  .pj-estudo input, .pj-estudo select { width:220px; }
   .pj-aviso { font-size:13px; color:#8a3b00; background:#fff4e5; border-radius:8px; padding:8px 10px; margin-top:10px; }
 </style>
 </head>
@@ -185,7 +192,8 @@
     </div></div>
     <div class="grp" data-grp="financas"><button type="button" class="grp-bt">Finanças</button><div class="grp-menu">
       <button data-tab="comandas">Comandas</button>
-      <button data-tab="caixa">Caixa</button>
+      <button data-tab="caixa">Faturamento</button>
+      <button data-tab="projecao">Projeções</button>
       <button data-tab="comissoes">Comissões</button>
     </div></div>
     <div class="grp" data-grp="servicos"><button type="button" class="grp-bt">Serviços</button><div class="grp-menu">
@@ -384,7 +392,7 @@
 
     <!-- Caixa: relatório de faturamento -->
     <div id="tab-caixa" class="hidden">
-      <div class="tabs-cx"><button data-cx="fat" class="on">Faturamento</button><button data-cx="proj">Projeção de resultado</button></div>
+      <div class="tabs-cx hidden"><button data-cx="fat" class="on">Faturamento</button><button data-cx="proj">Projeção de resultado</button></div>
       <div id="cxFat">
       <div class="card">
         <h2 style="margin-top:0">Faturamento</h2>
@@ -416,10 +424,16 @@
             <button id="pjSalvar">Salvar estudo</button>
             <button class="ghost" id="pjVerDre">Ver DRE</button>
             <button class="ghost" id="pjXlsx">Gerar planilha (xlsx)</button>
-            <button class="ghost" id="pjRestaurar">Recomeçar</button>
+            <button class="ghost" id="pjRestaurar">Novo estudo</button>
           </div>
         </div>
-        <p class="muted" style="font-size:13px">Defina a meta, escolha os serviços e informe quantas vezes cada profissional vai fazer cada serviço no período. O sistema compara com a agenda e mostra quanto falta agendar. Valores e durações vêm do cadastro de serviços; a comissão vem do cadastro de cada profissional (a do serviço, ou a padrão dele). Os campos <span class="pj-ed-amostra">em amarelo</span> podem ser alterados. <span id="pjSalvoEm"></span></p>
+        <p class="muted" style="font-size:13px">Defina a meta, escolha os serviços e informe quantas vezes cada profissional vai fazer cada serviço no período. O sistema compara com a agenda e mostra quanto falta agendar. Valores e durações vêm do cadastro de serviços; a comissão vem do cadastro de cada profissional (a do serviço, ou a padrão dele). Os campos <span class="pj-ed-amostra">em amarelo</span> podem ser alterados. Dê um nome ao estudo e clique em Salvar; para abrir um estudo guardado, escolha em "Estudos salvos" e clique em Carregar.</p>
+        <div class="pj-estudo">
+          <div><label for="pjNome">Nome do estudo</label><input id="pjNome" placeholder="Ex.: Meta dezembro"></div>
+          <div><label for="pjEstudos">Estudos salvos</label><select id="pjEstudos"></select></div>
+          <div class="actions" style="margin:0"><button class="ghost" id="pjCarregar">Carregar</button><button class="danger" id="pjExcluirEst">Excluir</button></div>
+          <span class="muted" id="pjSalvoEm" style="font-size:13px"></span>
+        </div>
         <div id="pjVeredito" class="pj-veredito"></div>
         <div class="kpis" id="pjResKpi" style="margin-top:10px"></div>
       </div>
@@ -740,12 +754,21 @@ const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const $ = (id) => document.getElementById(id);
 let kiaraLigada = true, equipe = [], cats = [], meuPapel = null, produtos = [], tenantId = null, usuarioId = null, TZ = "America/Sao_Paulo", servicos = [], profissionais = [], vinculos = [];
 
+// Textos de ajuda longos ficam escondidos atrás de um ícone "i"
+for (const p of document.querySelectorAll("main p.muted")) {
+  if (p.textContent.trim().length <= 140) continue;
+  const box = document.createElement("div"); box.className = "ajuda-box";
+  if (p.classList.contains("admin-only")) { p.classList.remove("admin-only"); box.classList.add("admin-only"); }
+  const bt = document.createElement("button"); bt.type = "button"; bt.className = "info-bt"; bt.textContent = "i"; bt.title = "Como funciona";
+  bt.onclick = () => box.classList.toggle("aberta");
+  p.replaceWith(box); box.append(bt, p);
+}
 let avisoTimer = null;
 function aviso(texto, tipo) {
   const m = $("msg"); m.textContent = texto; m.className = "msg " + (tipo || "ok");
   void m.offsetWidth; m.classList.add("entra");
   clearTimeout(avisoTimer);
-  avisoTimer = setTimeout(() => { m.className = "msg"; }, tipo === "err" ? 12000 : 4000);
+  avisoTimer = setTimeout(() => { m.className = "msg"; }, tipo === "err" ? 5000 : 4000);
 }
 $("msg").onclick = () => { clearTimeout(avisoTimer); $("msg").className = "msg"; };
 function erro(e) { console.error(e); aviso("Algo deu errado: " + (e.message || e), "err"); }
@@ -827,7 +850,10 @@ function marcarGrupo() {
 document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button[data-tab]").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll(".grp").forEach(x => x.classList.remove("aberto")); marcarGrupo();
-  for (const t of TODAS_ABAS) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
+  const aba = b.dataset.tab === "projecao" ? "caixa" : b.dataset.tab;
+  for (const t of TODAS_ABAS) $("tab-" + t).classList.toggle("hidden", t !== aba);
+  if (b.dataset.tab === "projecao") { document.querySelector('[data-cx="proj"]').click(); return; }
+  if (b.dataset.tab === "caixa") document.querySelector('[data-cx="fat"]').click();
   if (b.dataset.tab === "agenda") carregarAgenda();
   if (b.dataset.tab === "comandas") { if (!manterComanda) comandaAberta = null; manterComanda = false; carregarComandas(); }
   if (b.dataset.tab === "caixa") carregarCaixa();
@@ -2650,7 +2676,7 @@ document.querySelectorAll("[data-cx]").forEach(b => b.onclick = () => {
 const PJ_PREM = [
   ["prazo", "Prazo (dias)", 30], ["diasUteis", "Dias de atendimento no prazo", 20],
   ["meta", "Valor da meta (R$)", 30000], ["estrutura", "Estrutura por mês (R$)", 10000],
-  ["extras", "Extras por mês (R$)", 1000], ["insumo", "Insumos do serviço (% do preço)", 10],
+  ["extras", "Extras por mês (R$)", 1000],
   ["imposto", "Impostos + cartão (%)", 10], ["ocupacao", "Ocupação máxima da agenda (%)", 85],
 ];
 let pj = null, pjSalvo = null, pjAbertas = new Set(), pjAg = { porPS: {}, porS: {}, horasProf: {}, chave: "" };
@@ -2702,22 +2728,60 @@ function migrarProjecao(o) {
   }
   return n;
 }
-async function abrirProjecao() {
-  const { data, error } = await sb.from("tenants").select("settings").eq("id", tenantId).single();
-  if (error) return erro(error);
-  pjSalvo = data.settings?.projecao || null;
+// Vários estudos: settings.projecoes = [{nome, salvoEm, ...estudo}]; settings.projecao = o último usado.
+let pjLista = [];
+const pjQuando = (iso) => new Date(iso).toLocaleString("pt-BR", { timeZone: TZ, dateStyle: "short", timeStyle: "short" });
+function listarEstudos(sel) {
+  $("pjEstudos").innerHTML = pjLista.length ? pjLista.map((e, i) => `<option value="${i}" ${e.nome === sel ? "selected" : ""}>${esc(e.nome)} · ${pjQuando(e.salvoEm)}</option>`).join("") : '<option value="">Nenhum estudo salvo</option>';
+  $("pjCarregar").disabled = $("pjExcluirEst").disabled = !pjLista.length;
+}
+function usarEstudo(e) {
+  pjSalvo = e || null;
   pj = pjSalvo ? migrarProjecao(JSON.parse(JSON.stringify(pjSalvo))) : projecaoPadrao();
+  delete pj.nome; delete pj.salvoEm;
   for (const [k, , v] of PJ_PREM) if (pj.prem[k] === undefined) pj.prem[k] = v;
   pj.prem.inicio = pj.prem.inicio || hojeLocal(); pj.prem.metaTipo = pj.prem.metaTipo || "resultado";
   pj.sel = pj.sel || {}; pj.metas = pj.metas || []; pj.qtd = pj.qtd || {};
   pjAbertas = new Set(servicos.filter(s => s.active && pj.sel[s.id]).map(pjCat));
-  $("pjSalvoEm").textContent = pjSalvo?.salvoEm ? `Estudo salvo em ${new Date(pjSalvo.salvoEm).toLocaleString("pt-BR", { timeZone: TZ, dateStyle: "short", timeStyle: "short" })}.` : "Estudo ainda não salvo.";
+  $("pjNome").value = pjSalvo?.nome || "";
+  $("pjSalvoEm").textContent = pjSalvo?.salvoEm ? `Estudo "${pjSalvo.nome || "sem nome"}" salvo em ${pjQuando(pjSalvo.salvoEm)}.` : "Estudo ainda não salvo.";
+}
+async function gravarEstudos(mudar) {
+  const { data, error } = await sb.from("tenants").select("settings").eq("id", tenantId).single();
+  if (error) { erro(error); return false; }
+  const st = data.settings || {};
+  let lista = Array.isArray(st.projecoes) ? st.projecoes : (st.projecao ? [{ nome: st.projecao.nome || "Estudo 1", ...st.projecao }] : []);
+  const extra = mudar(lista); lista = extra.lista;
+  const novo = { ...st, projecoes: lista, projecao: extra.atual === undefined ? st.projecao : extra.atual };
+  const { data: ok, error: e2 } = await sb.from("tenants").update({ settings: novo }).eq("id", tenantId).select("id");
+  if (e2) { erro(e2); return false; }
+  if (!ok.length) { aviso("Só o administrador pode salvar o estudo.", "err"); return false; }
+  pjLista = lista; settingsAtuais = novo; return true;
+}
+$("pjCarregar").onclick = async () => {
+  const e = pjLista[Number($("pjEstudos").value)]; if (!e) return;
+  usarEstudo(e); await carregarAgendaProjecao(true); desenharProjecao(); aviso(`Estudo "${e.nome}" carregado.`);
+};
+$("pjExcluirEst").onclick = async () => {
+  const e = pjLista[Number($("pjEstudos").value)]; if (!e) return;
+  if (!confirm(`Excluir o estudo "${e.nome}"? Não dá para desfazer.`)) return;
+  if (!await gravarEstudos(l => ({ lista: l.filter(x => x.nome !== e.nome), atual: pjSalvo?.nome === e.nome ? null : undefined }))) return;
+  listarEstudos(pjSalvo?.nome); aviso(`Estudo "${e.nome}" excluído.`);
+};
+async function abrirProjecao() {
+  const { data, error } = await sb.from("tenants").select("settings").eq("id", tenantId).single();
+  if (error) return erro(error);
+  const st = data.settings || {};
+  pjLista = Array.isArray(st.projecoes) ? st.projecoes : (st.projecao ? [{ nome: st.projecao.nome || "Estudo 1", ...st.projecao }] : []);
+  const atual = st.projecao ? { nome: st.projecao.nome || "Estudo 1", ...st.projecao } : null;
+  listarEstudos(atual?.nome);
+  usarEstudo(atual);
   await carregarAgendaProjecao(true);
   desenharProjecao();
 }
 
 function calcularProjecao() {
-  const P = pj.prem, ins = P.insumo / 100, imp = P.imposto / 100;
+  const P = pj.prem, ins = 0, imp = P.imposto / 100; // insumos saíram do estudo (pedido do Airton, 22/11)
   const serv = {}; for (const s of servicos) serv[s.id] = { id: s.id, nome: s.name, cat: pjCat(s), preco: s.price_cents / 100, dur: s.duration_min, ativo: s.active };
   const prof = {}; for (const p of profissionais) prof[p.id] = { id: p.id, nome: p.name, com: Number(p.commission_pct || 0) / 100, ativo: p.active };
   const linhas = pj.metas.map((m, i) => {
@@ -2822,7 +2886,7 @@ function desenharProjecao() {
   const lin = (tx, v, forte) => `<tr${forte ? ' class="forte"' : ""}><td>${tx}</td><td>${pjR(v)}</td></tr>`;
   $("pjDrePrazo").textContent = `(${fmtD(per.ini)} a ${fmtD(per.fimIncl)})`;
   $("pjDre").innerHTML = lin("Receita de serviços", d.servBruto) + lin("Receita de produtos", d.prodBruto) + lin("Receita bruta", d.bruto, 1)
-    + lin("(−) Comissões (por profissional e serviço)", d.com) + lin("(−) Insumos", d.ins) + lin("(−) Impostos e cartão", d.imp) + lin("(−) Custo dos produtos", d.cmv)
+    + lin("(−) Comissões (por profissional e serviço)", d.com) + lin("(−) Impostos e cartão", d.imp) + lin("(−) Custo dos produtos", d.cmv)
     + lin("Margem de contribuição", d.margem, 1) + lin("(−) Estrutura", d.estrutura) + lin("(−) Extras", d.extras) + lin("Resultado líquido", d.liquido, 1);
   const v = $("pjVeredito"), lista = (l) => l.length ? `<ul>${l.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
   v.className = "pj-veredito " + (r.problemas.length ? "ruim" : "ok");
@@ -2870,20 +2934,19 @@ $("pjCapGerar").onclick = () => {
   desenharProjecao();
 };
 $("pjRestaurar").onclick = () => {
-  if (!confirm("Recomeçar o estudo do zero? O que não foi salvo se perde.")) return;
-  pj = projecaoPadrao(); pjAbertas = new Set(); carregarAgendaProjecao(true).then(desenharProjecao);
+  if (!confirm("Começar um estudo novo do zero? O que não foi salvo no estudo aberto se perde.")) return;
+  usarEstudo(null); carregarAgendaProjecao(true).then(desenharProjecao);
 };
 $("pjSalvar").onclick = async () => {
-  const { data, error } = await sb.from("tenants").select("settings").eq("id", tenantId).single();
-  if (error) return erro(error);
-  const salvar = { ...pj, salvoEm: new Date().toISOString() };
-  const novo = { ...(data.settings || {}), projecao: salvar };
-  const { data: ok, error: e2 } = await sb.from("tenants").update({ settings: novo }).eq("id", tenantId).select("id");
-  if (e2) return erro(e2);
-  if (!ok.length) return aviso("Só o administrador pode salvar o estudo.", "err");
-  pjSalvo = salvar; settingsAtuais = novo;
-  $("pjSalvoEm").textContent = `Estudo salvo em ${new Date(salvar.salvoEm).toLocaleString("pt-BR", { timeZone: TZ, dateStyle: "short", timeStyle: "short" })}.`;
-  aviso("Estudo salvo.");
+  const nome = $("pjNome").value.trim();
+  if (!nome) { $("pjNome").focus(); return aviso("Dê um nome ao estudo antes de salvar.", "err"); }
+  const existe = pjLista.some(e => e.nome.toLowerCase() === nome.toLowerCase());
+  if (existe && pjSalvo?.nome?.toLowerCase() !== nome.toLowerCase() && !confirm(`Já existe um estudo "${nome}". Substituir?`)) return;
+  const salvar = { ...pj, nome, salvoEm: new Date().toISOString() };
+  if (!await gravarEstudos(l => ({ lista: [salvar, ...l.filter(x => x.nome.toLowerCase() !== nome.toLowerCase())], atual: salvar }))) return;
+  pjSalvo = salvar; listarEstudos(nome);
+  $("pjSalvoEm").textContent = `Estudo "${nome}" salvo em ${pjQuando(salvar.salvoEm)}.`;
+  aviso(`Estudo "${nome}" salvo.`);
 };
 
 // Planilha com fórmulas: as células amarelas continuam editáveis no Excel.
@@ -2903,7 +2966,7 @@ $("pjXlsx").onclick = async () => {
   const wp = wb.addWorksheet("Premissas"); tit(wp, "Projeção de resultado · Premissas"); cab(wp, 2, ["Premissa", "Valor"]);
   const PR = {}, prem = [["metaTipo", "Tipo de meta", P.metaTipo === "faturamento" ? "Faturamento" : "Resultado líquido"], ["inicio", "Início do período", per.ini.split("-").reverse().join("/")],
     ["prazo", "Prazo (dias)", P.prazo], ["diasUteis", "Dias de atendimento", P.diasUteis], ["meta", "Valor da meta (R$)", P.meta, BRL], ["estrutura", "Estrutura por mês (R$)", P.estrutura, BRL],
-    ["extras", "Extras por mês (R$)", P.extras, BRL], ["insumo", "Insumos (% do preço)", P.insumo / 100, PCT], ["imposto", "Impostos + cartão", P.imposto / 100, PCT], ["ocupacao", "Ocupação máxima", P.ocupacao / 100, PCT]];
+    ["extras", "Extras por mês (R$)", P.extras, BRL], ["imposto", "Impostos + cartão", P.imposto / 100, PCT], ["ocupacao", "Ocupação máxima", P.ocupacao / 100, PCT]];
   prem.forEach(([k, rot, v, fmt], i) => { const n = 3 + i; wp.getCell(`A${n}`).value = rot; ed(wp.getCell(`B${n}`), v, fmt); PR[k] = `Premissas!$B$${n}`; });
   wp.getColumn(1).width = 30; wp.getColumn(2).width = 20;
   // Metas
@@ -2917,7 +2980,7 @@ $("pjXlsx").onclick = async () => {
     wm.getCell(`G${n}`).value = f(`F${n}*D${n}/60`, l.horas); wm.getCell(`H${n}`).value = f(`F${n}*C${n}`, l.valor); wm.getCell(`H${n}`).numFmt = BRL;
     wm.getCell(`I${n}`).value = l.agend; wm.getCell(`J${n}`).value = f(`MAX(0,F${n}-I${n})`, l.falta);
     wm.getCell(`K${n}`).value = f(`J${n}*C${n}`, l.valorFalta); wm.getCell(`K${n}`).numFmt = BRL;
-    wm.getCell(`L${n}`).value = f(`H${n}*(1-E${n}-${PR.insumo}-${PR.imposto})`, l.liq); wm.getCell(`L${n}`).numFmt = BRL; n++;
+    wm.getCell(`L${n}`).value = f(`H${n}*(1-E${n}-${PR.imposto})`, l.liq); wm.getCell(`L${n}`).numFmt = BRL; n++;
   }
   const i1 = Math.max(n - 1, i0), tot = Math.max(n, i0 + 1), t = r.totais;
   wm.getCell(`A${tot}`).value = "Total"; wm.getRow(tot).font = { bold: true };
@@ -2936,10 +2999,10 @@ $("pjXlsx").onclick = async () => {
   const wd = wb.addWorksheet("DRE"); tit(wd, "DRE projetada"); cab(wd, 2, ["Linha", "Valor"]);
   const d = r.dre;
   const dl = [["Receita de serviços", f(`Metas!H${tot}`, d.servBruto)], ["Receita de produtos", f(`Produtos!E${ktot}`, d.prodBruto)], ["Receita bruta", f("B3+B4", d.bruto)],
-    ["(−) Comissões", f(`-SUMPRODUCT(Metas!H${i0}:H${i1},Metas!E${i0}:E${i1})`, d.com)], ["(−) Insumos", f(`-B3*${PR.insumo}`, d.ins)], ["(−) Impostos e cartão", f(`-B5*${PR.imposto}`, d.imp)],
-    ["(−) Custo dos produtos", f(`-SUMPRODUCT(Produtos!C${k0}:C${k1},Produtos!D${k0}:D${k1})`, d.cmv)], ["Margem de contribuição", f("SUM(B5:B9)", d.margem)],
-    ["(−) Estrutura", f(`-${PR.estrutura}*${PR.prazo}/30`, d.estrutura)], ["(−) Extras", f(`-${PR.extras}*${PR.prazo}/30`, d.extras)], ["Resultado líquido", f("B10+B11+B12", d.liquido)],
-    ["Meta", f(PR.meta, P.meta)], ["Falta para a meta", f(`MAX(0,B14-IF(${PR.metaTipo}="Faturamento",B5,B13))`, Math.max(0, r.faltaMeta))]];
+    ["(−) Comissões", f(`-SUMPRODUCT(Metas!H${i0}:H${i1},Metas!E${i0}:E${i1})`, d.com)], ["(−) Impostos e cartão", f(`-B5*${PR.imposto}`, d.imp)],
+    ["(−) Custo dos produtos", f(`-SUMPRODUCT(Produtos!C${k0}:C${k1},Produtos!D${k0}:D${k1})`, d.cmv)], ["Margem de contribuição", f("SUM(B5:B8)", d.margem)],
+    ["(−) Estrutura", f(`-${PR.estrutura}*${PR.prazo}/30`, d.estrutura)], ["(−) Extras", f(`-${PR.extras}*${PR.prazo}/30`, d.extras)], ["Resultado líquido", f("B9+B10+B11", d.liquido)],
+    ["Meta", f(PR.meta, P.meta)], ["Falta para a meta", f(`MAX(0,B13-IF(${PR.metaTipo}="Faturamento",B5,B12))`, Math.max(0, r.faltaMeta))]];
   dl.forEach(([rot, v], i) => { wd.getCell(`A${3 + i}`).value = rot; wd.getCell(`B${3 + i}`).value = v; wd.getCell(`B${3 + i}`).numFmt = BRL; if (/bruta|Margem|Resultado|Falta/.test(rot)) wd.getRow(3 + i).font = { bold: true }; });
   wd.getColumn(1).width = 30; wd.getColumn(2).width = 18;
   wb.calcProperties.fullCalcOnLoad = true;
