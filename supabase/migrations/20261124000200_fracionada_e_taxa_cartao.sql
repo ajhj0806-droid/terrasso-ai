@@ -5,6 +5,7 @@
 --    A taxa vem das configurações (Finanças > Comissões > Taxas do cartão) e é rateada no fechamento da comanda.
 
 drop view if exists public.client_stats;
+drop trigger if exists comanda_items_package on public.comanda_items;  -- recriado logo abaixo
 alter table public.comanda_items drop column if exists commission_cents;
 
 alter table public.comanda_items alter column quantity type numeric(12,3);
@@ -15,6 +16,9 @@ alter table public.stock_movements alter column qty_delta type numeric(12,3);
 alter table public.comanda_items drop constraint if exists comanda_items_discount_le_total;
 alter table public.comanda_items add constraint comanda_items_discount_le_total
   check (discount_cents <= round(quantity * unit_price_cents));
+
+create trigger comanda_items_package after insert or update of client_package_item_id, quantity or delete
+  on public.comanda_items for each row execute function private.comanda_items_package();
 
 alter table public.comanda_items add column commission_cents integer generated always as (
   greatest(round((round(quantity * unit_price_cents) - discount_cents - card_fee_cents) * coalesce(commission_pct, 0) / 100), 0)::integer
