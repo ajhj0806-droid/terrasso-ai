@@ -54,6 +54,16 @@
   .sug button { display:flex; justify-content:space-between; gap:10px; width:100%; text-align:left; background:none; color:var(--ink); border-radius:0; padding:8px 10px; border-bottom:1px solid var(--line); }
   .sug button:hover, .sug button.ativo { background:#f3ebe3; }
   .sug .muted { font-size:13px; white-space:nowrap; }
+  .sug .sl { padding:8px 10px; border-bottom:1px solid var(--line); font-size:14px; }
+  .sug .sl .chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+  .sug .sl .chips button { display:inline-block; width:auto; padding:3px 8px; border:1px solid var(--line); border-radius:12px; font-size:12px; background:var(--card); }
+  .sug .sl .chips button:hover { background:#f3ebe3; }
+  .chk { display:inline-flex; align-items:center; gap:6px; font-size:14px; }
+  .chk input { width:auto; }
+  .kcli { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px; margin-top:10px; }
+  .kcli .bx { border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:13px; }
+  .kcli .bx b.t { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted, #8a7f76); margin-bottom:4px; }
+  .kcli .bx div { margin:2px 0; }
   .info-bt { width:22px; height:22px; padding:0; border-radius:50%; background:#e3eef7; color:#1d5f8a; border:1px solid #bcd6ea; font:italic 700 13px Georgia, serif; line-height:20px; text-align:center; }
   .info-bt:hover, .ajuda-box.aberta .info-bt { background:#1d5f8a; color:#fff; }
   .ajuda-box > p { display:none; margin:6px 0 0 !important; }
@@ -193,11 +203,13 @@
       <button data-tab="agenda" class="on">Agenda</button>
       <button data-tab="horarios">Horários</button>
       <button data-tab="clientes">Clientes</button>
+      <button data-tab="pacotes">Pacotes</button>
     </div></div>
     <div class="grp" data-grp="financas"><button type="button" class="grp-bt">Finanças</button><div class="grp-menu">
       <button data-tab="comandas">Comandas</button>
       <button data-tab="caixa">Faturamento</button>
       <button data-tab="projecao">Projeções</button>
+      <button data-tab="creditos">Créditos</button>
       <button data-tab="comissoes">Comissões</button>
     </div></div>
     <div class="grp" data-grp="servicos"><button type="button" class="grp-bt">Serviços</button><div class="grp-menu">
@@ -337,6 +349,84 @@
       </div>
     </div>
 
+    <!-- Pacotes de serviços -->
+    <div id="tab-pacotes" class="hidden">
+      <div class="card">
+        <h2 style="margin-top:0">Montar pacote</h2>
+        <p class="muted">Pacote é uma cesta de serviços que a cliente paga antes e usa dentro da validade. Ao vender, o pacote entra na comanda da cliente para ela pagar; depois, cada vez que ela fizer um desses serviços, a comanda usa uma sessão do pacote sem cobrar de novo. O profissional recebe comissão sobre o valor da sessão.</p>
+        <div class="row">
+          <div><label for="paModelo">Começar de um modelo</label><select id="paModelo"></select></div>
+          <div><label for="paNomePac">Nome do pacote</label><input id="paNomePac" placeholder="Ex.: 4 escovas"></div>
+          <div><label for="paDias">Validade (dias)</label><input id="paDias" inputmode="numeric" value="90"></div>
+          <div><label for="paPreco">Preço do pacote (R$)</label><input id="paPreco" inputmode="decimal"></div>
+        </div>
+        <div class="row">
+          <div><label for="paServ">Serviço</label><select id="paServ"></select></div>
+          <div><label for="paQtd">Sessões</label><input id="paQtd" inputmode="numeric" value="1"></div>
+          <div style="display:flex;align-items:end"><button class="ghost" id="paAddServ">+ Incluir serviço</button></div>
+          <div></div>
+        </div>
+        <table style="margin-top:6px"><tbody id="paItens"></tbody></table>
+        <div class="row" style="margin-top:10px">
+          <div style="position:relative"><label for="paNome">Cliente (digite o nome)</label><input id="paNome" placeholder="Nome e sobrenome" autocomplete="off"><div id="paSug" class="sug hidden"></div></div>
+          <div><label for="paTel">Celular (WhatsApp)</label><input id="paTel" inputmode="tel" placeholder="41 99999-9999"></div>
+        </div>
+        <div class="actions">
+          <button id="paVender">Vender para a cliente</button>
+          <button class="ghost" id="paSalvarModelo">Salvar como modelo</button>
+          <button class="ghost" id="paLimpar">Limpar</button>
+        </div>
+      </div>
+      <div class="card" id="paModelosCard">
+        <b>Modelos de pacote</b>
+        <table style="margin-top:8px"><thead><tr><th>Pacote</th><th>Serviços</th><th>Validade</th><th>Preço</th><th></th></tr></thead><tbody id="paModelos"></tbody></table>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div><label for="paFiltro">Pacotes das clientes</label><select id="paFiltro"><option value="abertos">Abertos (válidos com saldo)</option><option value="vencidos">Vencidos com saldo</option><option value="usados">Usados por completo</option><option value="cancelados">Cancelados</option><option value="todos">Todos (histórico)</option></select></div>
+          <div><label for="paBusca">Cliente</label><input id="paBusca" placeholder="Filtrar pelo nome"></div>
+        </div>
+        <table style="margin-top:8px"><thead><tr><th>Cliente</th><th>Pacote</th><th>Comprado</th><th>Vence</th><th>Saldo</th><th></th></tr></thead><tbody id="paLista"></tbody></table>
+      </div>
+    </div>
+
+    <!-- Créditos antecipados -->
+    <div id="tab-creditos" class="hidden">
+      <div class="card">
+        <h2 style="margin-top:0">Receber crédito antecipado</h2>
+        <p class="muted">A cliente paga um valor agora e vai usando nos próximos atendimentos. O valor entra no faturamento do dia em que foi recebido; na comanda, use a forma de pagamento "Crédito antecipado" para descontar do saldo.</p>
+        <div class="row">
+          <div style="position:relative"><label for="crNome">Cliente (digite o nome)</label><input id="crNome" placeholder="Nome e sobrenome" autocomplete="off"><div id="crSug" class="sug hidden"></div></div>
+          <div><label for="crTel">Celular (WhatsApp)</label><input id="crTel" inputmode="tel" placeholder="41 99999-9999"></div>
+        </div>
+        <div class="row pags">
+          <div><label for="crValor">Valor (R$)</label><input id="crValor" inputmode="decimal"></div>
+          <div><label for="crMetodo">Forma</label><select id="crMetodo"></select></div>
+          <div id="crParcBox" class="hidden"><label for="crParc">Parcelas</label><select id="crParc"><option>1</option><option>2</option><option>3</option></select></div>
+          <div><label for="crObs">Observação</label><input id="crObs" placeholder="Opcional"></div>
+        </div>
+        <div class="actions"><button id="crReceber">Receber crédito</button></div>
+      </div>
+      <div class="card">
+        <b>Clientes com saldo</b>
+        <table style="margin-top:8px"><thead><tr><th>Cliente</th><th>Saldo</th><th>Último movimento</th><th></th></tr></thead><tbody id="crSaldos"></tbody></table>
+      </div>
+      <div class="card hidden" id="crHistCard">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><b id="crHistTitulo"></b><button class="ghost" id="crHistFechar">Fechar</button></div>
+        <div class="kpis" id="crHistKpis"></div>
+        <h3 style="margin:14px 0 4px;font-size:15px">Movimentos do crédito</h3>
+        <table><tbody id="crMovs"></tbody></table>
+        <div class="actions hidden" id="crAjusteBox">
+          <input id="crAjValor" inputmode="decimal" placeholder="Valor (R$)" style="max-width:130px">
+          <select id="crAjTipo" style="max-width:220px"><option value="refund">Devolvido à cliente (tira do saldo)</option><option value="adjust+">Ajuste: somar ao saldo</option><option value="adjust-">Ajuste: tirar do saldo</option></select>
+          <input id="crAjObs" placeholder="Motivo" style="max-width:220px">
+          <button class="ghost" id="crAjustar">Lançar ajuste</button>
+        </div>
+        <h3 style="margin:14px 0 4px;font-size:15px">Histórico de pagamentos da cliente</h3>
+        <table><thead><tr><th>Data</th><th>Itens</th><th>Total</th><th>Pago com</th></tr></thead><tbody id="crPags"></tbody></table>
+      </div>
+    </div>
+
     <!-- Comandas -->
     <div id="tab-comandas" class="hidden">
       <div class="card">
@@ -352,9 +442,14 @@
             <div style="position:relative"><label for="kNome">Cliente (digite o nome)</label><input id="kNome" placeholder="Nome e sobrenome" autocomplete="off"><div id="kSug" class="sug hidden"></div></div>
             <div><label for="kTel">Celular (WhatsApp)</label><input id="kTel" inputmode="tel" placeholder="41 99999-9999"></div>
           </div>
+          <div class="row">
+            <div style="position:relative"><label for="kServBusca">Serviço (opcional, 3 letras)</label><input id="kServBusca" placeholder="Ex.: esc, corte, Ana" autocomplete="off"><div id="kServSug" class="sug hidden"></div></div>
+            <div><label for="kProf">Profissional</label><select id="kProf"><option value="vez">Profissional da vez</option></select></div>
+          </div>
           <div class="actions"><button id="kCriar">Abrir comanda</button><button class="ghost" id="kCancelarNova">Fechar</button></div>
         </div>
         <table><thead><tr><th>Cliente</th><th>Aberta</th><th>Total</th><th>Falta</th><th></th></tr></thead><tbody id="kLista"></tbody></table>
+        <p class="muted" style="font-size:13px;margin-bottom:0" id="kFila"></p>
       </div>
 
       <div class="card hidden" id="kDet">
@@ -362,15 +457,24 @@
           <b id="kTitulo"></b>
           <button class="ghost" id="kFecharDet">Fechar</button>
         </div>
+        <div id="kCli" class="kcli"></div>
         <table style="margin-top:8px"><thead><tr><th>Item</th><th>Qtd</th><th>Valor</th><th></th></tr></thead><tbody id="kItens"></tbody></table>
         <div id="kAddItem">
+          <div class="row" style="margin-top:8px">
+            <div style="position:relative"><label for="iBusca">Buscar serviço, produto ou profissional (3 letras)</label><input id="iBusca" placeholder="Ex.: esc, tinta, Ana" autocomplete="off"><div id="iSug" class="sug hidden"></div></div>
+          </div>
           <div class="row itens">
-            <div><label for="iTipo">Tipo</label><select id="iTipo"><option value="servico">Serviço</option><option value="produto">Produto</option></select></div>
+            <div><label for="iTipo">Tipo</label><select id="iTipo"><option value="servico">Serviço</option><option value="uso">Produto usado no procedimento</option><option value="produto">Produto vendido</option></select></div>
             <div><label for="iItem">Item</label><select id="iItem"></select></div>
             <div id="iProfBox"><label for="iProf">Profissional</label><select id="iProf"></select></div>
-            <div><label for="iQtd">Qtd</label><input id="iQtd" inputmode="decimal" value="1"></div>
+            <div><label for="iQtd" id="iQtdLbl">Qtd</label><input id="iQtd" inputmode="decimal" value="1"></div>
             <div><label for="iPreco">Preço unit. (R$)</label><input id="iPreco" inputmode="decimal"></div>
             <div><label for="iDesc">Desconto (R$)</label><input id="iDesc" inputmode="decimal" placeholder="0,00"></div>
+          </div>
+          <div class="actions" style="align-items:center">
+            <label class="chk hidden" id="iUsarPacBox"><input type="checkbox" id="iUsarPac" checked> <span id="iUsarPacTxt"></span></label>
+            <label class="chk hidden" id="iBrindeBox"><input type="checkbox" id="iBrinde"> Brinde (sem cobrar)</label>
+            <span class="muted" id="iCalc"></span>
           </div>
           <div class="actions"><button class="ghost" id="iAdd">+ Adicionar item</button></div>
         </div>
@@ -475,6 +579,16 @@
 
     <!-- Comissões -->
     <div id="tab-comissoes" class="hidden">
+      <div class="card hidden" id="txCard">
+        <b>Taxas do cartão (descontadas da comissão)</b>
+        <p class="muted" style="font-size:13px">Ao fechar a comanda, a taxa da maquininha é dividida entre os itens pelo valor de cada um. A comissão do serviço é calculada sobre o valor do item menos essa parte da taxa. Produtos não pagam comissão.</p>
+        <div class="row">
+          <div><label for="txDeb">Débito (%)</label><input id="txDeb" inputmode="decimal" placeholder="Ex.: 1,5"></div>
+          <div><label for="txCred">Crédito à vista (%)</label><input id="txCred" inputmode="decimal" placeholder="Ex.: 3,2"></div>
+          <div><label for="txParc">Crédito parcelado (%)</label><input id="txParc" inputmode="decimal" placeholder="Ex.: 4,5"></div>
+          <div style="display:flex;align-items:end"><button class="ghost" id="txSalvar">Salvar taxas</button></div>
+        </div>
+      </div>
       <div class="card">
         <h2 style="margin-top:0" id="mTitulo">Comissões</h2>
         <div class="row periodo">
@@ -868,11 +982,13 @@ document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () 
   if (b.dataset.tab === "perfil") carregarPerfil();
   if (b.dataset.tab === "equipe") carregarEquipe();
   if (b.dataset.tab === "comissoes") carregarComissoes();
+  if (b.dataset.tab === "pacotes") carregarPacotes();
+  if (b.dataset.tab === "creditos") carregarCreditos();
 });
 
-const TODAS_ABAS = ["agenda","comandas","caixa","comissoes","clientes","produtos","servicos","profissionais","horarios","conversas","perfil","equipe"];
+const TODAS_ABAS = ["agenda","pacotes","creditos","comandas","caixa","comissoes","clientes","produtos","servicos","profissionais","horarios","conversas","perfil","equipe"];
 const ABAS_POR_FUNCAO = {
-  reception: ["agenda", "comandas", "clientes", "produtos", "conversas"],
+  reception: ["agenda", "pacotes", "creditos", "comandas", "clientes", "produtos", "conversas"],
   professional: ["agenda", "comissoes"],
 };
 const ehAdmin = () => ["owner", "manager"].includes(meuPapel);
@@ -1957,6 +2073,9 @@ async function mudarStatus(a, st) {
   const { error } = await sb.from("appointments").update({ status: st, updated_at: new Date().toISOString() }).eq("id", a.id);
   if (error) return error.code === "23P01" ? aviso("Esse horário já foi ocupado por outra cliente. Marque um novo horário.", "err") : erro(error);
   aviso(`Situação alterada para "${STATUS[st]}".`);
+  // Confirmou (para hoje) ou começou o atendimento: a comanda já fica aberta com o serviço
+  if (!ehProf() && ["confirmed", "in_service"].includes(st) && hojeLocal() === new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(a.ini || lerFaixa(a.period).ini))
+    await comandaDoAgendamento({ ...a, status: st }, { abrir: false, chegou: false });
   carregarAgenda();
 }
 $("dFechar").onclick = () => { agSel = null; $("agDetalhe").classList.add("hidden"); desenharGrade(); };
@@ -2088,25 +2207,98 @@ async function acharOuCriarCliente(tel, nome) {
 }
 
 // ---------- Caixa e comandas ----------
-const METODOS = { pix: "Pix", cash: "Dinheiro", debit: "Débito", credit: "Crédito", voucher: "Vale-presente", package: "Pacote", other: "Outro" };
+const METODOS = { pix: "Pix", cash: "Dinheiro", debit: "Débito", credit: "Crédito", prepaid: "Crédito antecipado (saldo)", voucher: "Vale-presente", package: "Pacote", other: "Outro" };
 const podeDesconto = () => ["owner", "manager"].includes(meuPapel);
-let comandas = [], comandaAberta = null, kItens = [], kPags = [];
+let comandas = [], comandaAberta = null, kItens = [], kPags = [], kComanda = null, kPacItens = [], kSaldo = 0;
 const totalItem = (i) => Math.round(i.quantity * i.unit_price_cents) - i.discount_cents;
 // Quantidade de produto aceita decimais (até 3 casas, ex.: 0,5 ou 1,25)
 const qtdBr = (v) => { const n = Number(String(v ?? "").trim().replace(/\./g, "").replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 1000) / 1000 : NaN; };
 const fmtQ = (n) => Number(n || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+const dataBr = (t) => t ? new Date(t).toLocaleDateString("pt-BR") : "";
 
-$("gMetodo").innerHTML = Object.entries(METODOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
-$("gMetodo").onchange = () => $("gParcBox").classList.toggle("hidden", $("gMetodo").value !== "credit");
+$("gMetodo").innerHTML = Object.entries(METODOS).filter(([k]) => k !== "package").map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+$("gMetodo").onchange = () => {
+  $("gParcBox").classList.toggle("hidden", $("gMetodo").value !== "credit");
+  if ($("gMetodo").value === "prepaid") {
+    const falta = paraCentavos($("gValor").value) || 0;
+    if (kSaldo <= 0) aviso("Esta cliente não tem saldo de crédito antecipado.", "err");
+    else if (falta > kSaldo) $("gValor").value = (kSaldo / 100).toFixed(2).replace(".", ",");
+  }
+};
 
 let manterComanda = false;
 function irParaAba(t) { if (t === "comandas") manterComanda = true; document.querySelector(`.tabs button[data-tab="${t}"]`).click(); }
 
-async function comandaDoAgendamento(a) {
-  // já está numa comanda? abre ela
+// Pacotes válidos com saldo da cliente (por serviço)
+async function pacotesDaCliente(clientId) {
+  if (!clientId) return [];
+  const { data, error } = await sb.from("client_packages").select("id, name, expires_at, status, client_package_items(id, service_id, quantity_total, quantity_used, unit_value_cents)")
+    .eq("tenant_id", tenantId).eq("client_id", clientId).eq("status", "active").gt("expires_at", new Date().toISOString()).order("expires_at");
+  if (error) { erro(error); return []; }
+  return data.flatMap(p => (p.client_package_items || []).filter(i => i.quantity_used < i.quantity_total).map(i => ({ ...i, pacote: p })));
+}
+const pacoteDoServico = (lista, servId) => lista.find(i => i.service_id === servId);
+
+// Grava na agenda um serviço lançado direto na comanda (começa agora, ou logo depois do atendimento que ocupa o profissional).
+async function gravarNaAgenda(itemId, serv, profId, clientId, preco) {
+  const dur = (serv.duration_min || 30) * 60000;
+  let ini = new Date(Math.floor(Date.now() / 300000) * 300000);
+  for (let t = 0; t < 3; t++) {
+    const fim = new Date(ini.getTime() + dur);
+    const r = await sb.from("appointments").insert({
+      tenant_id: tenantId, client_id: clientId, professional_id: profId, service_id: serv.id, period: faixa(ini, fim),
+      price_cents: preco, source: "reception", status: ini.getTime() > Date.now() + 60000 ? "checked_in" : "in_service", created_by: usuarioId,
+    }).select("id").single();
+    if (!r.error && r.data) { await sb.from("comanda_items").update({ appointment_id: r.data.id }).eq("id", itemId); return { ini }; }
+    if (r.error?.code !== "23P01") return { erro: r.error?.message || "sem resposta" };
+    const oc = await sb.from("appointments").select("period").eq("professional_id", profId).not("status", "in", "(cancelled,no_show)").overlaps("period", faixa(ini, fim));
+    const fins = (oc.data || []).map(x => lerFaixa(x.period).fim.getTime()).filter(x => x > ini.getTime());
+    if (!fins.length) break;
+    ini = new Date(Math.max(...fins));
+  }
+  return { ocupado: true };
+}
+
+// Lança um serviço na comanda. prof pode ser "vez" (fila). Usa pacote ou brinde quando pedido. Sem agendamento, grava na agenda.
+async function lancarServico({ comanda, clientId, serv, prof, preco, desc = 0, pacItem = null, brinde = false, appointment = null, agendar = true }) {
+  let vez = false;
+  if (prof === "vez") {
+    const r = await sb.rpc("take_turn", { p_tenant: tenantId, p_service: serv.id });
+    if (r.error) throw r.error;
+    prof = r.data; vez = true;
+    if (!prof) throw new Error("não há profissional na fila da vez para esse serviço");
+  }
+  const valor = pacItem ? pacItem.unit_value_cents : brinde ? 0 : preco;
+  const ins = await sb.from("comanda_items").insert({
+    tenant_id: tenantId, comanda_id: comanda, service_id: serv.id, professional_id: prof || null,
+    description: serv.name + (pacItem ? ` (pacote ${pacItem.pacote.name})` : "") + (brinde ? " (brinde)" : ""),
+    quantity: 1, unit_price_cents: valor, discount_cents: pacItem || brinde ? 0 : desc, discount_approved_by: !pacItem && !brinde && desc > 0 ? usuarioId : null,
+    client_package_item_id: pacItem?.id || null, is_gift: brinde, by_turn: vez, appointment_id: appointment,
+  }).select("id").single();
+  if (ins.error) throw ins.error;
+  const itemId = ins.data?.id;
+  if (pacItem && valor > 0) {
+    const pg = await sb.from("payments").insert({ tenant_id: tenantId, comanda_id: comanda, method: "package", amount_cents: valor, comanda_item_id: itemId, received_by: usuarioId });
+    if (pg.error) { await sb.from("comanda_items").delete().eq("id", itemId); throw pg.error; }
+  }
+  let agenda = null;
+  if (agendar && !appointment && prof && itemId) agenda = await gravarNaAgenda(itemId, serv, prof, clientId, valor);
+  return { prof, vez, agenda };
+}
+function textoLancado(r, serv) {
+  const nome = profissionais.find(p => p.id === r.prof)?.name || "";
+  let t = `${serv.name}${nome ? ` com ${nome}` : ""}${r.vez ? " (profissional da vez)" : ""} lançado.`;
+  if (r.agenda?.ini) t += ` Gravado na agenda às ${r.agenda.ini.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.`;
+  if (r.agenda?.ocupado) t += " Não coube na agenda agora: o profissional está ocupado, ajuste na Agenda.";
+  if (r.agenda?.erro) t += " Não consegui gravar na agenda: " + r.agenda.erro;
+  return t;
+}
+
+// Comanda a partir do agendamento. abrir=false cria/acha a comanda sem sair da agenda (usado ao confirmar).
+async function comandaDoAgendamento(a, { abrir = true, chegou = true } = {}) {
   const ja = await sb.from("comanda_items").select("comanda_id").eq("appointment_id", a.id).limit(1);
   if (ja.error) return erro(ja.error);
-  let cid = ja.data[0]?.comanda_id;
+  let cid = ja.data[0]?.comanda_id, msg = "";
   if (!cid) {
     const aberta = await sb.from("comandas").select("id").eq("tenant_id", tenantId).eq("client_id", a.client_id).eq("status", "open").order("opened_at", { ascending: false }).limit(1);
     if (aberta.error) return erro(aberta.error);
@@ -2116,15 +2308,23 @@ async function comandaDoAgendamento(a) {
       if (n.error) return erro(n.error);
       cid = n.data.id;
     }
-    const it = await sb.from("comanda_items").insert({
-      tenant_id: tenantId, comanda_id: cid, appointment_id: a.id, service_id: a.service_id, professional_id: a.professional_id,
-      description: a.services?.name || "Serviço", quantity: 1, unit_price_cents: a.price_cents,
-    });
-    if (it.error) return erro(it.error);
-    if (["scheduled", "confirmed"].includes(a.status)) await sb.from("appointments").update({ status: "checked_in", updated_at: new Date().toISOString() }).eq("id", a.id);
+    const serv = servicos.find(s => s.id === a.service_id) || { id: a.service_id, name: a.services?.name || "Serviço", duration_min: 30 };
+    const pac = pacoteDoServico(await pacotesDaCliente(a.client_id), a.service_id);
+    try { await lancarServico({ comanda: cid, clientId: a.client_id, serv, prof: a.professional_id, preco: a.price_cents, pacItem: pac, appointment: a.id, agendar: false }); }
+    catch (e) { return erro(e); }
+    if (pac) msg = ` Usou 1 sessão do pacote ${pac.pacote.name}.`;
+    if (chegou && ["scheduled", "confirmed"].includes(a.status)) await sb.from("appointments").update({ status: "checked_in", updated_at: new Date().toISOString() }).eq("id", a.id);
   }
+  if (!abrir) return aviso(`Comanda de ${a.clients?.full_name || "cliente"} aberta com ${a.services?.name || "o serviço"}.${msg}`);
+  if (msg) aviso(msg.trim());
   comandaAberta = cid;
   irParaAba("comandas");
+}
+
+async function desenharFila() {
+  const ativos = profissionais.filter(p => p.active && p.in_turn_queue !== false);
+  const ord = [...ativos].sort((a, b) => (a.last_turn_at || "") < (b.last_turn_at || "") ? -1 : (a.last_turn_at || "") > (b.last_turn_at || "") ? 1 : a.name.localeCompare(b.name));
+  $("kFila").innerHTML = ord.length ? `<b>Fila da vez:</b> ${ord.map((p, i) => `${i + 1}. ${esc(p.name)}`).join(" · ")} <span>(na hora, o sistema pula quem não faz o serviço, não está no horário ou está atendendo)</span>` : "";
 }
 
 async function carregarComandas() {
@@ -2141,12 +2341,48 @@ async function carregarComandas() {
       <td><button class="ghost" data-k="${c.id}">Abrir</button></td></tr>`).join("")
     : '<tr><td colspan="5" class="muted">Nenhuma comanda aberta. Abra pela Agenda (botão Comanda) ou em "+ Nova comanda".</td></tr>';
   $("kLista").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.k; abrirComanda().then(() => $("kDet").scrollIntoView({ behavior: "smooth" })); });
+  desenharFila();
   if (comandaAberta) abrirComanda(); else $("kDet").classList.add("hidden");
 }
 
+// Painel da cliente dentro da comanda: agenda, pacotes, crédito, comandas, produtos usados e brindes
+async function desenharClienteComanda(c) {
+  const cid = c.client_id;
+  if (!cid) { $("kCli").innerHTML = ""; return; }
+  const agora = new Date(), hoje0 = localParaUtc(hojeLocal(), "00:00");
+  const [ag, pk, sd, cm, us] = await Promise.all([
+    sb.from("appointments").select("id, period, status, service_id, professional_id, price_cents, client_id, services(name), clients(full_name)").eq("tenant_id", tenantId).eq("client_id", cid)
+      .in("status", ["scheduled", "confirmed", "checked_in", "in_service"]).overlaps("period", faixa(hoje0, new Date(agora.getTime() + 60 * 86400000))),
+    sb.from("client_packages").select("id, name, expires_at, status, bought_at, client_package_items(service_id, quantity_total, quantity_used)").eq("tenant_id", tenantId).eq("client_id", cid).order("bought_at", { ascending: false }).limit(10),
+    sb.from("client_credit_balances").select("balance_cents").eq("tenant_id", tenantId).eq("client_id", cid),
+    sb.from("comandas").select("id, status, opened_at, closed_at, comanda_items(description, quantity, unit_price_cents, discount_cents)").eq("tenant_id", tenantId).eq("client_id", cid).neq("id", c.id).neq("status", "cancelled").order("opened_at", { ascending: false }).limit(6),
+    sb.from("comanda_items").select("description, quantity, is_gift, product_use, created_at, comandas!inner(client_id)").eq("tenant_id", tenantId).eq("comandas.client_id", cid).or("is_gift.eq.true,product_use.eq.true").order("created_at", { ascending: false }).limit(10),
+  ]);
+  kSaldo = Number(sd.data?.[0]?.balance_cents || 0);
+  const nomeServ = (id) => servicos.find(s => s.id === id)?.name || "serviço";
+  const nomeProf = (id) => profissionais.find(p => p.id === id)?.name || "";
+  const naComanda = new Set(kItens.map(i => i.appointment_id).filter(Boolean));
+  const ags = (ag.data || []).map(a => ({ ...a, ...lerFaixa(a.period) })).sort((a, b) => a.ini - b.ini);
+  const pacs = pk.data || [];
+  const validos = pacs.filter(p => p.status === "active" && new Date(p.expires_at) > agora && p.client_package_items.some(i => i.quantity_used < i.quantity_total));
+  const box = (t, corpo) => `<div class="bx"><b class="t">${t}</b>${corpo}</div>`;
+  const tot = (k) => k.comanda_items.reduce((t, i) => t + totalItem(i), 0);
+  $("kCli").innerHTML =
+    box("Agendados e em andamento", ags.map(a => `<div>${a.ini.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} ${a.ini.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · ${esc(a.services?.name || nomeServ(a.service_id))} · ${esc(nomeProf(a.professional_id))} <span class="pill">${esc(STATUS[a.status] || a.status)}</span>
+        ${naComanda.has(a.id) ? '<span class="muted">na comanda</span>' : c.status === "open" ? ` <button class="ghost" data-kag="${a.id}" style="padding:2px 8px">Lançar</button>` : ""}</div>`).join("") || '<span class="muted">Nada agendado.</span>')
+    + box("Pacotes", (validos.map(p => `<div><b>${esc(p.name)}</b> · vence ${dataBr(p.expires_at)}<br><span class="muted">${p.client_package_items.map(i => `${esc(nomeServ(i.service_id))}: ${i.quantity_total - i.quantity_used} de ${i.quantity_total}`).join(" · ")}</span></div>`).join("") || '<span class="muted">Nenhum pacote em aberto.</span>')
+        + (pacs.length > validos.length ? `<div class="muted">${pacs.length - validos.length} pacote(s) encerrado(s) no histórico</div>` : ""))
+    + box("Crédito antecipado", kSaldo > 0 ? `<div><b>${reais(kSaldo)}</b> de saldo</div><div class="muted">Use a forma "Crédito antecipado" no pagamento.</div>` : '<span class="muted">Sem saldo.</span>')
+    + box("Comandas", (cm.data || []).map(k => `<div>${k.status === "open" ? '<span class="pill off">aberta</span>' : dataBr(k.closed_at)} · ${reais(tot(k))} <span class="muted">${esc(k.comanda_items.map(i => i.description).slice(0, 3).join(", "))}</span> <button class="ghost" data-kver="${k.id}" style="padding:2px 8px">Ver</button></div>`).join("") || '<span class="muted">Primeira comanda da cliente.</span>')
+    + box("Produtos usados e brindes", (us.data || []).map(i => `<div>${dataBr(i.created_at)} · ${esc(i.description)}${i.product_use ? ` (${fmtQ(i.quantity)})` : ""} ${i.is_gift ? '<span class="pill">brinde</span>' : ""}</div>`).join("") || '<span class="muted">Nenhum ainda.</span>');
+  $("kCli").querySelectorAll("[data-kag]").forEach(b => b.onclick = () => { const a = ags.find(x => x.id === b.dataset.kag); if (a) comandaDoAgendamento(a).then(() => carregarComandas()); });
+  $("kCli").querySelectorAll("[data-kver]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.kver; abrirComanda().then(() => $("kDet").scrollIntoView({ behavior: "smooth" })); });
+}
+
 async function abrirComanda() {
-  const { data: c, error } = await sb.from("comandas").select("id, status, opened_at, clients(full_name, phone_e164)").eq("id", comandaAberta).single();
+  const { data: c, error } = await sb.from("comandas").select("id, status, opened_at, client_id, clients(full_name, phone_e164)").eq("id", comandaAberta).single();
   if (error) return erro(error);
+  kComanda = c;
   const [i, p] = await Promise.all([
     sb.from("comanda_items").select("*, professionals(name)").eq("comanda_id", comandaAberta).order("created_at"),
     sb.from("payments").select("*").eq("comanda_id", comandaAberta).order("paid_at"),
@@ -2154,16 +2390,17 @@ async function abrirComanda() {
   for (const r of [i, p]) if (r.error) return erro(r.error);
   kItens = i.data; kPags = p.data;
   const aberta = c.status === "open";
+  kPacItens = aberta ? await pacotesDaCliente(c.client_id) : [];
   $("kDet").classList.remove("hidden");
   $("kTitulo").innerHTML = `Comanda de ${esc(c.clients?.full_name || "Cliente")} ${aberta ? "" : `<span class="pill ${c.status === "cancelled" ? "off" : ""}">${c.status === "closed" ? "fechada" : "cancelada"}</span>`}`;
   $("kItens").innerHTML = kItens.length ? kItens.map(x => `<tr>
-      <td><b>${esc(x.description)}</b>${x.professionals ? ` <span class="muted">· ${esc(x.professionals.name)}</span>` : ""}${x.product_id ? ' <span class="pill">produto</span>' : ""}
-        ${x.discount_cents ? `<br><span class="muted">desconto de ${reais(x.discount_cents)}</span>` : ""}</td>
+      <td><b>${esc(x.description)}</b>${x.professionals ? ` <span class="muted">· ${esc(x.professionals.name)}${x.by_turn ? " (da vez)" : ""}</span>` : ""}${x.product_id ? ` <span class="pill">${x.product_use ? "usado no serviço" : "produto"}</span>` : ""}${x.is_gift ? ' <span class="pill">brinde</span>' : ""}${x.client_package_item_id ? ' <span class="pill">pacote</span>' : ""}${x.sold_package_id ? ' <span class="pill">venda de pacote</span>' : ""}
+        ${x.discount_cents ? `<br><span class="muted">desconto de ${reais(x.discount_cents)}</span>` : ""}${x.card_fee_cents ? `<br><span class="muted">taxa do cartão ${reais(x.card_fee_cents)}</span>` : ""}</td>
       <td>${fmtQ(x.quantity)}</td><td>${x.discount_cents ? `<s class="muted" style="font-size:12px">${reais(Math.round(x.quantity * x.unit_price_cents))}</s><br>` : ""}${reais(totalItem(x))}</td>
       <td>${aberta ? `<button class="danger" data-rmi="${x.id}">Remover</button>` : ""}</td></tr>`).join("")
     : '<tr><td colspan="4" class="muted">Sem itens ainda.</td></tr>';
-  $("kPags").innerHTML = kPags.map(g => `<tr><td>${METODOS[g.method]}${g.installments > 1 ? ` em ${g.installments}x` : ""}</td><td class="muted">${quando(g.paid_at)}</td><td>${reais(g.amount_cents)}</td>
-      <td>${aberta ? `<button class="danger" data-rmp="${g.id}">Remover</button>` : ""}</td></tr>`).join("") || '<tr><td class="muted">Nenhum pagamento ainda.</td></tr>';
+  $("kPags").innerHTML = kPags.map(g => `<tr><td>${METODOS[g.method] || g.method}${g.installments > 1 ? ` em ${g.installments}x` : ""}${g.comanda_item_id ? ' <span class="muted">(sessão do pacote)</span>' : ""}</td><td class="muted">${quando(g.paid_at)}</td><td>${reais(g.amount_cents)}</td>
+      <td>${aberta && !g.comanda_item_id ? `<button class="danger" data-rmp="${g.id}">Remover</button>` : ""}</td></tr>`).join("") || '<tr><td class="muted">Nenhum pagamento ainda.</td></tr>';
   const total = kItens.reduce((t, x) => t + totalItem(x), 0), pago = kPags.reduce((t, g) => t + g.amount_cents, 0);
   const descontos = kItens.reduce((t, x) => t + x.discount_cents, 0);
   $("kTotais").innerHTML = (descontos ? `<div class="kpi"><b>${reais(total + descontos)}</b>Subtotal</div><div class="kpi"><b>− ${reais(descontos)}</b>Descontos</div>` : "")
@@ -2172,10 +2409,12 @@ async function abrirComanda() {
   for (const id of ["kAddItem", "kAddPag", "kAcoes"]) $(id).classList.toggle("hidden", !aberta);
   $("gValor").value = total > pago ? ((total - pago) / 100).toFixed(2).replace(".", ",") : "";
   $("iDesc").disabled = !podeDesconto(); $("iDesc").title = podeDesconto() ? "" : "Só dono ou gerente dá desconto";
+  $("iBrindeBox").classList.toggle("hidden", !podeDesconto());
   preencherItens();
+  desenharClienteComanda(c);
   $("kItens").querySelectorAll("[data-rmi]").forEach(b => b.onclick = async () => {
     if (!confirm("Remover este item da comanda?")) return;
-    const { error } = await sb.from("comanda_items").delete().eq("id", b.dataset.rmi); if (error) return erro(error); carregarComandas();
+    const { error } = await sb.from("comanda_items").delete().eq("id", b.dataset.rmi); if (error) return aviso(error.message, "err"); carregarComandas();
   });
   $("kPags").querySelectorAll("[data-rmp]").forEach(b => b.onclick = async () => {
     if (!confirm("Remover este pagamento?")) return;
@@ -2183,55 +2422,123 @@ async function abrirComanda() {
   });
 }
 
+// ---------- Busca de serviço / produto / profissional com 3 letras ----------
+function profsDoServico(servId) {
+  const fazem = new Set(vinculos.filter(v => v.service_id === servId).map(v => v.professional_id));
+  return profissionais.filter(p => p.active && (!fazem.size || fazem.has(p.id)));
+}
+// onPick({ serv, prod, prof }) — prof: id, "vez" ou null
+function ligarBuscaItens(inputId, sugId, tipoFn, onPick) {
+  const inp = $(inputId), sug = $(sugId);
+  inp.oninput = () => {
+    const t = semAcento(inp.value.trim());
+    if (t.length < 3) { sug.classList.add("hidden"); return; }
+    const tipo = tipoFn();
+    let html = "";
+    if (tipo === "servico") {
+      const ss = servicos.filter(s => s.active && semAcento(s.name).includes(t)).slice(0, 8);
+      const ps = profissionais.filter(p => p.active && semAcento(p.name).includes(t)).slice(0, 4);
+      html += ss.map(s => `<div class="sl"><b>${esc(s.name)}</b> <span class="muted">${reais(s.price_cents)} · ${s.duration_min} min${pacoteDoServico(kPacItens, s.id) ? " · tem pacote" : ""}</span>
+        <div class="chips"><button type="button" data-bs="${s.id}" data-bp="vez">Profissional da vez</button>${profsDoServico(s.id).map(p => `<button type="button" data-bs="${s.id}" data-bp="${p.id}">${esc(p.name)}</button>`).join("")}</div></div>`).join("");
+      html += ps.map(p => { const sv = servicos.filter(s => s.active && vinculos.some(v => v.professional_id === p.id && v.service_id === s.id)).slice(0, 12);
+        return `<div class="sl"><b>${esc(p.name)}</b> <span class="muted">profissional</span><div class="chips">${sv.map(s => `<button type="button" data-bs="${s.id}" data-bp="${p.id}">${esc(s.name)}</button>`).join("") || '<span class="muted">sem serviços ligados</span>'}</div></div>`; }).join("");
+    } else {
+      html += produtos.filter(x => x.active && semAcento(x.name).includes(t)).slice(0, 10).map(x => `<div class="sl"><div class="chips"><button type="button" data-bpr="${x.id}">${esc(x.name)} · ${reais(x.price_cents)} · estoque ${fmtQ(x.stock_qty)}</button></div></div>`).join("");
+    }
+    sug.innerHTML = html || '<div class="muted" style="padding:8px 10px;font-size:13px">Nada encontrado com essas letras.</div>';
+    sug.classList.remove("hidden");
+    sug.querySelectorAll("[data-bs]").forEach(b => b.onmousedown = (ev) => { ev.preventDefault(); sug.classList.add("hidden"); onPick({ serv: servicos.find(s => s.id === b.dataset.bs), prof: b.dataset.bp }); });
+    sug.querySelectorAll("[data-bpr]").forEach(b => b.onmousedown = (ev) => { ev.preventDefault(); sug.classList.add("hidden"); onPick({ prod: produtos.find(x => x.id === b.dataset.bpr) }); });
+  };
+  inp.onblur = () => setTimeout(() => sug.classList.add("hidden"), 150);
+}
+
 function preencherItens() {
-  const tipo = $("iTipo").value;
-  const lista = tipo === "servico" ? servicos.filter(s => s.active) : produtos.filter(p => p.active);
-  $("iItem").innerHTML = lista.map(x => `<option value="${x.id}">${esc(x.name)}${tipo === "produto" ? ` (estoque ${fmtQ(x.stock_qty)})` : ""}</option>`).join("")
-    || `<option value="">${tipo === "servico" ? "Cadastre serviços" : "Cadastre produtos na aba Produtos"}</option>`;
-  $("iProfBox").classList.toggle("hidden", tipo !== "servico");
+  const tipo = $("iTipo").value, ehServ = tipo === "servico";
+  const lista = ehServ ? servicos.filter(s => s.active) : produtos.filter(p => p.active);
+  const atual = $("iItem").value;
+  $("iItem").innerHTML = lista.map(x => `<option value="${x.id}">${esc(x.name)}${!ehServ ? ` (estoque ${fmtQ(x.stock_qty)})` : ""}</option>`).join("")
+    || `<option value="">${ehServ ? "Cadastre serviços" : "Cadastre produtos na aba Produtos"}</option>`;
+  if (lista.some(x => x.id === atual)) $("iItem").value = atual;
+  $("iProfBox").classList.toggle("hidden", !ehServ);
+  $("iQtdLbl").textContent = tipo === "uso" ? "Fração usada" : "Qtd";
+  $("iQtd").placeholder = tipo === "uso" ? "ex.: 0,25" : "";
+  if (tipo === "uso" && $("iQtd").value === "1") $("iQtd").value = "";
+  if (tipo !== "uso" && !$("iQtd").value) $("iQtd").value = "1";
   $("iItem").onchange();
 }
-$("iTipo").onchange = preencherItens;
+$("iTipo").onchange = () => { $("iBusca").value = ""; preencherItens(); };
 $("iItem").onchange = () => {
   const tipo = $("iTipo").value, id = $("iItem").value;
   const x = (tipo === "servico" ? servicos : produtos).find(y => y.id === id);
   $("iPreco").value = x ? (x.price_cents / 100).toFixed(2).replace(".", ",") : "";
   if (tipo === "servico") {
-    const fazem = new Set(vinculos.filter(v => v.service_id === id).map(v => v.professional_id));
-    $("iProf").innerHTML = profissionais.filter(p => p.active && (!fazem.size || fazem.has(p.id))).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+    const atual = $("iProf").value;
+    $("iProf").innerHTML = '<option value="vez">Profissional da vez</option>' + profsDoServico(id).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+    if ([...$("iProf").options].some(o => o.value === atual)) $("iProf").value = atual;
   }
+  const pac = tipo === "servico" ? pacoteDoServico(kPacItens, id) : null;
+  $("iUsarPacBox").classList.toggle("hidden", !pac);
+  if (pac) { $("iUsarPac").checked = true; $("iUsarPacTxt").textContent = `Usar o pacote ${pac.pacote.name} (restam ${pac.quantity_total - pac.quantity_used}, vence ${dataBr(pac.pacote.expires_at)})`; }
+  calcItem();
 };
+function calcItem() {
+  const q = qtdBr($("iQtd").value), p = paraCentavos($("iPreco").value);
+  $("iCalc").textContent = $("iTipo").value !== "servico" && q > 0 && p >= 0 ? `${fmtQ(q)} × ${reais(p)} = ${reais(Math.round(q * p))}` : "";
+}
+$("iQtd").oninput = $("iPreco").oninput = calcItem;
+ligarBuscaItens("iBusca", "iSug", () => $("iTipo").value, ({ serv, prod, prof }) => {
+  if (serv) { $("iItem").value = serv.id; $("iItem").onchange(); if (prof) $("iProf").value = prof; $("iBusca").value = serv.name; }
+  if (prod) { $("iItem").value = prod.id; $("iItem").onchange(); $("iBusca").value = prod.name; $("iQtd").focus(); }
+});
 $("iAdd").onclick = async () => {
-  const tipo = $("iTipo").value, id = $("iItem").value;
-  const x = (tipo === "servico" ? servicos : produtos).find(y => y.id === id);
+  const tipo = $("iTipo").value, id = $("iItem").value, ehServ = tipo === "servico";
+  const x = (ehServ ? servicos : produtos).find(y => y.id === id);
   const qtd = qtdBr($("iQtd").value), preco = paraCentavos($("iPreco").value);
   const desc = $("iDesc").value.trim() ? paraCentavos($("iDesc").value) : 0;
+  const brinde = $("iBrinde").checked && podeDesconto();
   if (!x) return aviso("Escolha o item.", "err");
-  if (!(qtd > 0)) return aviso("Informe a quantidade (pode usar vírgula, ex.: 0,5).", "err");
-  if (tipo === "servico" && !Number.isInteger(qtd)) return aviso("Serviço vai em quantidade inteira.", "err");
+  if (!(qtd > 0)) return aviso(tipo === "uso" ? "Informe a fração usada (ex.: 0,25 = um quarto do produto)." : "Informe a quantidade (pode usar vírgula, ex.: 0,5).", "err");
+  if (ehServ && !Number.isInteger(qtd)) return aviso("Serviço vai em quantidade inteira.", "err");
   if (!(preco >= 0)) return aviso("Confira o preço, por exemplo 89,90.", "err");
   if (!(desc >= 0) || desc > Math.round(qtd * preco)) return aviso("O desconto não pode passar do valor do item.", "err");
   if (desc > 0 && !podeDesconto()) return aviso("Só o dono ou o gerente pode dar desconto.", "err");
-  if (tipo === "produto" && x.stock_qty < qtd && !confirm(`O estoque de ${x.name} é ${fmtQ(x.stock_qty)}. Lançar mesmo assim?`)) return;
-  const { error } = await sb.from("comanda_items").insert({
-    tenant_id: tenantId, comanda_id: comandaAberta, description: x.name, quantity: qtd, unit_price_cents: preco,
-    discount_cents: desc, discount_approved_by: desc > 0 ? usuarioId : null,
-    service_id: tipo === "servico" ? x.id : null, product_id: tipo === "produto" ? x.id : null,
-    professional_id: tipo === "servico" ? ($("iProf").value || null) : null,
-  });
-  if (error) return erro(error);
-  $("iQtd").value = 1; $("iDesc").value = "";
-  aviso("Item adicionado."); carregarComandas();
+  if (!ehServ && x.stock_qty < qtd && !confirm(`O estoque de ${x.name} é ${fmtQ(x.stock_qty)}. Lançar mesmo assim?`)) return;
+  $("iAdd").disabled = true;
+  try {
+    if (ehServ) {
+      const pac = $("iUsarPac").checked && !$("iUsarPacBox").classList.contains("hidden") ? pacoteDoServico(kPacItens, x.id) : null;
+      let msg = "";
+      for (let n = 0; n < qtd; n++) {
+        const p = n === 0 ? pac : null;
+        const r = await lancarServico({ comanda: comandaAberta, clientId: kComanda?.client_id, serv: x, prof: $("iProf").value, preco, desc: n === 0 ? desc : 0, pacItem: p, brinde });
+        msg = textoLancado(r, x) + (p ? ` Usou 1 sessão do pacote ${p.pacote.name}.` : "");
+      }
+      aviso(msg);
+    } else {
+      const { error } = await sb.from("comanda_items").insert({
+        tenant_id: tenantId, comanda_id: comandaAberta, description: (tipo === "uso" ? "Usado: " : "") + x.name + (brinde ? " (brinde)" : ""), quantity: qtd,
+        unit_price_cents: brinde ? 0 : preco, discount_cents: brinde ? 0 : desc, discount_approved_by: !brinde && desc > 0 ? usuarioId : null,
+        product_id: x.id, product_use: tipo === "uso", is_gift: brinde,
+      });
+      if (error) throw error;
+      aviso(brinde ? "Brinde lançado (baixa no estoque, sem cobrar)." : "Item adicionado.");
+    }
+    $("iQtd").value = tipo === "uso" ? "" : 1; $("iDesc").value = ""; $("iBrinde").checked = false; $("iBusca").value = "";
+    carregar().then(() => carregarComandas());
+  } catch (e) { aviso("Não deu para lançar: " + (e.message || e), "err"); }
+  finally { $("iAdd").disabled = false; }
 };
 $("gAdd").onclick = async () => {
   const valor = paraCentavos($("gValor").value), metodo = $("gMetodo").value;
   if (!(valor > 0)) return aviso("Informe o valor recebido, por exemplo 120,00.", "err");
+  if (metodo === "prepaid" && valor > kSaldo) return aviso(`O saldo de crédito da cliente é ${reais(kSaldo)}.`, "err");
   const { error } = await sb.from("payments").insert({
     tenant_id: tenantId, comanda_id: comandaAberta, method: metodo, amount_cents: valor,
     installments: metodo === "credit" ? parseInt($("gParc").value, 10) : 1, received_by: usuarioId,
   });
-  if (error) return erro(error);
-  aviso(`Pagamento em ${METODOS[metodo]} registrado.`); carregarComandas();
+  if (error) return aviso(error.message, "err");
+  aviso(`Pagamento em ${METODOS[metodo]} registrado.`); $("gMetodo").value = "pix"; $("gMetodo").onchange(); carregarComandas();
 };
 $("kFechar").onclick = async () => {
   const { error } = await sb.rpc("close_comanda", { p_comanda: comandaAberta });
@@ -2240,8 +2547,13 @@ $("kFechar").onclick = async () => {
   comandaAberta = null; await carregar(); carregarComandas(); clientStats = {};
 };
 $("kCancelar").onclick = async () => {
-  if (kPags.length) return aviso("Remova os pagamentos antes de cancelar a comanda.", "err");
-  if (!confirm("Cancelar esta comanda?")) return;
+  if (kPags.some(g => !g.comanda_item_id)) return aviso("Remova os pagamentos antes de cancelar a comanda.", "err");
+  if (!confirm("Cancelar esta comanda? Sessões de pacote usadas nela voltam para o saldo da cliente.")) return;
+  // devolve as sessões de pacote e desfaz pacotes vendidos nesta comanda
+  for (const i of kItens.filter(x => x.client_package_item_id || x.sold_package_id)) {
+    const { error } = await sb.from("comanda_items").delete().eq("id", i.id);
+    if (error) return aviso(error.message, "err");
+  }
   const { error } = await sb.from("comandas").update({ status: "cancelled", closed_at: new Date().toISOString(), closed_by: usuarioId }).eq("id", comandaAberta);
   if (error) return erro(error);
   // libera os atendimentos para entrarem em outra comanda
@@ -2254,41 +2566,261 @@ $("kNovaBtn").onclick = () => { $("kNova").classList.toggle("hidden"); if (!$("k
 // Nova comanda: procura a cliente pelo nome e mostra o celular; escolhida, o celular é preenchido.
 const telBonito = (e) => { const d = String(e || "").replace(/^\+55/, "").replace(/\D/g, ""); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : (e || ""); };
 const telDaLista = (e) => ehAdmin() ? telBonito(e) : (e ? "•••• " + String(e).slice(-4) : "");
-let kCliente = null, kSugTimer = null, kSugLista = [];
-$("kNome").oninput = () => {
-  if (kCliente) { kCliente = null; $("kTel").value = ""; $("kTel").readOnly = false; }
-  clearTimeout(kSugTimer);
-  const t = $("kNome").value.trim();
-  if (t.length < 2) { $("kSug").classList.add("hidden"); return; }
-  kSugTimer = setTimeout(async () => {
-    const termo = t.replace(/[%_,()]/g, " ").trim();
-    const { data, error } = await sb.from("clients").select("id, full_name, phone_e164").eq("tenant_id", tenantId).ilike("full_name", `%${termo}%`).order("full_name").limit(8);
-    if (error || $("kNome").value.trim() !== t) return;
-    kSugLista = data || [];
-    $("kSug").innerHTML = kSugLista.length ? kSugLista.map((c, i) => `<button type="button" data-ksug="${i}"><span>${esc(c.full_name || "Sem nome")}</span><span class="muted">${esc(telDaLista(c.phone_e164))}</span></button>`).join("")
-      : '<div class="muted" style="padding:8px 10px;font-size:13px">Nenhuma cliente com esse nome. Informe o celular para cadastrar.</div>';
-    $("kSug").classList.remove("hidden");
-    $("kSug").querySelectorAll("[data-ksug]").forEach(b => b.onmousedown = (ev) => { ev.preventDefault(); escolherClienteComanda(kSugLista[Number(b.dataset.ksug)]); });
-  }, 250);
-};
-$("kNome").onblur = () => setTimeout(() => $("kSug").classList.add("hidden"), 150);
-$("kNome").onkeydown = (ev) => { if (ev.key === "Enter" && kSugLista.length === 1 && !$("kSug").classList.contains("hidden")) { ev.preventDefault(); escolherClienteComanda(kSugLista[0]); } };
-function escolherClienteComanda(c) {
-  kCliente = c; $("kNome").value = c.full_name || ""; $("kTel").value = telDaLista(c.phone_e164); $("kTel").readOnly = true;
-  $("kSug").classList.add("hidden"); $("kCriar").focus();
+// Busca de cliente pelo nome (reaproveitada em comanda, pacotes e créditos). Retorna { atual(), limpar() }.
+function ligarBuscaCliente(nomeId, sugId, telId, onPick) {
+  const st = { cliente: null, timer: null, lista: [] };
+  const escolher = (c) => { st.cliente = c; $(nomeId).value = c.full_name || ""; $(telId).value = telDaLista(c.phone_e164); $(telId).readOnly = true; $(sugId).classList.add("hidden"); onPick && onPick(c); };
+  $(nomeId).oninput = () => {
+    if (st.cliente) { st.cliente = null; $(telId).value = ""; $(telId).readOnly = false; onPick && onPick(null); }
+    clearTimeout(st.timer);
+    const t = $(nomeId).value.trim();
+    if (t.length < 2) { $(sugId).classList.add("hidden"); return; }
+    st.timer = setTimeout(async () => {
+      const termo = t.replace(/[%_,()]/g, " ").trim();
+      const { data, error } = await sb.from("clients").select("id, full_name, phone_e164").eq("tenant_id", tenantId).ilike("full_name", `%${termo}%`).order("full_name").limit(8);
+      if (error || $(nomeId).value.trim() !== t) return;
+      st.lista = data || [];
+      $(sugId).innerHTML = st.lista.length ? st.lista.map((c, i) => `<button type="button" data-csug="${i}"><span>${esc(c.full_name || "Sem nome")}</span><span class="muted">${esc(telDaLista(c.phone_e164))}</span></button>`).join("")
+        : '<div class="muted" style="padding:8px 10px;font-size:13px">Nenhuma cliente com esse nome. Informe o celular para cadastrar.</div>';
+      $(sugId).classList.remove("hidden");
+      $(sugId).querySelectorAll("[data-csug]").forEach(b => b.onmousedown = (ev) => { ev.preventDefault(); escolher(st.lista[Number(b.dataset.csug)]); });
+    }, 250);
+  };
+  $(nomeId).onblur = () => setTimeout(() => $(sugId).classList.add("hidden"), 150);
+  $(nomeId).onkeydown = (ev) => { if (ev.key === "Enter" && st.lista.length === 1 && !$(sugId).classList.contains("hidden")) { ev.preventDefault(); escolher(st.lista[0]); } };
+  return {
+    escolher,
+    async id() {
+      if (st.cliente) return st.cliente.id;
+      const tel = normalizarTel($(telId).value);
+      if (!tel) throw new Error("escolha a cliente na lista pelo nome, ou informe o celular com DDD para cadastrar");
+      return acharOuCriarCliente(tel, $(nomeId).value.trim());
+    },
+    limpar() { st.cliente = null; $(nomeId).value = ""; $(telId).value = ""; $(telId).readOnly = false; },
+  };
 }
+const kBusca = ligarBuscaCliente("kNome", "kSug", "kTel", () => $("kServBusca").focus());
+let kNovaServ = null;
+ligarBuscaItens("kServBusca", "kServSug", () => "servico", ({ serv, prof }) => {
+  kNovaServ = serv; $("kServBusca").value = serv.name;
+  $("kProf").innerHTML = '<option value="vez">Profissional da vez</option>' + profsDoServico(serv.id).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+  $("kProf").value = prof || "vez";
+});
+$("kServBusca").addEventListener("input", () => { if (kNovaServ && $("kServBusca").value !== kNovaServ.name) kNovaServ = null; });
 $("kCancelarNova").onclick = () => $("kNova").classList.add("hidden");
 $("kCriar").onclick = async () => {
-  let clientId = kCliente?.id;
-  if (!clientId) {
-    const tel = normalizarTel($("kTel").value);
-    if (!tel) return aviso("Escolha a cliente na lista pelo nome, ou informe o celular com DDD para cadastrar.", "err");
-    try { clientId = await acharOuCriarCliente(tel, $("kNome").value.trim()); } catch (e) { return aviso("Não deu para abrir: " + e.message, "err"); }
-  }
-  const n = await sb.from("comandas").insert({ tenant_id: tenantId, client_id: clientId, opened_by: usuarioId }).select("id").single();
+  let clientId;
+  try { clientId = await kBusca.id(); } catch (e) { return aviso("Não deu para abrir: " + e.message, "err"); }
+  $("kCriar").disabled = true;
+  try {
+    const n = await sb.from("comandas").insert({ tenant_id: tenantId, client_id: clientId, opened_by: usuarioId }).select("id").single();
+    if (n.error) return erro(n.error);
+    comandaAberta = n.data.id;
+    if (kNovaServ) {
+      const pac = pacoteDoServico(await pacotesDaCliente(clientId), kNovaServ.id);
+      try { const r = await lancarServico({ comanda: comandaAberta, clientId, serv: kNovaServ, prof: $("kProf").value, preco: kNovaServ.price_cents, pacItem: pac }); aviso("Comanda aberta. " + textoLancado(r, kNovaServ) + (pac ? ` Usou 1 sessão do pacote ${pac.pacote.name}.` : "")); }
+      catch (e) { aviso("Comanda aberta, mas o serviço não foi lançado: " + (e.message || e), "err"); }
+    }
+    kBusca.limpar(); kNovaServ = null; $("kServBusca").value = ""; $("kProf").innerHTML = '<option value="vez">Profissional da vez</option>';
+    $("kNova").classList.add("hidden");
+    await carregar(); carregarComandas();
+  } finally { $("kCriar").disabled = false; }
+};
+
+// ---------- Taxas do cartão (settings.taxas_cartao, em %) ----------
+const pctBr = (v) => { const t = String(v ?? "").trim(); if (!t) return null; const n = Number(t.replace(",", ".")); return Number.isFinite(n) && n >= 0 && n < 100 ? n : NaN; };
+async function carregarTaxas() {
+  const { data } = await sb.from("tenants").select("settings").eq("id", tenantId).single();
+  const tx = data?.settings?.taxas_cartao || {};
+  const f = (n) => n == null ? "" : String(n).replace(".", ",");
+  $("txDeb").value = f(tx.debit); $("txCred").value = f(tx.credit); $("txParc").value = f(tx.credit_parc);
+}
+$("txSalvar").onclick = async () => {
+  const v = { debit: pctBr($("txDeb").value), credit: pctBr($("txCred").value), credit_parc: pctBr($("txParc").value) };
+  if (Object.values(v).some(x => Number.isNaN(x))) return aviso("Confira as taxas, por exemplo 3,2.", "err");
+  const atual = await sb.from("tenants").select("settings").eq("id", tenantId).single();
+  if (atual.error) return erro(atual.error);
+  const novo = { ...(atual.data.settings || {}), taxas_cartao: Object.fromEntries(Object.entries(v).filter(([, x]) => x != null)) };
+  const { data, error } = await sb.from("tenants").update({ settings: novo }).eq("id", tenantId).select("id");
+  if (error) return erro(error);
+  if (!data?.length) return aviso("Só o administrador grava as taxas.", "err");
+  settingsAtuais = novo; aviso("Taxas salvas. Valem para as próximas comandas fechadas.");
+};
+
+// ---------- Pacotes de serviços ----------
+let paModelos = [], paMontagem = [], paClientes = [];
+const paBusca = ligarBuscaCliente("paNome", "paSug", "paTel");
+function desenharMontagem() {
+  const soma = paMontagem.reduce((t, i) => t + i.qtd * (servicos.find(s => s.id === i.service_id)?.price_cents || 0), 0);
+  $("paItens").innerHTML = paMontagem.map((i, k) => `<tr><td>${esc(servicos.find(s => s.id === i.service_id)?.name || "Serviço")}</td><td>${i.qtd} sessão(ões)</td>
+      <td class="muted">${reais((servicos.find(s => s.id === i.service_id)?.price_cents || 0) * i.qtd)} avulso</td><td><button class="danger" data-parm="${k}">Tirar</button></td></tr>`).join("")
+    + (paMontagem.length ? `<tr><td colspan="4" class="muted">Valor avulso total: ${reais(soma)}${paraCentavos($("paPreco").value) > 0 ? ` · desconto do pacote: ${reais(soma - paraCentavos($("paPreco").value))}` : ""}</td></tr>` : '<tr><td class="muted">Inclua os serviços do pacote.</td></tr>');
+  $("paItens").querySelectorAll("[data-parm]").forEach(b => b.onclick = () => { paMontagem.splice(Number(b.dataset.parm), 1); desenharMontagem(); });
+}
+$("paPreco").oninput = desenharMontagem;
+$("paAddServ").onclick = () => {
+  const sid = $("paServ").value, q = parseInt($("paQtd").value, 10);
+  if (!sid || !(q > 0)) return aviso("Escolha o serviço e o número de sessões.", "err");
+  const ja = paMontagem.find(i => i.service_id === sid);
+  if (ja) ja.qtd += q; else paMontagem.push({ service_id: sid, qtd: q });
+  $("paQtd").value = 1; desenharMontagem();
+};
+$("paModelo").onchange = () => {
+  const m = paModelos.find(x => x.id === $("paModelo").value);
+  if (!m) return;
+  $("paNomePac").value = m.name; $("paDias").value = m.validity_days; $("paPreco").value = (m.price_cents / 100).toFixed(2).replace(".", ",");
+  paMontagem = m.package_template_items.map(i => ({ service_id: i.service_id, qtd: i.quantity })); desenharMontagem();
+};
+$("paLimpar").onclick = () => { paMontagem = []; $("paNomePac").value = ""; $("paPreco").value = ""; $("paDias").value = 90; $("paModelo").value = ""; paBusca.limpar(); desenharMontagem(); };
+function lerMontagem() {
+  const nome = $("paNomePac").value.trim(), dias = parseInt($("paDias").value, 10), preco = paraCentavos($("paPreco").value);
+  if (!nome) throw new Error("dê um nome ao pacote");
+  if (!(dias > 0)) throw new Error("informe a validade em dias");
+  if (!(preco >= 0)) throw new Error("informe o preço do pacote");
+  if (!paMontagem.length) throw new Error("inclua pelo menos um serviço");
+  return { nome, dias, preco };
+}
+$("paSalvarModelo").onclick = async () => {
+  let m; try { m = lerMontagem(); } catch (e) { return aviso("Falta: " + e.message, "err"); }
+  const n = await sb.from("package_templates").insert({ tenant_id: tenantId, name: m.nome, validity_days: m.dias, price_cents: m.preco }).select("id").single();
   if (n.error) return erro(n.error);
-  $("kTel").value = ""; $("kNome").value = ""; $("kTel").readOnly = false; kCliente = null; $("kNova").classList.add("hidden");
-  comandaAberta = n.data.id; carregarComandas();
+  const it = await sb.from("package_template_items").insert(paMontagem.map(i => ({ tenant_id: tenantId, template_id: n.data.id, service_id: i.service_id, quantity: i.qtd })));
+  if (it.error) return erro(it.error);
+  aviso("Modelo de pacote salvo."); carregarPacotes();
+};
+// Valor de cada sessão = preço do pacote rateado pelo preço avulso dos serviços (base da comissão quando a sessão for usada)
+function valoresSessao(preco, itens) {
+  const soma = itens.reduce((t, i) => t + i.qtd * (servicos.find(s => s.id === i.service_id)?.price_cents || 0), 0);
+  const sess = itens.reduce((t, i) => t + i.qtd, 0);
+  return itens.map(i => soma > 0 ? Math.round(preco * (servicos.find(s => s.id === i.service_id)?.price_cents || 0) / soma) : Math.round(preco / sess));
+}
+$("paVender").onclick = async () => {
+  let m; try { m = lerMontagem(); } catch (e) { return aviso("Falta: " + e.message, "err"); }
+  let clientId; try { clientId = await paBusca.id(); } catch (e) { return aviso("Cliente: " + e.message, "err"); }
+  $("paVender").disabled = true;
+  try {
+    // comanda aberta da cliente (ou uma nova) para ela pagar o pacote
+    const ab = await sb.from("comandas").select("id").eq("tenant_id", tenantId).eq("client_id", clientId).eq("status", "open").order("opened_at", { ascending: false }).limit(1);
+    if (ab.error) throw ab.error;
+    let cid = ab.data[0]?.id;
+    if (!cid) { const n = await sb.from("comandas").insert({ tenant_id: tenantId, client_id: clientId, opened_by: usuarioId }).select("id").single(); if (n.error) throw n.error; cid = n.data.id; }
+    const exp = new Date(Date.now() + m.dias * 86400000); exp.setHours(23, 59, 0, 0);
+    const pk = await sb.from("client_packages").insert({ tenant_id: tenantId, client_id: clientId, template_id: $("paModelo").value || null, name: m.nome, price_cents: m.preco, expires_at: exp.toISOString(), comanda_id: cid, created_by: usuarioId }).select("id").single();
+    if (pk.error) throw pk.error;
+    const vals = valoresSessao(m.preco, paMontagem);
+    const it = await sb.from("client_package_items").insert(paMontagem.map((i, k) => ({ tenant_id: tenantId, client_package_id: pk.data.id, service_id: i.service_id, quantity_total: i.qtd, unit_value_cents: vals[k] })));
+    if (it.error) throw it.error;
+    const ci = await sb.from("comanda_items").insert({ tenant_id: tenantId, comanda_id: cid, description: `Pacote: ${m.nome} (vale até ${exp.toLocaleDateString("pt-BR")})`, quantity: 1, unit_price_cents: m.preco, sold_package_id: pk.data.id });
+    if (ci.error) throw ci.error;
+    aviso(`Pacote ${m.nome} vendido. Ele está na comanda da cliente para receber o pagamento.`);
+    $("paLimpar").onclick();
+    comandaAberta = cid; irParaAba("comandas");
+  } catch (e) { aviso("Não deu para vender: " + (e.message || e), "err"); }
+  finally { $("paVender").disabled = false; }
+};
+$("paFiltro").onchange = $("paBusca").oninput = () => desenharPacotesClientes();
+async function carregarPacotes() {
+  $("paServ").innerHTML = servicos.filter(s => s.active).map(s => `<option value="${s.id}">${esc(s.name)} · ${reais(s.price_cents)}</option>`).join("");
+  $("paModelosCard").classList.toggle("hidden", !ehAdmin());
+  $("paSalvarModelo").classList.toggle("hidden", !ehAdmin());
+  const [m, c] = await Promise.all([
+    sb.from("package_templates").select("*, package_template_items(service_id, quantity)").eq("tenant_id", tenantId).order("name"),
+    sb.from("client_packages").select("*, clients(full_name), client_package_items(service_id, quantity_total, quantity_used)").eq("tenant_id", tenantId).order("bought_at", { ascending: false }).limit(500),
+  ]);
+  for (const r of [m, c]) if (r.error) return erro(r.error);
+  paModelos = m.data; paClientes = c.data;
+  const atual = $("paModelo").value;
+  $("paModelo").innerHTML = '<option value="">Montar do zero</option>' + paModelos.filter(x => x.active).map(x => `<option value="${x.id}">${esc(x.name)} · ${reais(x.price_cents)}</option>`).join("");
+  $("paModelo").value = paModelos.some(x => x.id === atual) ? atual : "";
+  const nomeServ = (id) => servicos.find(s => s.id === id)?.name || "serviço";
+  $("paModelos").innerHTML = paModelos.map(x => `<tr><td><b>${esc(x.name)}</b>${x.active ? "" : ' <span class="pill off">inativo</span>'}</td>
+      <td class="muted">${x.package_template_items.map(i => `${i.quantity}× ${esc(nomeServ(i.service_id))}`).join(", ")}</td><td>${x.validity_days} dias</td><td>${reais(x.price_cents)}</td>
+      <td><button class="ghost" data-pmativo="${x.id}">${x.active ? "Desativar" : "Ativar"}</button></td></tr>`).join("") || '<tr><td colspan="5" class="muted">Nenhum modelo. Monte um pacote acima e clique em "Salvar como modelo".</td></tr>';
+  $("paModelos").querySelectorAll("[data-pmativo]").forEach(b => b.onclick = async () => {
+    const x = paModelos.find(y => y.id === b.dataset.pmativo);
+    const { error } = await sb.from("package_templates").update({ active: !x.active }).eq("id", x.id); if (error) return erro(error); carregarPacotes();
+  });
+  desenharMontagem(); desenharPacotesClientes();
+}
+function situacaoPacote(p) {
+  if (p.status === "cancelled") return "cancelados";
+  const saldo = p.client_package_items.some(i => i.quantity_used < i.quantity_total);
+  if (!saldo) return "usados";
+  return new Date(p.expires_at) > new Date() ? "abertos" : "vencidos";
+}
+function desenharPacotesClientes() {
+  const f = $("paFiltro").value, t = semAcento($("paBusca").value.trim());
+  const nomeServ = (id) => servicos.find(s => s.id === id)?.name || "serviço";
+  const lista = paClientes.filter(p => (f === "todos" || situacaoPacote(p) === f) && (!t || semAcento(p.clients?.full_name).includes(t)));
+  const rot = { abertos: "", vencidos: '<span class="pill off">vencido</span>', usados: '<span class="pill">usado</span>', cancelados: '<span class="pill off">cancelado</span>' };
+  $("paLista").innerHTML = lista.map(p => `<tr><td><b>${esc(p.clients?.full_name || "Cliente")}</b></td><td>${esc(p.name)} <span class="muted">${reais(p.price_cents)}</span> ${rot[situacaoPacote(p)]}</td>
+      <td class="muted">${dataBr(p.bought_at)}</td><td>${dataBr(p.expires_at)}</td>
+      <td class="muted">${p.client_package_items.map(i => `${esc(nomeServ(i.service_id))}: ${i.quantity_total - i.quantity_used}/${i.quantity_total}`).join("<br>")}</td>
+      <td>${p.comanda_id ? `<button class="ghost" data-pak="${p.comanda_id}">Comanda</button>` : ""}</td></tr>`).join("")
+    || '<tr><td colspan="6" class="muted">Nenhum pacote nessa situação.</td></tr>';
+  $("paLista").querySelectorAll("[data-pak]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.pak; irParaAba("comandas"); });
+}
+
+// ---------- Créditos antecipados ----------
+// ao escolher a cliente, mostra o histórico dela também
+const crBusca = ligarBuscaCliente("crNome", "crSug", "crTel", (c) => { if (c) abrirHistoricoCliente(c.id, c.full_name); });
+$("crMetodo").innerHTML = Object.entries(METODOS).filter(([k]) => !["package", "prepaid"].includes(k)).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+$("crMetodo").onchange = () => $("crParcBox").classList.toggle("hidden", $("crMetodo").value !== "credit");
+let crHistCliente = null;
+$("crReceber").onclick = async () => {
+  const valor = paraCentavos($("crValor").value), metodo = $("crMetodo").value;
+  if (!(valor > 0)) return aviso("Informe o valor recebido, por exemplo 300,00.", "err");
+  let clientId; try { clientId = await crBusca.id(); } catch (e) { return aviso("Cliente: " + e.message, "err"); }
+  const nome = $("crNome").value.trim();
+  if (!confirm(`Receber ${reais(valor)} em ${METODOS[metodo]} como crédito de ${nome || "cliente"}?`)) return;
+  const { error } = await sb.rpc("receive_credit", { p_client: clientId, p_amount: valor, p_method: metodo,
+    p_installments: metodo === "credit" ? parseInt($("crParc").value, 10) : 1, p_notes: $("crObs").value.trim() || null });
+  if (error) return aviso(error.message, "err");
+  aviso(`Crédito de ${reais(valor)} recebido. Entrou no faturamento de hoje e no saldo da cliente.`);
+  $("crValor").value = ""; $("crObs").value = ""; crBusca.limpar();
+  await carregarCreditos(); abrirHistoricoCliente(clientId, nome);
+};
+async function carregarCreditos() {
+  const { data, error } = await sb.from("client_credit_balances").select("client_id, balance_cents, last_move").eq("tenant_id", tenantId).gt("balance_cents", 0).order("balance_cents", { ascending: false });
+  if (error) return erro(error);
+  const ids = data.map(x => x.client_id);
+  const nomes = ids.length ? (await sb.from("clients").select("id, full_name").in("id", ids)).data || [] : [];
+  const nomeDe = (id) => nomes.find(c => c.id === id)?.full_name || "Cliente";
+  const total = data.reduce((t, x) => t + Number(x.balance_cents), 0);
+  $("crSaldos").innerHTML = data.map(x => `<tr><td><b>${esc(nomeDe(x.client_id))}</b></td><td>${reais(Number(x.balance_cents))}</td><td class="muted">${quando(x.last_move)}</td>
+      <td><button class="ghost" data-crh="${x.client_id}">Histórico</button></td></tr>`).join("")
+    + (data.length ? `<tr><td class="muted">Total em créditos a usar</td><td><b>${reais(total)}</b></td><td></td><td></td></tr>` : '<tr><td colspan="4" class="muted">Nenhuma cliente com saldo. Para ver o histórico de pagamentos de qualquer cliente, digite o nome no campo acima.</td></tr>');
+  $("crSaldos").querySelectorAll("[data-crh]").forEach(b => b.onclick = () => abrirHistoricoCliente(b.dataset.crh, nomeDe(b.dataset.crh)));
+}
+async function abrirHistoricoCliente(clientId, nome) {
+  crHistCliente = clientId;
+  const [mv, cm] = await Promise.all([
+    sb.from("client_credits").select("amount_cents, kind, notes, created_at, comanda_id").eq("tenant_id", tenantId).eq("client_id", clientId).order("created_at", { ascending: false }),
+    sb.from("comandas").select("id, closed_at, comanda_items(description, quantity, unit_price_cents, discount_cents), payments(method, amount_cents, installments)").eq("tenant_id", tenantId).eq("client_id", clientId).eq("status", "closed").order("closed_at", { ascending: false }).limit(50),
+  ]);
+  for (const r of [mv, cm]) if (r.error) return erro(r.error);
+  const saldo = mv.data.reduce((t, x) => t + x.amount_cents, 0);
+  const gasto = cm.data.reduce((t, k) => t + k.comanda_items.reduce((s, i) => s + totalItem(i), 0), 0);
+  const KIND = { deposit: "Crédito recebido", use: "Usado em comanda", refund: "Devolvido à cliente", adjust: "Ajuste" };
+  $("crHistCard").classList.remove("hidden");
+  $("crHistTitulo").textContent = "Histórico de " + (nome || "cliente");
+  $("crHistKpis").innerHTML = `<div class="kpi"><b>${reais(saldo)}</b>Saldo de crédito</div><div class="kpi"><b>${cm.data.length}</b>Comandas pagas</div><div class="kpi"><b>${reais(gasto)}</b>Total das comandas</div>`;
+  $("crMovs").innerHTML = mv.data.map(x => `<tr><td class="muted">${quando(x.created_at)}</td><td>${KIND[x.kind]}${x.notes ? ` <span class="muted">· ${esc(x.notes)}</span>` : ""}</td><td style="color:${x.amount_cents < 0 ? "#b4443b" : "inherit"}">${x.amount_cents < 0 ? "− " : "+ "}${reais(Math.abs(x.amount_cents))}</td></tr>`).join("") || '<tr><td class="muted">Sem movimentos de crédito.</td></tr>';
+  $("crAjusteBox").classList.toggle("hidden", !ehAdmin());
+  $("crPags").innerHTML = cm.data.map(k => `<tr><td class="muted">${quando(k.closed_at)}</td><td>${esc(k.comanda_items.map(i => i.description).join(", "))}</td>
+      <td>${reais(k.comanda_items.reduce((s, i) => s + totalItem(i), 0))}</td><td>${esc(formaDe(k.payments))}</td></tr>`).join("") || '<tr><td colspan="4" class="muted">Nenhuma comanda fechada.</td></tr>';
+  $("crHistCard").scrollIntoView({ behavior: "smooth" });
+}
+$("crHistFechar").onclick = () => { $("crHistCard").classList.add("hidden"); crHistCliente = null; };
+$("crAjustar").onclick = async () => {
+  const v = paraCentavos($("crAjValor").value), tipo = $("crAjTipo").value, motivo = $("crAjObs").value.trim();
+  if (!(v > 0)) return aviso("Informe o valor do ajuste.", "err");
+  if (!motivo) return aviso("Escreva o motivo do ajuste.", "err");
+  const amount = tipo === "adjust+" ? v : -v;
+  const { error } = await sb.rpc("adjust_credit", { p_client: crHistCliente, p_amount: amount, p_kind: tipo === "refund" ? "refund" : "adjust", p_notes: motivo });
+  if (error) return aviso(error.message, "err");
+  $("crAjValor").value = ""; $("crAjObs").value = "";
+  aviso("Ajuste lançado."); carregarCreditos(); abrirHistoricoCliente(crHistCliente, $("crHistTitulo").textContent.replace("Histórico de ", ""));
 };
 // ---------- Caixa: relatório de faturamento ----------
 let relatorio = [];
@@ -2316,23 +2848,27 @@ async function carregarCaixa() {
   if (!$("fAte").value || $("fAte").value < $("fDe").value) $("fAte").value = $("fDe").value;
   const ini = localParaUtc($("fDe").value, "00:00").toISOString(), fim = localParaUtc(somarDias($("fAte").value, 1), "00:00").toISOString();
   const { data: fechadas, error } = await sb.from("comandas")
-    .select("id, closed_at, clients(full_name), comanda_items(description, quantity, unit_price_cents, discount_cents, product_id, service_id, professional_id, professionals(name)), payments(method, amount_cents, installments)")
+    .select("id, closed_at, clients(full_name), comanda_items(description, quantity, unit_price_cents, discount_cents, product_id, service_id, professional_id, client_package_item_id, professionals(name)), payments(method, amount_cents, installments)")
     .eq("tenant_id", tenantId).eq("status", "closed").gte("closed_at", ini).lt("closed_at", fim).order("closed_at", { ascending: false });
   if (error) return erro(error);
-  let total = 0, servs = 0, prods = 0, desc = 0, nComandas = 0;
+  let total = 0, servs = 0, prods = 0, desc = 0, nComandas = 0, jaFat = 0, jaCred = 0;
   relatorio = [];
   for (const c of fechadas) {
     const forma = formaDe(c.payments);
     const itens = c.comanda_items.filter(i => (!fProf || i.professional_id === fProf)
       && (!fServ || (fServ.startsWith("s:") ? i.service_id === fServ.slice(2) : i.product_id === fServ.slice(2))));
     if (itens.length) nComandas++;
+    if (!fProf && !fServ) jaCred += c.payments.filter(g => g.method === "prepaid").reduce((t, g) => t + g.amount_cents, 0);
     for (const i of itens) {
-      const v = totalItem(i); total += v; desc += i.discount_cents; i.product_id ? prods += v : servs += v;
+      const v = totalItem(i);
+      if (i.client_package_item_id) { jaFat += v; relatorio.push({ comanda: c.id, data: c.closed_at, cliente: c.clients?.full_name || "Cliente", item: i.description, tipo: "Sessão de pacote", prof: i.professionals?.name || "", valor: v, desconto: 0, forma: "Pacote (já faturado na venda)", jaFat: true }); continue; }
+      total += v; desc += i.discount_cents; i.product_id ? prods += v : servs += v;
       relatorio.push({ comanda: c.id, data: c.closed_at, cliente: c.clients?.full_name || "Cliente", item: i.description + (Number(i.quantity) !== 1 ? ` (${fmtQ(i.quantity)}x)` : ""),
         tipo: i.product_id ? "Produto" : "Serviço", prof: i.professionals?.name || "", valor: v, desconto: i.discount_cents, forma });
     }
   }
-  $("kResumo").innerHTML = `<div class="kpi"><b>${reais(total)}</b>Faturado</div><div class="kpi"><b>${nComandas}</b>Comandas</div>`
+  total -= jaCred; servs -= jaCred; jaFat += jaCred;
+  $("kResumo").innerHTML = `<div class="kpi"><b>${reais(total)}</b>Faturado</div>${jaFat ? `<div class="kpi"><b>${reais(jaFat)}</b>Usado de pacote ou crédito (faturado antes)</div>` : ""}<div class="kpi"><b>${nComandas}</b>Comandas</div>`
     + `<div class="kpi"><b>${reais(nComandas ? Math.round(total / nComandas) : 0)}</b>Ticket médio</div>`
     + `<div class="kpi"><b>${reais(servs)}</b>Serviços</div><div class="kpi"><b>${reais(prods)}</b>Produtos</div>`
     + `<div class="kpi"><b>${reais(desc)}</b>Descontos</div>`;
@@ -2369,10 +2905,12 @@ async function carregarComissoes() {
   if (!$("mProf").options.length) { $("mProf").innerHTML = '<option value="">Todos</option>' + profissionais.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join(""); }
   if (ehProf() && !meus.length) { $("mItens").innerHTML = '<tr><td colspan="7" class="muted">Seu login ainda não está ligado a um profissional. Peça ao administrador.</td></tr>'; return; }
   $("mPagarTudo").classList.toggle("hidden", !ehAdmin());
+  $("txCard").classList.toggle("hidden", !ehAdmin());
+  if (ehAdmin()) carregarTaxas();
   const filtro = ehProf() ? meus : ($("mProf").value ? [$("mProf").value] : null);
   const ini = localParaUtc($("mDe").value, "00:00").toISOString(), fim = localParaUtc(somarDias($("mAte").value, 1), "00:00").toISOString();
   let q = sb.from("comanda_items")
-    .select("id, description, quantity, unit_price_cents, discount_cents, commission_pct, commission_cents, commission_paid_at, professional_id, comandas!inner(status, closed_at, clients(full_name))")
+    .select("id, description, quantity, unit_price_cents, discount_cents, commission_pct, commission_cents, commission_paid_at, professional_id, card_fee_cents, client_package_item_id, comandas!inner(status, closed_at, clients(full_name))")
     .eq("tenant_id", tenantId).not("professional_id", "is", null).is("product_id", null)
     .eq("comandas.status", "closed").gte("comandas.closed_at", ini).lt("comandas.closed_at", fim);
   if (filtro) q = q.in("professional_id", filtro);
@@ -2398,7 +2936,7 @@ async function carregarComissoes() {
       <td><b>${reais(tot(l, "commission_cents"))}</b></td><td>${media(n)}</td><td>${t.data.filter(c => c.referred_by_professional_id === id).length}</td></tr>`;
   }).join("") || '<tr><td colspan="6" class="muted">Nenhum atendimento no período.</td></tr>';
   $("mItens").innerHTML = comissoes.map(i => `<tr><td class="muted">${quando(i.data)}</td><td>${esc(i.cliente)}</td><td>${esc(i.description)}${Number(i.quantity) !== 1 ? ` (${fmtQ(i.quantity)}x)` : ""}</td>
-      <td>${esc(i.prof)}</td><td>${reais(i.valor)}</td><td>${i.commission_pct != null ? Number(i.commission_pct).toLocaleString("pt-BR") + "%" : "—"}</td><td><b>${reais(i.commission_cents || 0)}</b></td>
+      <td>${esc(i.prof)}</td><td>${reais(i.valor)}${i.card_fee_cents ? `<br><span class="muted" style="font-size:12px">taxa cartão − ${reais(i.card_fee_cents)}</span>` : ""}${i.client_package_item_id ? ' <span class="pill">pacote</span>' : ""}</td><td>${i.commission_pct != null ? Number(i.commission_pct).toLocaleString("pt-BR") + "%" : "—"}</td><td><b>${reais(i.commission_cents || 0)}</b></td>
       <td>${!i.commission_cents ? "" : i.commission_paid_at ? `<span class="pill">Paga ${new Date(i.commission_paid_at).toLocaleDateString("pt-BR")}</span>${ehAdmin() ? ` <button class="ghost" data-mpago="${i.id}" data-v="0" title="Desfazer pagamento">↺</button>` : ""}`
         : ehAdmin() ? `<button class="ghost" data-mpago="${i.id}" data-v="1">Marcar paga</button>` : '<span class="muted">A receber</span>'}</td></tr>`).join("")
     || '<tr><td colspan="8" class="muted">Nenhum atendimento em comanda fechada no período.</td></tr>';
