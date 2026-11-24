@@ -118,7 +118,7 @@
   .st.atrasado.atrasado { background:#ffd8b0; color:#8a3b00; } .st.clica { cursor:pointer; } .st.clica:hover { outline:1px solid rgba(0,0,0,.25); }
   .xcanc { background:none; border:0; color:var(--danger); font-weight:700; font-size:15px; padding:0 4px; cursor:pointer; line-height:1; }
   .st.scheduled, .st.confirmed { background:#e8eaf6; } .st.checked_in, .st.in_service { background:#cfe3ff; } .st.done { background:#c8e6c9; } .st.no_show, .st.cancelled { background:#f3e3e2; color:var(--danger); }
-  .row.itens { grid-template-columns: 130px minmax(200px,2fr) minmax(150px,1.3fr) 80px 130px 130px; }
+  .row.itens { grid-template-columns: 150px minmax(180px,2fr) minmax(140px,1.2fr) 70px 110px 110px 120px; }
   .row.pags { grid-template-columns: minmax(150px,1fr) minmax(130px,1fr) minmax(110px,1fr) 2fr; }
   .row.periodo { grid-template-columns: 160px 160px auto; align-items:end; }
   @media (max-width:900px) { .row.itens, .row.pags, .row.periodo { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); } }
@@ -128,6 +128,28 @@
   .ap-bt { position:absolute; top:3px; right:4px; display:flex; gap:4px; }
   .ap-bt button { font-size:11px; padding:2px 7px; border-radius:6px; border:1px solid rgba(0,0,0,.15); }
   .ap-bt .feito { background:#b9e3b5; color:#1b4d1b; } .ap-bt .canc { background:#f6c343; color:#4a3500; }
+  /* ---- visual mais compacto: campos menores, menos espaço, botões e títulos em destaque ---- */
+  body { font-size:14px; }
+  main { padding:12px; }
+  .card { padding:12px 14px; margin-bottom:12px; border-radius:10px; }
+  label { font-size:12px; margin:6px 0 3px; font-weight:600; color:#6b625b; }
+  input, select, textarea { padding:6px 8px; border-radius:6px; font-size:14px; min-height:32px; }
+  input:focus, select:focus, textarea:focus { outline:2px solid #d9b89f; border-color:var(--brand); }
+  textarea { min-height:48px; }
+  .row { grid-template-columns: repeat(auto-fill, minmax(170px, 250px)); gap:6px 10px; }
+  th, td { padding:6px 8px; }
+  .actions { margin-top:10px; gap:6px; }
+  button { padding:7px 14px; font-weight:600; border-radius:7px; }
+  button:not(.ghost):not(.danger):not(.grp-bt):not(.info-bt):not(.xcanc) { box-shadow:0 2px 6px rgba(138,90,60,.35); }
+  button:not(.ghost):not(.danger):not(.grp-bt):not(.info-bt):not(.xcanc):hover { filter:brightness(1.08); }
+  button.ghost { border-color:#cfb39e; background:#fbf7f3; }
+  button.ghost:hover { background:#f3ebe3; }
+  button.danger { border-color:#e3b8b4; }
+  .grp-menu button, .sug button, .sug .sl .chips button, .seg button, .ap-bt button { box-shadow:none !important; }
+  .card h2 { font-size:17px; color:var(--brand); border-left:4px solid var(--brand); padding-left:8px; margin:0 0 8px; }
+  .card > b:first-child, .card > .actions:first-child > b, .card h3 { font-size:15px; color:var(--brand); }
+  .kpi b { font-size:17px; }
+  .msg { padding:12px 40px 12px 16px; font-size:15px; }
   .p-sel { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px; }
   .p-sel-cat { font-size:12px; font-weight:600; color:var(--muted); min-width:90px; }
   .p-chip { display:inline-flex; align-items:center; gap:4px; background:#f3ebe3; color:var(--ink); border-radius:999px; padding:3px 4px 3px 10px; font-size:13px; }
@@ -355,7 +377,7 @@
         <h2 style="margin-top:0">Montar pacote</h2>
         <p class="muted">Pacote é uma cesta de serviços que a cliente paga antes e usa dentro da validade. Ao vender, o pacote entra na comanda da cliente para ela pagar; depois, cada vez que ela fizer um desses serviços, a comanda usa uma sessão do pacote sem cobrar de novo. O profissional recebe comissão sobre o valor da sessão.</p>
         <div class="row">
-          <div><label for="paModelo">Começar de um modelo</label><select id="paModelo"></select></div>
+          <div><label for="paModelo">Modelo</label><select id="paModelo"></select></div>
           <div><label for="paNomePac">Nome do pacote</label><input id="paNomePac" placeholder="Ex.: 4 escovas"></div>
           <div><label for="paDias">Validade (dias)</label><input id="paDias" inputmode="numeric" value="90"></div>
           <div><label for="paPreco">Preço do pacote (R$)</label><input id="paPreco" inputmode="decimal"></div>
@@ -368,7 +390,7 @@
         </div>
         <table style="margin-top:6px"><tbody id="paItens"></tbody></table>
         <div class="row" style="margin-top:10px">
-          <div style="position:relative"><label for="paNome">Cliente (digite o nome)</label><input id="paNome" placeholder="Nome e sobrenome" autocomplete="off"><div id="paSug" class="sug hidden"></div></div>
+          <div style="position:relative"><label for="paNome">Cliente (nome ou celular)</label><input id="paNome" placeholder="Nome ou celular" autocomplete="off"><div id="paSug" class="sug hidden"></div></div>
           <div><label for="paTel">Celular (WhatsApp)</label><input id="paTel" inputmode="tel" placeholder="41 99999-9999"></div>
         </div>
         <div class="actions">
@@ -396,7 +418,7 @@
         <h2 style="margin-top:0">Receber crédito antecipado</h2>
         <p class="muted">A cliente paga um valor agora e vai usando nos próximos atendimentos. O valor entra no faturamento do dia em que foi recebido; na comanda, use a forma de pagamento "Crédito antecipado" para descontar do saldo.</p>
         <div class="row">
-          <div style="position:relative"><label for="crNome">Cliente (digite o nome)</label><input id="crNome" placeholder="Nome e sobrenome" autocomplete="off"><div id="crSug" class="sug hidden"></div></div>
+          <div style="position:relative"><label for="crNome">Cliente (nome ou celular)</label><input id="crNome" placeholder="Nome ou celular" autocomplete="off"><div id="crSug" class="sug hidden"></div></div>
           <div><label for="crTel">Celular (WhatsApp)</label><input id="crTel" inputmode="tel" placeholder="41 99999-9999"></div>
         </div>
         <div class="row pags">
@@ -439,7 +461,7 @@
         </div>
         <div class="hidden" id="kNova" style="margin-top:8px">
           <div class="row">
-            <div style="position:relative"><label for="kNome">Cliente (digite o nome)</label><input id="kNome" placeholder="Nome e sobrenome" autocomplete="off"><div id="kSug" class="sug hidden"></div></div>
+            <div style="position:relative"><label for="kNome">Cliente (nome ou celular)</label><input id="kNome" placeholder="Nome ou celular" autocomplete="off"><div id="kSug" class="sug hidden"></div></div>
             <div><label for="kTel">Celular (WhatsApp)</label><input id="kTel" inputmode="tel" placeholder="41 99999-9999"></div>
           </div>
           <div class="row">
@@ -449,6 +471,7 @@
           <div class="actions"><button id="kCriar">Abrir comanda</button><button class="ghost" id="kCancelarNova">Fechar</button></div>
         </div>
         <table><thead><tr><th>Cliente</th><th>Aberta</th><th>Total</th><th>Falta</th><th></th></tr></thead><tbody id="kLista"></tbody></table>
+        <div id="kAlerta" class="hidden" style="margin-top:8px;padding:8px 10px;border-radius:8px;background:#fdecea;color:#8a1f17;font-size:13px"></div>
         <p class="muted" style="font-size:13px;margin-bottom:0" id="kFila"></p>
       </div>
 
@@ -460,7 +483,7 @@
         <div id="kCli" class="kcli"></div>
         <table style="margin-top:8px"><thead><tr><th>Item</th><th>Qtd</th><th>Valor</th><th></th></tr></thead><tbody id="kItens"></tbody></table>
         <div id="kAddItem">
-          <div class="row" style="margin-top:8px">
+          <div class="row" style="margin-top:8px;grid-template-columns:minmax(260px,620px)">
             <div style="position:relative"><label for="iBusca">Buscar serviço, produto ou profissional (3 letras)</label><input id="iBusca" placeholder="Ex.: esc, tinta, Ana" autocomplete="off"><div id="iSug" class="sug hidden"></div></div>
           </div>
           <div class="row itens">
@@ -470,10 +493,11 @@
             <div><label for="iQtd" id="iQtdLbl">Qtd</label><input id="iQtd" inputmode="decimal" value="1"></div>
             <div><label for="iPreco">Preço unit. (R$)</label><input id="iPreco" inputmode="decimal"></div>
             <div><label for="iDesc">Desconto (R$)</label><input id="iDesc" inputmode="decimal" placeholder="0,00"></div>
+            <div id="iSitBox"><label for="iSit">Situação</label><select id="iSit"><option value="in_service">Atendendo</option><option value="scheduled">Agendado</option><option value="done">Concluído</option></select></div>
           </div>
           <div class="actions" style="align-items:center">
             <label class="chk hidden" id="iUsarPacBox"><input type="checkbox" id="iUsarPac" checked> <span id="iUsarPacTxt"></span></label>
-            <label class="chk hidden" id="iBrindeBox"><input type="checkbox" id="iBrinde"> Brinde (sem cobrar)</label>
+            <label class="chk hidden" id="iBrindeBox"><input type="checkbox" id="iBrinde"> Cortesia (desconto de 100%)</label>
             <span class="muted" id="iCalc"></span>
           </div>
           <div class="actions"><button class="ghost" id="iAdd">+ Adicionar item</button></div>
@@ -664,7 +688,7 @@
           <span class="actions" style="margin:0;align-items:center">
             <button class="ghost" id="tAbrir">Classificação</button>
             <button id="clNovo">+ Novo cliente</button>
-            <input id="clBusca" placeholder="Buscar por nome ou telefone" style="max-width:240px">
+            <input id="clBusca" type="search" placeholder="Buscar por nome ou celular" style="max-width:260px">
           </span>
         </div>
         <table><thead id="clCab"></thead><tbody id="clLista"></tbody></table>
@@ -2240,14 +2264,14 @@ async function pacotesDaCliente(clientId) {
 const pacoteDoServico = (lista, servId) => lista.find(i => i.service_id === servId);
 
 // Grava na agenda um serviço lançado direto na comanda (começa agora, ou logo depois do atendimento que ocupa o profissional).
-async function gravarNaAgenda(itemId, serv, profId, clientId, preco) {
+async function gravarNaAgenda(itemId, serv, profId, clientId, preco, situacao = "in_service") {
   const dur = (serv.duration_min || 30) * 60000;
   let ini = new Date(Math.floor(Date.now() / 300000) * 300000);
   for (let t = 0; t < 3; t++) {
     const fim = new Date(ini.getTime() + dur);
     const r = await sb.from("appointments").insert({
       tenant_id: tenantId, client_id: clientId, professional_id: profId, service_id: serv.id, period: faixa(ini, fim),
-      price_cents: preco, source: "reception", status: ini.getTime() > Date.now() + 60000 ? "checked_in" : "in_service", created_by: usuarioId,
+      price_cents: preco, source: "reception", status: situacao === "in_service" && ini.getTime() > Date.now() + 60000 ? "checked_in" : situacao, created_by: usuarioId,
     }).select("id").single();
     if (!r.error && r.data) { await sb.from("comanda_items").update({ appointment_id: r.data.id }).eq("id", itemId); return { ini }; }
     if (r.error?.code !== "23P01") return { erro: r.error?.message || "sem resposta" };
@@ -2260,7 +2284,7 @@ async function gravarNaAgenda(itemId, serv, profId, clientId, preco) {
 }
 
 // Lança um serviço na comanda. prof pode ser "vez" (fila). Usa pacote ou brinde quando pedido. Sem agendamento, grava na agenda.
-async function lancarServico({ comanda, clientId, serv, prof, preco, desc = 0, pacItem = null, brinde = false, appointment = null, agendar = true }) {
+async function lancarServico({ comanda, clientId, serv, prof, preco, desc = 0, pacItem = null, brinde = false, appointment = null, agendar = true, situacao = "in_service" }) {
   let vez = false;
   if (prof === "vez") {
     const r = await sb.rpc("take_turn", { p_tenant: tenantId, p_service: serv.id });
@@ -2268,12 +2292,13 @@ async function lancarServico({ comanda, clientId, serv, prof, preco, desc = 0, p
     prof = r.data; vez = true;
     if (!prof) throw new Error("não há profissional na fila da vez para esse serviço");
   }
-  const valor = pacItem ? pacItem.unit_value_cents : brinde ? 0 : preco;
+  const valor = pacItem ? pacItem.unit_value_cents : preco;
+  const descF = pacItem ? 0 : brinde ? valor : desc;
   const ins = await sb.from("comanda_items").insert({
     tenant_id: tenantId, comanda_id: comanda, service_id: serv.id, professional_id: prof || null,
-    description: serv.name + (pacItem ? ` (pacote ${pacItem.pacote.name})` : "") + (brinde ? " (brinde)" : ""),
-    quantity: 1, unit_price_cents: valor, discount_cents: pacItem || brinde ? 0 : desc, discount_approved_by: !pacItem && !brinde && desc > 0 ? usuarioId : null,
-    client_package_item_id: pacItem?.id || null, is_gift: brinde, by_turn: vez, appointment_id: appointment,
+    description: serv.name + (pacItem ? ` (pacote ${pacItem.pacote.name})` : "") + (brinde && !pacItem ? " (cortesia)" : ""),
+    quantity: 1, unit_price_cents: valor, discount_cents: descF, discount_approved_by: descF > 0 ? usuarioId : null,
+    client_package_item_id: pacItem?.id || null, is_gift: brinde && !pacItem, by_turn: vez, appointment_id: appointment,
   }).select("id").single();
   if (ins.error) throw ins.error;
   const itemId = ins.data?.id;
@@ -2282,7 +2307,7 @@ async function lancarServico({ comanda, clientId, serv, prof, preco, desc = 0, p
     if (pg.error) { await sb.from("comanda_items").delete().eq("id", itemId); throw pg.error; }
   }
   let agenda = null;
-  if (agendar && !appointment && prof && itemId) agenda = await gravarNaAgenda(itemId, serv, prof, clientId, valor);
+  if (agendar && !appointment && prof && itemId) agenda = await gravarNaAgenda(itemId, serv, prof, clientId, valor, situacao);
   return { prof, vez, agenda };
 }
 function textoLancado(r, serv) {
@@ -2332,11 +2357,32 @@ async function carregarComandas() {
     .select("id, status, opened_at, closed_at, client_id, clients(full_name, phone_e164), comanda_items(quantity, unit_price_cents, discount_cents), payments(amount_cents)")
     .eq("tenant_id", tenantId).eq("status", "open").order("opened_at");
   if (error) return erro(error);
-  comandas = data;
   const tot = (c) => c.comanda_items.reduce((t, i) => t + totalItem(i), 0), pago = (c) => c.payments.reduce((t, p) => t + p.amount_cents, 0);
+  // Comandas de dias anteriores ainda abertas: o sistema fecha as pagas, cancela as vazias e avisa as que têm valor a receber
+  const diaDe = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date(t)), hoje = hojeLocal();
+  const antigas = data.filter(c => diaDe(c.opened_at) < hoje);
+  const fechadas = [], canceladas = [], pendentes = [];
+  if (!ehProf()) for (const c of antigas) {
+    if (!c.comanda_items.length && !c.payments.length) {
+      const r = await sb.from("comandas").update({ status: "cancelled", closed_at: new Date().toISOString(), closed_by: usuarioId }).eq("id", c.id);
+      if (!r.error) { canceladas.push(c); continue; }
+    } else if (c.comanda_items.length && pago(c) >= tot(c)) {
+      const r = await sb.rpc("close_comanda", { p_comanda: c.id });
+      if (!r.error) { fechadas.push(c); continue; }
+    }
+    pendentes.push(c);
+  }
+  const nomeC = (c) => c.clients?.full_name || "Cliente";
+  if (fechadas.length || canceladas.length) {
+    aviso(`Fechamento automático de comandas de dias anteriores: ${fechadas.length ? `${fechadas.length} fechada(s) (${fechadas.map(nomeC).join(", ")})` : ""}${fechadas.length && canceladas.length ? "; " : ""}${canceladas.length ? `${canceladas.length} vazia(s) cancelada(s)` : ""}.`, pendentes.length ? "err" : undefined);
+    if (fechadas.length) carregar();
+  }
+  $("kAlerta").classList.toggle("hidden", !pendentes.length);
+  $("kAlerta").innerHTML = pendentes.length ? `<b>⚠ ${pendentes.length} comanda(s) de dias anteriores não puderam ser fechadas porque falta receber:</b> ${pendentes.map(c => `${esc(nomeC(c))} (${dataBr(c.opened_at)}, falta ${reais(Math.max(tot(c) - pago(c), 0))})`).join(" · ")}. Registre o pagamento ou cancele.` : "";
+  comandas = data.filter(c => !fechadas.includes(c) && !canceladas.includes(c));
   $("kLista").innerHTML = comandas.length ? comandas.map(c => `<tr>
       <td><b>${esc(c.clients?.full_name || "Cliente")}</b><br><span class="muted">${esc(telVisivel(c.clients?.phone_e164))}</span></td>
-      <td class="muted">${quando(c.opened_at)}</td><td>${reais(tot(c))}</td>
+      <td class="muted">${quando(c.opened_at)}${diaDe(c.opened_at) < hoje ? ' <span class="pill off">dia anterior</span>' : ""}</td><td>${reais(tot(c))}</td>
       <td>${!c.comanda_items.length ? '<span class="pill">vazia</span>' : tot(c) - pago(c) > 0 ? `<span class="pill off">${reais(tot(c) - pago(c))}</span>` : '<span class="pill">pago</span>'}</td>
       <td><button class="ghost" data-k="${c.id}">Abrir</button></td></tr>`).join("")
     : '<tr><td colspan="5" class="muted">Nenhuma comanda aberta. Abra pela Agenda (botão Comanda) ou em "+ Nova comanda".</td></tr>';
@@ -2374,7 +2420,7 @@ async function desenharClienteComanda(c) {
         + (pacs.length > validos.length ? `<div class="muted">${pacs.length - validos.length} pacote(s) encerrado(s) no histórico</div>` : ""))
     + box("Crédito antecipado", kSaldo > 0 ? `<div><b>${reais(kSaldo)}</b> de saldo</div><div class="muted">Use a forma "Crédito antecipado" no pagamento.</div>` : '<span class="muted">Sem saldo.</span>')
     + box("Comandas", (cm.data || []).map(k => `<div>${k.status === "open" ? '<span class="pill off">aberta</span>' : dataBr(k.closed_at)} · ${reais(tot(k))} <span class="muted">${esc(k.comanda_items.map(i => i.description).slice(0, 3).join(", "))}</span> <button class="ghost" data-kver="${k.id}" style="padding:2px 8px">Ver</button></div>`).join("") || '<span class="muted">Primeira comanda da cliente.</span>')
-    + box("Produtos usados e brindes", (us.data || []).map(i => `<div>${dataBr(i.created_at)} · ${esc(i.description)}${i.product_use ? ` (${fmtQ(i.quantity)})` : ""} ${i.is_gift ? '<span class="pill">brinde</span>' : ""}</div>`).join("") || '<span class="muted">Nenhum ainda.</span>');
+    + box("Produtos usados e cortesias", (us.data || []).map(i => `<div>${dataBr(i.created_at)} · ${esc(i.description)}${i.product_use ? ` (${fmtQ(i.quantity)})` : ""} ${i.is_gift ? '<span class="pill">cortesia</span>' : ""}</div>`).join("") || '<span class="muted">Nenhum ainda.</span>');
   $("kCli").querySelectorAll("[data-kag]").forEach(b => b.onclick = () => { const a = ags.find(x => x.id === b.dataset.kag); if (a) comandaDoAgendamento(a).then(() => carregarComandas()); });
   $("kCli").querySelectorAll("[data-kver]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.kver; abrirComanda().then(() => $("kDet").scrollIntoView({ behavior: "smooth" })); });
 }
@@ -2384,7 +2430,7 @@ async function abrirComanda() {
   if (error) return erro(error);
   kComanda = c;
   const [i, p] = await Promise.all([
-    sb.from("comanda_items").select("*, professionals(name)").eq("comanda_id", comandaAberta).order("created_at"),
+    sb.from("comanda_items").select("*, professionals(name), appointments(status)").eq("comanda_id", comandaAberta).order("created_at"),
     sb.from("payments").select("*").eq("comanda_id", comandaAberta).order("paid_at"),
   ]);
   for (const r of [i, p]) if (r.error) return erro(r.error);
@@ -2393,9 +2439,14 @@ async function abrirComanda() {
   kPacItens = aberta ? await pacotesDaCliente(c.client_id) : [];
   $("kDet").classList.remove("hidden");
   $("kTitulo").innerHTML = `Comanda de ${esc(c.clients?.full_name || "Cliente")} ${aberta ? "" : `<span class="pill ${c.status === "cancelled" ? "off" : ""}">${c.status === "closed" ? "fechada" : "cancelada"}</span>`}`;
+  const SIT = { scheduled: "scheduled", confirmed: "scheduled", checked_in: "in_service", in_service: "in_service", done: "done", cancelled: "cancelled", no_show: "cancelled" };
+  const SIT_TXT = { scheduled: "Agendado", in_service: "Atendendo", done: "Concluído", cancelled: "Cancelado" };
+  const sitHtml = (x) => { if (!x.appointment_id || !x.appointments) return ""; const v = SIT[x.appointments.status] || "scheduled";
+    return aberta ? `<br><select data-ksit="${x.id}" class="st ${v}" style="width:auto;min-height:0;padding:2px 6px;font-size:12px;margin-top:3px">${Object.entries(SIT_TXT).map(([k, t]) => `<option value="${k}" ${k === v ? "selected" : ""}>${t}</option>`).join("")}</select>`
+      : ` <span class="st ${v}">${SIT_TXT[v]}</span>`; };
   $("kItens").innerHTML = kItens.length ? kItens.map(x => `<tr>
-      <td><b>${esc(x.description)}</b>${x.professionals ? ` <span class="muted">· ${esc(x.professionals.name)}${x.by_turn ? " (da vez)" : ""}</span>` : ""}${x.product_id ? ` <span class="pill">${x.product_use ? "usado no serviço" : "produto"}</span>` : ""}${x.is_gift ? ' <span class="pill">brinde</span>' : ""}${x.client_package_item_id ? ' <span class="pill">pacote</span>' : ""}${x.sold_package_id ? ' <span class="pill">venda de pacote</span>' : ""}
-        ${x.discount_cents ? `<br><span class="muted">desconto de ${reais(x.discount_cents)}</span>` : ""}${x.card_fee_cents ? `<br><span class="muted">taxa do cartão ${reais(x.card_fee_cents)}</span>` : ""}</td>
+      <td><b>${esc(x.description)}</b>${x.professionals ? ` <span class="muted">· ${esc(x.professionals.name)}${x.by_turn ? " (da vez)" : ""}</span>` : ""}${x.product_id ? ` <span class="pill">${x.product_use ? "usado no serviço" : "produto"}</span>` : ""}${x.is_gift ? ' <span class="pill">cortesia</span>' : ""}${x.client_package_item_id ? ' <span class="pill">pacote</span>' : ""}${x.sold_package_id ? ' <span class="pill">venda de pacote</span>' : ""}
+        ${sitHtml(x)}${x.discount_cents ? `<br><span class="muted">desconto de ${reais(x.discount_cents)}</span>` : ""}${x.card_fee_cents ? `<br><span class="muted">taxa do cartão ${reais(x.card_fee_cents)}</span>` : ""}</td>
       <td>${fmtQ(x.quantity)}</td><td>${x.discount_cents ? `<s class="muted" style="font-size:12px">${reais(Math.round(x.quantity * x.unit_price_cents))}</s><br>` : ""}${reais(totalItem(x))}</td>
       <td>${aberta ? `<button class="danger" data-rmi="${x.id}">Remover</button>` : ""}</td></tr>`).join("")
     : '<tr><td colspan="4" class="muted">Sem itens ainda.</td></tr>';
@@ -2415,6 +2466,19 @@ async function abrirComanda() {
   $("kItens").querySelectorAll("[data-rmi]").forEach(b => b.onclick = async () => {
     if (!confirm("Remover este item da comanda?")) return;
     const { error } = await sb.from("comanda_items").delete().eq("id", b.dataset.rmi); if (error) return aviso(error.message, "err"); carregarComandas();
+  });
+  $("kItens").querySelectorAll("[data-ksit]").forEach(sel => sel.onchange = async () => {
+    const x = kItens.find(i => i.id === sel.dataset.ksit), v = sel.value;
+    if (v === "cancelled") {
+      if (!confirm(`Cancelar ${x.description}? O horário fica cancelado na agenda e o serviço sai da comanda.`)) { sel.value = SIT[x.appointments.status]; return; }
+      const a = await sb.from("appointments").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", x.appointment_id);
+      if (a.error) return erro(a.error);
+      const d = await sb.from("comanda_items").delete().eq("id", x.id); if (d.error) return aviso(d.error.message, "err");
+      aviso("Serviço cancelado e retirado da comanda."); return carregarComandas();
+    }
+    const { error } = await sb.from("appointments").update({ status: v, updated_at: new Date().toISOString() }).eq("id", x.appointment_id);
+    if (error) return erro(error);
+    aviso(`Situação: ${SIT_TXT[v]}.`); carregarComandas();
   });
   $("kPags").querySelectorAll("[data-rmp]").forEach(b => b.onclick = async () => {
     if (!confirm("Remover este pagamento?")) return;
@@ -2460,7 +2524,7 @@ function preencherItens() {
   $("iItem").innerHTML = lista.map(x => `<option value="${x.id}">${esc(x.name)}${!ehServ ? ` (estoque ${fmtQ(x.stock_qty)})` : ""}</option>`).join("")
     || `<option value="">${ehServ ? "Cadastre serviços" : "Cadastre produtos na aba Produtos"}</option>`;
   if (lista.some(x => x.id === atual)) $("iItem").value = atual;
-  $("iProfBox").classList.toggle("hidden", !ehServ);
+  $("iProfBox").classList.toggle("hidden", !ehServ); $("iSitBox").classList.toggle("hidden", !ehServ);
   $("iQtdLbl").textContent = tipo === "uso" ? "Fração usada" : "Qtd";
   $("iQtd").placeholder = tipo === "uso" ? "ex.: 0,25" : "";
   if (tipo === "uso" && $("iQtd").value === "1") $("iQtd").value = "";
@@ -2511,18 +2575,18 @@ $("iAdd").onclick = async () => {
       let msg = "";
       for (let n = 0; n < qtd; n++) {
         const p = n === 0 ? pac : null;
-        const r = await lancarServico({ comanda: comandaAberta, clientId: kComanda?.client_id, serv: x, prof: $("iProf").value, preco, desc: n === 0 ? desc : 0, pacItem: p, brinde });
+        const r = await lancarServico({ comanda: comandaAberta, clientId: kComanda?.client_id, serv: x, prof: $("iProf").value, preco, desc: n === 0 ? desc : 0, pacItem: p, brinde, situacao: $("iSit").value });
         msg = textoLancado(r, x) + (p ? ` Usou 1 sessão do pacote ${p.pacote.name}.` : "");
       }
       aviso(msg);
     } else {
       const { error } = await sb.from("comanda_items").insert({
-        tenant_id: tenantId, comanda_id: comandaAberta, description: (tipo === "uso" ? "Usado: " : "") + x.name + (brinde ? " (brinde)" : ""), quantity: qtd,
-        unit_price_cents: brinde ? 0 : preco, discount_cents: brinde ? 0 : desc, discount_approved_by: !brinde && desc > 0 ? usuarioId : null,
+        tenant_id: tenantId, comanda_id: comandaAberta, description: (tipo === "uso" ? "Usado: " : "") + x.name + (brinde ? " (cortesia)" : ""), quantity: qtd,
+        unit_price_cents: preco, discount_cents: brinde ? Math.round(qtd * preco) : desc, discount_approved_by: brinde || desc > 0 ? usuarioId : null,
         product_id: x.id, product_use: tipo === "uso", is_gift: brinde,
       });
       if (error) throw error;
-      aviso(brinde ? "Brinde lançado (baixa no estoque, sem cobrar)." : "Item adicionado.");
+      aviso(brinde ? "Cortesia lançada (desconto de 100%, baixa no estoque)." : "Item adicionado.");
     }
     $("iQtd").value = tipo === "uso" ? "" : 1; $("iDesc").value = ""; $("iBrinde").checked = false; $("iBusca").value = "";
     carregar().then(() => carregarComandas());
@@ -2576,8 +2640,10 @@ function ligarBuscaCliente(nomeId, sugId, telId, onPick) {
     const t = $(nomeId).value.trim();
     if (t.length < 2) { $(sugId).classList.add("hidden"); return; }
     st.timer = setTimeout(async () => {
-      const termo = t.replace(/[%_,()]/g, " ").trim();
-      const { data, error } = await sb.from("clients").select("id, full_name, phone_e164").eq("tenant_id", tenantId).ilike("full_name", `%${termo}%`).order("full_name").limit(8);
+      const termo = t.replace(/[%_,()]/g, " ").trim(), dig = telLocal(t);
+      let q = sb.from("clients").select("id, full_name, phone_e164").eq("tenant_id", tenantId);
+      q = !/[a-z]/i.test(t) && dig.length >= 3 ? q.or(`phone_e164.like.%${dig}%,phone_e164.like.%${sem9(dig)}%`) : q.ilike("full_name", `%${termo.split(" ").join("%")}%`);
+      const { data, error } = await q.order("full_name").limit(8);
       if (error || $(nomeId).value.trim() !== t) return;
       st.lista = data || [];
       $(sugId).innerHTML = st.lista.length ? st.lista.map((c, i) => `<button type="button" data-csug="${i}"><span>${esc(c.full_name || "Sem nome")}</span><span class="muted">${esc(telDaLista(c.phone_e164))}</span></button>`).join("")
@@ -2613,12 +2679,19 @@ $("kCriar").onclick = async () => {
   try { clientId = await kBusca.id(); } catch (e) { return aviso("Não deu para abrir: " + e.message, "err"); }
   $("kCriar").disabled = true;
   try {
-    const n = await sb.from("comandas").insert({ tenant_id: tenantId, client_id: clientId, opened_by: usuarioId }).select("id").single();
-    if (n.error) return erro(n.error);
-    comandaAberta = n.data.id;
+    const ab = await sb.from("comandas").select("id").eq("tenant_id", tenantId).eq("client_id", clientId).eq("status", "open").order("opened_at", { ascending: false }).limit(1);
+    if (ab.error) return erro(ab.error);
+    let jaAberta = ab.data[0]?.id;
+    if (jaAberta) comandaAberta = jaAberta;
+    else {
+      const n = await sb.from("comandas").insert({ tenant_id: tenantId, client_id: clientId, opened_by: usuarioId }).select("id").single();
+      if (n.error) return erro(n.error);
+      comandaAberta = n.data.id;
+    }
+    if (jaAberta && !kNovaServ) aviso("Esta cliente já tem uma comanda aberta. Abri a mesma comanda.");
     if (kNovaServ) {
       const pac = pacoteDoServico(await pacotesDaCliente(clientId), kNovaServ.id);
-      try { const r = await lancarServico({ comanda: comandaAberta, clientId, serv: kNovaServ, prof: $("kProf").value, preco: kNovaServ.price_cents, pacItem: pac }); aviso("Comanda aberta. " + textoLancado(r, kNovaServ) + (pac ? ` Usou 1 sessão do pacote ${pac.pacote.name}.` : "")); }
+      try { const r = await lancarServico({ comanda: comandaAberta, clientId, serv: kNovaServ, prof: $("kProf").value, preco: kNovaServ.price_cents, pacItem: pac }); aviso((jaAberta ? "Lançado na comanda que já estava aberta. " : "Comanda aberta. ") + textoLancado(r, kNovaServ) + (pac ? ` Usou 1 sessão do pacote ${pac.pacote.name}.` : "")); }
       catch (e) { aviso("Comanda aberta, mas o serviço não foi lançado: " + (e.message || e), "err"); }
     }
     kBusca.limpar(); kNovaServ = null; $("kServBusca").value = ""; $("kProf").innerHTML = '<option value="vez">Profissional da vez</option>';
@@ -2667,7 +2740,7 @@ $("paAddServ").onclick = () => {
 };
 $("paModelo").onchange = () => {
   const m = paModelos.find(x => x.id === $("paModelo").value);
-  if (!m) return;
+  if (!m) { paMontagem = []; $("paNomePac").value = ""; $("paPreco").value = ""; $("paDias").value = 90; $("paQtd").value = 1; desenharMontagem(); $("paNomePac").focus(); return; }
   $("paNomePac").value = m.name; $("paDias").value = m.validity_days; $("paPreco").value = (m.price_cents / 100).toFixed(2).replace(".", ",");
   paMontagem = m.package_template_items.map(i => ({ service_id: i.service_id, qtd: i.quantity })); desenharMontagem();
 };
@@ -2730,7 +2803,7 @@ async function carregarPacotes() {
   for (const r of [m, c]) if (r.error) return erro(r.error);
   paModelos = m.data; paClientes = c.data;
   const atual = $("paModelo").value;
-  $("paModelo").innerHTML = '<option value="">Montar do zero</option>' + paModelos.filter(x => x.active).map(x => `<option value="${x.id}">${esc(x.name)} · ${reais(x.price_cents)}</option>`).join("");
+  $("paModelo").innerHTML = '<option value="">Novo pacote</option>' + paModelos.filter(x => x.active).map(x => `<option value="${x.id}">${esc(x.name)} · ${reais(x.price_cents)}</option>`).join("");
   $("paModelo").value = paModelos.some(x => x.id === atual) ? atual : "";
   const nomeServ = (id) => servicos.find(s => s.id === id)?.name || "serviço";
   $("paModelos").innerHTML = paModelos.map(x => `<tr><td><b>${esc(x.name)}</b>${x.active ? "" : ' <span class="pill off">inativo</span>'}</td>
@@ -3058,9 +3131,20 @@ $("clExcluir").onclick = async () => {
   aviso("Cliente excluído."); $("clForm").classList.add("hidden"); carregarClientes();
 };
 
+// Busca de cliente: nome sem acento (todas as palavras, em qualquer ordem) ou celular em qualquer formato (com ou sem 55, com ou sem o 9)
+const telLocal = (e) => { let d = String(e || "").replace(/\D/g, ""); if (d.startsWith("55") && d.length >= 12) d = d.slice(2); return d; };
+const sem9 = (d) => d.length === 11 && d[2] === "9" ? d.slice(0, 2) + d.slice(3) : d;
+function clienteBate(c, q) {
+  if (!q) return true;
+  const palavras = semAcento(q).split(" ").filter(Boolean), nome = semAcento(c.full_name || "");
+  if (palavras.every(w => nome.includes(w))) return true;
+  const qd = telLocal(q); if (qd.length < 3 || /[a-z]/i.test(q)) return false;
+  const t = telLocal(c.phone_e164);
+  return t.includes(qd) || sem9(t).includes(sem9(qd)) || t.includes(sem9(qd));
+}
 function desenharClientes() {
-  const q = $("clBusca").value.trim().toLowerCase(), qd = q.replace(/\D/g, "");
-  const lista = listaClientes.filter(c => !q || (c.full_name || "").toLowerCase().includes(q) || (qd && c.phone_e164.includes(qd)))
+  const q = $("clBusca").value.trim();
+  const lista = listaClientes.filter(c => clienteBate(c, q))
     .sort((a, b) => (clientStats[b.id]?.points ?? 0) - (clientStats[a.id]?.points ?? 0));
   const adm = ehAdmin(), trazida = (c) => { const p = profissionais.find(x => x.id === c.referred_by_professional_id); return p ? `<br><span class="muted" style="font-size:12px">trazida por ${esc(p.name)}</span>` : ""; };
   $("clCab").innerHTML = adm ? "<tr><th>Cliente</th><th>Classificação</th><th>Pontos</th><th>Visitas</th><th>Cancel.</th><th>Faltas</th><th>Gasto 12 meses</th><th>Última visita</th><th></th></tr>"
