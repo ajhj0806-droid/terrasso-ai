@@ -244,7 +244,6 @@
     body.lateral header, body.lateral main { margin-left:232px; }
     body.lateral #menu { position:fixed; top:0; left:0; bottom:0; width:232px; z-index:40; background:var(--side); color:var(--side-ink); flex-direction:column; flex-wrap:nowrap; align-items:stretch; gap:16px; padding:18px 12px 24px; overflow-y:auto; }
     body.lateral .lat-marca { display:block; font-size:24px; font-weight:600; color:#fff; padding:2px 8px 4px; }
-    body.lateral header h1 { display:none; }
     body.lateral .grp { position:static; }
     body.lateral .grp-bt { width:100%; text-align:left; cursor:default; background:transparent !important; color:var(--side-muted) !important; font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-weight:600; padding:0 8px 4px; }
     body.lateral .grp-bt::after, body.lateral .grp-bt small { display:none; }
@@ -254,6 +253,55 @@
     body.lateral .grp-menu button.on { background:var(--side-on) !important; color:#fff !important; font-weight:600; }
     body.lateral .pop:not(.hidden) { left:calc(50% + 116px); width:min(820px, calc(100vw - 264px)); }
   }
+
+  /* ---- tema Terra em todas as telas: cartões, campos, botões, tabelas, agenda ---- */
+  header { background:#fff; padding:10px 20px; min-height:60px; }
+  header h1 { font-size:22px; font-weight:600; }
+  main { max-width:1400px; padding:20px 24px 32px; }
+  .card { border-radius:18px; padding:16px 18px; margin-bottom:16px; border-color:var(--line); box-shadow:0 1px 2px rgba(47,58,51,.04); }
+  .card h2 { font-size:19px; margin:0 0 10px; }
+  .card h3 { font-family: Fraunces, Georgia, serif; font-weight:600; }
+  label { color:var(--muted); font-weight:600; }
+  input, select, textarea { border-radius:10px; min-height:38px; padding:7px 10px; border-color:var(--line); background:#fff; }
+  input:focus, select:focus, textarea:focus { outline:2px solid #f0c7b4; border-color:var(--brand); }
+  button { border-radius:10px; min-height:36px; padding:7px 16px; }
+  button:not(.ghost):not(.danger):not(.grp-bt):not(.info-bt):not(.xcanc) { box-shadow:0 1px 3px rgba(180,83,47,.25); }
+  button.ghost { background:#fff; border:1px solid var(--line); color:var(--ink); }
+  button.ghost:hover { background:var(--tint); border-color:#e0cfc2; }
+  button.danger { background:#fff; }
+  .kpis { grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .kpi { background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px 14px; font-size:13px; color:var(--muted); }
+  .kpi b { font-size:22px; font-weight:700; color:var(--ink); margin-bottom:2px; }
+  table { border-collapse:separate; border-spacing:0; }
+  th { font-size:11px; letter-spacing:.08em; color:var(--muted); background:var(--bg); border-bottom:1px solid var(--line); }
+  th:first-child { border-top-left-radius:10px; } th:last-child { border-top-right-radius:10px; }
+  td { border-bottom:1px solid #efe8de; }
+  tbody tr:hover td { background:#fbf7f2; }
+  .pill { background:#efe8de; color:var(--ink); padding:3px 10px; font-weight:600; }
+  .pill.off { background:#fce3e1; color:#a12a22; }
+  .seg, .tabs-cx { display:inline-flex; gap:2px; background:#f2ebe1; border:0; border-radius:12px; padding:4px; }
+  .seg button, .tabs-cx button { background:transparent; border:0; color:var(--muted); border-radius:9px; box-shadow:none !important; min-height:32px; }
+  .seg button.on, .tabs-cx button.on { background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08) !important; }
+  #agCompacto.on { background:var(--brand); color:#fff; }
+  .info-bt { background:#dce7de; color:#2e5a3a; border-color:#c3d6c7; }
+  .info-bt:hover, .ajuda-box.aberta .info-bt { background:var(--sage); color:#fff; }
+  .ag-seta { background:var(--tint); color:var(--brand); }
+  .ag-seta:hover { background:#f3c9b5; }
+  .gh { font-family: Fraunces, Georgia, serif; font-weight:600; font-size:15px; border-bottom-color:var(--line); }
+  .cel { border-top-color:#efe8de; }
+  .cel:hover { background:#fbf1eb; }
+  .bloq { background:#efe8de; border-radius:10px; }
+  .ap { border:0; border-left:4px solid; border-radius:10px; padding:5px 8px; background:#e9eef5; box-shadow:none; }
+  .ap.scheduled, .ap.confirmed { background:#e9eef5; }
+  .ap.sel { outline:2px solid var(--brand); outline-offset:1px; }
+  .agora { border-top-color:var(--brand); }
+  .msg.ok { background:var(--ok); }
+  .grp-menu { border-radius:12px; }
+  .sug { border-radius:12px; }
+  .login { margin-top:64px; }
+  .pop:not(.hidden) { border-radius:18px; }
+  .cd-tab tr.cl:hover td { background:var(--tint); }
+  @media (min-width:901px) { body.lateral main { max-width:none; } }
 </style>
 </head>
 <body>
@@ -874,7 +922,7 @@
         <input type="hidden" id="pId">
         <div class="row">
           <div><label for="pNome">Nome</label><input id="pNome" placeholder="Ex.: Ana"></div>
-          <div><label for="pCor">Cor na agenda</label><input id="pCor" type="color" value="#8a5a3c"></div>
+          <div><label for="pCor">Cor na agenda</label><input id="pCor" type="color" value="#b4532f"></div>
           <div><label for="pComissao" title="Usada nos serviços que não têm comissão própria">Comissão padrão (%)</label><input id="pComissao" type="number" min="0" max="100" step="0.5" placeholder="40"></div>
           <div><label for="pLogin">Login do profissional</label><select id="pLogin"></select></div>
         </div>
@@ -1030,7 +1078,9 @@ function paraCentavos(t) {
 function mostrar(v) { for (const id of ["vLogin","vSemAcesso","vApp"]) $(id).classList.toggle("hidden", id !== v); $("menu").classList.toggle("hidden", v !== "vApp"); $("btnMenu").classList.toggle("hidden", v !== "vApp"); aplicarMenuLateral(); }
 // Menu lateral: aparece por padrão em telas largas; o botão ☰ oculta ou mostra (oculto, o menu volta para o topo em grupos). A escolha fica salva neste aparelho.
 function menuLateralLigado() { try { return localStorage.getItem("painel.menuLateral") !== "oculto"; } catch { return true; } }
-function aplicarMenuLateral() { document.body.classList.toggle("lateral", !$("menu").classList.contains("hidden") && menuLateralLigado()); }
+function aplicarMenuLateral() { document.body.classList.toggle("lateral", !$("menu").classList.contains("hidden") && menuLateralLigado()); tituloPagina(); }
+// Com o menu lateral, o topo mostra o nome da tela aberta; sem ele, "Painel".
+function tituloPagina() { const on = document.querySelector(".tabs button[data-tab].on"); document.querySelector("header h1").textContent = document.body.classList.contains("lateral") && on ? on.firstChild.textContent.trim() : "Painel"; }
 $("btnMenu").onclick = () => { try { localStorage.setItem("painel.menuLateral", menuLateralLigado() ? "oculto" : "visivel"); } catch {} aplicarMenuLateral(); };
 
 // ---------- Login ----------
@@ -1090,6 +1140,7 @@ document.querySelectorAll(".grp-bt").forEach(g => g.onclick = (ev) => {
 document.addEventListener("click", (ev) => { if (!ev.target.closest(".grp")) document.querySelectorAll(".grp").forEach(x => x.classList.remove("aberto")); });
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") document.querySelectorAll(".grp").forEach(x => x.classList.remove("aberto")); });
 function marcarGrupo() {
+  if (typeof tituloPagina === "function") tituloPagina();
   document.querySelectorAll(".grp").forEach(g => {
     const on = g.querySelector("button[data-tab].on"), bt = g.querySelector(".grp-bt"), nome = { agenda: "Agenda", financas: "Finanças", servicos: "Serviços", ia: "Perfil de IA" }[g.dataset.grp];
     g.classList.toggle("on", !!on);
@@ -1324,13 +1375,13 @@ function opcoesLogin(atual) {
   $("pLogin").value = atual || "";
 }
 function limparProfissional() {
-  $("pId").value = ""; $("pNome").value = ""; $("pCor").value = "#8a5a3c"; $("pAtivo").checked = true; $("pComissao").value = ""; opcoesLogin("");
+  $("pId").value = ""; $("pNome").value = ""; $("pCor").value = "#b4532f"; $("pAtivo").checked = true; $("pComissao").value = ""; opcoesLogin("");
   pMarcadosDe = null; $("pFiltroCat").value = "";
   $("fpTitulo").textContent = "Novo profissional"; desenharProfissionais();
 }
 function editarProfissional(id) {
   const p = profissionais.find(x => x.id === id); if (!p) return;
-  $("pId").value = p.id; $("pNome").value = p.name; $("pCor").value = p.color || "#8a5a3c"; $("pAtivo").checked = p.active;
+  $("pId").value = p.id; $("pNome").value = p.name; $("pCor").value = p.color || "#b4532f"; $("pAtivo").checked = p.active;
   $("pComissao").value = p.commission_pct ? String(p.commission_pct) : ""; opcoesLogin(p.user_id);
   pMarcadosDe = null; $("pFiltroCat").value = "";
   $("fpTitulo").textContent = "Editar profissional"; desenharProfissionais(); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1543,7 +1594,7 @@ function prepararProfissionais({ cab, regs }) {
     const r = { linha: g.linhas.join(", "), nome: g.nome };
     if (g.erro) return { ...r, erro: g.erro };
     const row = g.row, atual = g.atual;
-    if (!atual) { if (row.commission_pct === undefined) row.commission_pct = 0; if (!row.color) row.color = "#8a5a3c"; if (row.active === undefined) row.active = true; }
+    if (!atual) { if (row.commission_pct === undefined) row.commission_pct = 0; if (!row.color) row.color = "#b4532f"; if (row.active === undefined) row.active = true; }
     const ja = new Set(atual ? vinculos.filter(v => v.professional_id === atual.id).map(v => v.service_id) : []);
     const novosServ = [...g.servIds].filter(id => !ja.has(id));
     const comAtu = atual ? [...g.servCom].filter(([sid, v]) => { const vi = vinculos.find(x => x.professional_id === atual.id && x.service_id === sid); return vi && (vi.commission_pct == null || Number(vi.commission_pct) !== v); }) : [];
@@ -1644,7 +1695,7 @@ $("pModelo").onclick = () => {
     for (const [n, c] of meus) l.push([...base, n, c == null ? "" : Number(c), ativo]);
   }
   baixarModelo(`profissionais-${hojeLocal()}.xlsx`, "Profissionais", ["Nome", "Comissão padrão (%)", "Cor", "Serviço", "Comissão do serviço (%)", "Ativo"],
-    l.length ? l : [["Ana", 40, "#8a5a3c", "Corte feminino", 45, "Sim"], ["Ana", 40, "#8a5a3c", "Escova", "", "Sim"]],
+    l.length ? l : [["Ana", 40, "#b4532f", "Corte feminino", 45, "Sim"], ["Ana", 40, "#b4532f", "Escova", "", "Sim"]],
     ["Uma linha por profissional e serviço (repita o nome do profissional em cada linha). A primeira linha (títulos) não pode mudar de nome.", "Nome igual a um profissional já cadastrado: ele é atualizado. Nome novo: é criado.",
      "Serviço: nome exatamente como está em Serviços. Os serviços são SOMADOS aos que o profissional já faz; nenhum é removido (para tirar, use a tela de edição).",
      "Comissão do serviço (%): a comissão daquele serviço para aquele profissional. Em branco = usa a Comissão padrão.",
@@ -1756,7 +1807,7 @@ async function abrirConversa(id) {
   const quem = { client: "Cliente", ai: "IA", staff: "Equipe", system: "Sistema" };
   $("cMsgs").innerHTML = data.reverse().map(m => `
     <div style="margin:8px 0;display:flex;justify-content:${m.direction === "inbound" ? "flex-start" : "flex-end"}">
-      <div style="max-width:80%;padding:8px 12px;border-radius:10px;background:${m.direction === "inbound" ? "#f1ede8" : "#efe3d8"}">
+      <div style="max-width:80%;padding:8px 12px;border-radius:10px;background:${m.direction === "inbound" ? "#f2ebe1" : "#f6e7de"}">
         <div class="muted" style="font-size:12px">${quem[m.author] || ""} · ${quando(m.created_at)}</div>
         <div style="white-space:pre-wrap">${esc(m.body || "(mídia)")}</div>
       </div></div>`).join("") || '<p class="muted">Sem mensagens.</p>';
@@ -2042,7 +2093,7 @@ function desenharGrade() {
     const ini = Math.max(de, minutoNoDia(a.ini, agenda.ini)), fim = Math.min(ate, minutoNoDia(a.fim, agenda.ini));
     const arrasta = !porServ && balcao && ["scheduled", "confirmed"].includes(a.status), aberto = balcao && ["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status);
     const n = porServ ? (a.nFaixas || 1) : 1, larg = 100 / n, pos = porServ ? `left:calc(${(a.faixa || 0) * larg}% + 2px);right:auto;width:calc(${larg}% - 4px);` : "";
-    return `<div class="ap ${a.status} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" ${arrasta ? 'draggable="true"' : ""} style="${pos}top:${top(ini)}px;height:${Math.max(18, (fim - ini) * px - 2)}px;border-left-color:${esc(p?.color || "#8a5a3c")}">
+    return `<div class="ap ${a.status} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" ${arrasta ? 'draggable="true"' : ""} style="${pos}top:${top(ini)}px;height:${Math.max(18, (fim - ini) * px - 2)}px;border-left-color:${esc(p?.color || "#b4532f")}">
       ${aberto && n === 1 && a.status !== "scheduled" ? `<span class="ap-bt"><button class="feito" data-feito="${a.id}" title="Abrir a comanda deste atendimento">Comanda</button></span>` : ""}
       <b>${hhmm(minutoNoDia(a.ini, agenda.ini))} ${esc(a.clients?.full_name || "Cliente")}</b> ${estrela(a.client_id)}<br>
       ${extra} ${seloStatus(a)}${aberto ? `<button class="xcanc" data-canc="${a.id}" title="Cancelar horário">✕</button>` : ""}${a.source === "whatsapp_ai" ? " 💬" : ""}</div>`;
