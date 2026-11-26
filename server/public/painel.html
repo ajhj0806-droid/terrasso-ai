@@ -375,6 +375,30 @@
   .kf-linha { display:grid; grid-template-columns:1.2fr 1fr 1fr 1.3fr 1.1fr 1.1fr; gap:8px; margin-bottom:6px; align-items:end; }
   .kf-linha label { margin-top:0; }
   @media (max-width:900px) { .kf-linha { grid-template-columns:repeat(2, 1fr); } }
+  /* ---- sistema mais compacto: fontes menores em listas e relatórios, menos espaço entre caixas ---- */
+  body { font-size:14px; }
+  main { padding:14px 16px 24px; }
+  .card { padding:12px 14px; margin-bottom:10px; border-radius:14px; }
+  .card h2 { font-size:17px; margin:0 0 8px; }
+  label { margin:6px 0 3px; font-size:12px; }
+  .row { gap:8px; }
+  input, select, textarea { min-height:34px; padding:5px 9px; font-size:14px; }
+  button { padding:5px 11px; min-height:32px; font-size:13.5px; }
+  .lnk, .xcanc, .mcal-grid button, .ap-bt button, .sug button, .info-bt, .p-chip button { min-height:0; }
+  input[type=checkbox], input[type=radio] { min-height:0; padding:0; width:auto; }
+  .ge-kpis .ge-k b { font-size:14px; white-space:normal; overflow:visible; }
+  table { font-size:13px; }
+  th { font-size:11px; padding:6px 6px; }
+  td { padding:6px 6px; }
+  .kpis:not(.ge-kpis):not(#agKpis) { gap:6px; margin-top:8px; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); }
+  .kpi { padding:7px 10px; font-size:12px; border-radius:10px; }
+  .kpi b { font-size:17px; }
+  .actions { gap:6px; margin-top:10px; }
+  .ge-grid, .ag-corpo { gap:10px; }
+  .kcli { gap:6px; } .kcli .bx { padding:6px 8px; font-size:12.5px; }
+  .muted { font-size:inherit; }
+  .pill { font-size:11px; }
+  .cd-tab td { padding:5px 6px; }
 </style>
 </head>
 <body>
