@@ -563,7 +563,8 @@
         <table><thead id="cdDetHead"></thead><tbody id="cdDet"></tbody></table>
       </div>
       <div class="card">
-        <h2 style="margin-top:0">Lançar no caixa</h2>
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Lançar no caixa</h2><button class="ghost" type="button" data-mostra="cdLancBox">Mostrar</button></div>
+        <div class="hidden" id="cdLancBox">
         <div class="row">
           <div><label for="cdTipo">Tipo</label><select id="cdTipo"><option value="expense">Despesa extra</option><option value="cleaning">Limpeza</option><option value="advance">Adiantamento a profissional</option><option value="withdrawal">Retirada de caixa</option></select></div>
           <div class="hidden" id="cdProfBox"><label for="cdProf">Profissional</label><select id="cdProf"></select></div>
@@ -573,12 +574,15 @@
         </div>
         <div class="actions"><button id="cdLancar">Lançar</button></div>
         <p class="muted" style="font-size:13px;margin-bottom:0">Fica registrado com o seu login, a data e a hora. Só o administrador apaga um lançamento.</p>
+        </div>
       </div>
       <div class="card">
-        <h2 style="margin-top:0">Despesas da sede (valor por mês)</h2>
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Despesas da sede (valor por mês)</h2><button class="ghost" type="button" data-mostra="cdSedeBox">Mostrar</button></div>
+        <div class="hidden" id="cdSedeBox">
         <p class="muted" style="font-size:13px;margin-top:0">Aluguel, luz, água, internet, contador, sistema... O caixa divide o valor do mês pelos dias do mês e lança a parte de cada dia.</p>
         <table><tbody id="cdSede"></tbody></table>
         <div class="actions"><button class="ghost" id="cdSedeAdd">+ Despesa</button><button id="cdSedeSalvar">Salvar despesas da sede</button></div>
+        </div>
       </div>
     </div>
 
@@ -3154,6 +3158,11 @@ function cdDetalhe(ch, titulo) {
   });
   $("cdDetCard").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
+// quadros que abrem ocultos, com Mostrar / Ocultar
+document.querySelectorAll("[data-mostra]").forEach(b => b.onclick = () => {
+  const box = $(b.dataset.mostra), abrir = box.classList.contains("hidden");
+  box.classList.toggle("hidden", !abrir); b.textContent = abrir ? "Ocultar" : "Mostrar";
+});
 $("cdDetFechar").onclick = () => { if (cd) cd.aberto = null; $("cdDetCard").classList.add("hidden"); };
 $("cdLancar").onclick = async () => {
   const kind = $("cdTipo").value, desc = $("cdDesc").value.trim(), valor = paraCentavos($("cdValor").value), dia = $("cdData").value;
