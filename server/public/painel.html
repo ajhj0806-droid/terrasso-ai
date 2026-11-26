@@ -245,9 +245,13 @@
     body.lateral #menu { position:fixed; top:0; left:0; bottom:0; width:232px; z-index:40; background:var(--side); color:var(--side-ink); flex-direction:column; flex-wrap:nowrap; align-items:stretch; gap:16px; padding:18px 12px 24px; overflow-y:auto; }
     body.lateral .lat-marca { display:block; font-size:24px; font-weight:600; color:#fff; padding:2px 8px 4px; }
     body.lateral .grp { position:static; }
-    body.lateral .grp-bt { width:100%; text-align:left; cursor:default; background:transparent !important; color:var(--side-muted) !important; font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-weight:600; padding:0 8px 4px; }
-    body.lateral .grp-bt::after, body.lateral .grp-bt small { display:none; }
-    body.lateral .grp-menu { display:flex; position:static; flex-direction:column; min-width:0; background:transparent; border:0; box-shadow:none; padding:0; gap:2px; }
+    body.lateral .grp-bt { width:100%; text-align:left; cursor:pointer; display:flex; justify-content:space-between; align-items:center; min-height:32px; border-radius:8px; background:transparent !important; color:var(--side-muted) !important; font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-weight:600; padding:0 8px 4px; }
+    body.lateral .grp-bt small { display:none; }
+    body.lateral .grp-bt::after { content:"▸"; font-size:12px; color:var(--side-muted); }
+    body.lateral .grp.exp .grp-bt::after { content:"▾"; }
+    body.lateral .grp-bt:hover { color:#fff !important; }
+    body.lateral .grp-menu { display:none; position:static; flex-direction:column; min-width:0; background:transparent; border:0; box-shadow:none; padding:0; gap:2px; }
+    body.lateral .grp.exp .grp-menu { display:flex; }
     body.lateral .grp-menu button { color:var(--side-ink) !important; padding:8px 10px; border-radius:8px; font-size:14px; }
     body.lateral .grp-menu button:hover { background:rgba(255,255,255,.08) !important; }
     body.lateral .grp-menu button.on { background:var(--side-on) !important; color:#fff !important; font-weight:600; }
@@ -1131,8 +1135,11 @@ async function iniciar() {
 
 // ---------- Abas ----------
 // Menu em grupos: clicar no grupo abre as opções; escolher uma opção fecha o menu.
+// No menu lateral, cada tópico abre e fecha ao clicar no título; ao entrar, só Agenda vem aberta.
+document.querySelector('.grp[data-grp="agenda"]').classList.add("exp");
 document.querySelectorAll(".grp-bt").forEach(g => g.onclick = (ev) => {
   ev.stopPropagation();
+  if (document.body.classList.contains("lateral")) { g.parentElement.classList.toggle("exp"); g.setAttribute("aria-expanded", g.parentElement.classList.contains("exp")); return; }
   const grp = g.parentElement, abrir = !grp.classList.contains("aberto");
   document.querySelectorAll(".grp").forEach(x => x.classList.remove("aberto"));
   if (abrir) grp.classList.add("aberto");
