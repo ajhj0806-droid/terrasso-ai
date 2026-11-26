@@ -346,6 +346,16 @@
   .d-tab input, .d-tab select { padding:5px 6px; min-height:0; font-size:13px; }
   .d-tab .w-t { width:62px; } .d-tab .w-h { width:104px; } .d-tab .w-v { width:84px; }
   .d-cred { font-size:13px; margin:8px 0 0; }
+  .d-pac { width:100%; margin:4px 0 6px; } .d-pac th { font-size:11px; padding:3px 6px; } .d-pac td { padding:3px 6px; font-size:13px; color:var(--ink); }
+  .lado-fechar { text-align:right; margin:-4px 0 6px; }
+  /* indicadores da agenda numa linha só, mais baixos */
+  #agKpis { grid-template-columns:repeat(auto-fit, minmax(84px, 1fr)); gap:6px; margin-top:8px; }
+  #agKpis .kpi { padding:4px 8px; font-size:11px; border-radius:10px; line-height:1.2; }
+  #agKpis .kpi b { font-size:16px; margin:0; }
+  /* filtros das comandas numa linha só */
+  .kf-linha { display:grid; grid-template-columns:1.2fr 1fr 1fr 1.3fr 1.1fr 1.1fr; gap:8px; margin-bottom:6px; align-items:end; }
+  .kf-linha label { margin-top:0; }
+  @media (max-width:900px) { .kf-linha { grid-template-columns:repeat(2, 1fr); } }
 </style>
 </head>
 <body>
@@ -483,6 +493,7 @@
 
       <div class="ag-corpo">
       <aside class="card" id="agLado">
+        <div class="lado-fechar"><button type="button" class="lnk" id="agLadoOcultar">‹ Ocultar calendário e filtros</button></div>
         <div class="mcal-top"><button type="button" class="ghost" id="mcAntes" aria-label="Mês anterior">‹</button><b id="mcMes"></b><button type="button" class="ghost" id="mcDepois" aria-label="Próximo mês">›</button></div>
         <div class="mcal-grid" id="mcGrid"></div>
         <b class="lado-t">Categorias</b>
@@ -620,12 +631,13 @@
           </div>
           <div class="actions"><button id="kCriar">Abrir comanda</button><button class="ghost" id="kCancelarNova">Fechar</button></div>
         </div>
-        <div class="row" style="margin-bottom:6px">
+        <div class="kf-linha">
           <div><label for="kfStatus">Situação</label><select id="kfStatus"><option value="open">Abertas</option><option value="agendadas">Com serviço agendado</option><option value="closed">Fechadas</option><option value="cancelled">Canceladas</option><option value="all">Todas</option></select></div>
           <div><label for="kfDe">De</label><input type="date" id="kfDe"></div>
           <div><label for="kfAte">Até</label><input type="date" id="kfAte"></div>
-          <div><label for="kfCli">Cliente</label><input id="kfCli" placeholder="Nome ou celular" autocomplete="off"></div>
-          <div><label for="kfServ">Serviço</label><input id="kfServ" placeholder="Ex.: escova" autocomplete="off"></div>
+          <div><label for="kfCli">Cliente</label><input id="kfCli" list="kfCliL" placeholder="Nome ou celular" autocomplete="off"><datalist id="kfCliL"></datalist></div>
+          <div><label for="kfServ">Serviço</label><input id="kfServ" list="kfServL" placeholder="Ex.: escova" autocomplete="off"><datalist id="kfServL"></datalist></div>
+          <div><label for="kfProf">Profissional</label><input id="kfProf" list="kfProfL" placeholder="Ex.: Israel" autocomplete="off"><datalist id="kfProfL"></datalist></div>
         </div>
         <table><thead><tr><th>Nº</th><th>Cliente</th><th>Aberta</th><th>Situação</th><th>Total</th><th>Falta</th><th></th></tr></thead><tbody id="kLista"></tbody><tfoot id="kSoma"></tfoot></table>
         <div id="kAlerta" class="hidden" style="margin-top:8px;padding:8px 10px;border-radius:8px;background:#fdecea;color:#8a1f17;font-size:13px"></div>
@@ -2108,6 +2120,7 @@ const profNoFiltro = (p) => !agfOcultos.includes(p.id) && (!agfCats.length || ca
 const servNoFiltro = (sv) => !agfCats.length || agfCats.includes(sv.category);
 function desenharLado() {
   $("agLado").classList.toggle("hidden", !agLado); $("agLadoBtn").classList.toggle("on", agLado);
+  $("agLadoBtn").textContent = agLado ? "Ocultar calendário e filtros" : "📅 Mostrar calendário e filtros";
   if (!agLado) return;
   // calendário do mês, com o dia escolhido marcado
   const sel = $("agData").value || hojeLocal(), hoje = hojeLocal(), mes = mcMes || sel.slice(0, 7);
@@ -2132,6 +2145,7 @@ function desenharLado() {
   $("agfTodos").onclick = () => { agfOcultos = []; mudou(); };
   $("agfNenhum").onclick = () => { agfOcultos = base.map(p => p.id); mudou(); };
 }
+$("agLadoOcultar").onclick = () => $("agLadoBtn").onclick();
 $("agLadoBtn").onclick = () => { agLado = !agLado; salvarFiltrosAg(); desenharLado(); requestAnimationFrame(setasAgenda); };
 $("mcAntes").onclick = () => { const b = mcMes || ($("agData").value || hojeLocal()).slice(0, 7); mcMes = somarDias(b + "-01", -1).slice(0, 7); desenharLado(); };
 $("mcDepois").onclick = () => { const b = mcMes || ($("agData").value || hojeLocal()).slice(0, 7); mcMes = somarDias(b + "-28", 7).slice(0, 7); desenharLado(); };
@@ -2425,9 +2439,9 @@ async function creditosDaClienteAg(clientId) {
   const saldo = Number(sd.data?.[0]?.balance_cents || 0);
   const nomeServ = (id) => servicos.find(s => s.id === id)?.name || "serviço";
   const partes = [];
-  if (saldo > 0) partes.push(`<b>Crédito antecipado:</b> ${reais(saldo)}`);
-  if (pac.length) partes.push(`<b>Pacotes:</b> ${pac.map(i => `${esc(i.pacote.name)} (${esc(nomeServ(i.service_id))}: ${i.quantity_total - i.quantity_used} de ${i.quantity_total} sessões, vence ${dataBr(i.pacote.expires_at)})`).join(" · ")}`);
-  $("dCred").innerHTML = partes.length ? partes.join("<br>") + '<br><span style="font-size:12px">O pacote e o crédito são usados na comanda.</span>' : "Sem créditos ou pacotes comprados.";
+  if (saldo > 0) partes.push(`<div><b>Crédito antecipado:</b> ${reais(saldo)}</div>`);
+  if (pac.length) partes.push(`<b>Pacotes</b><table class="d-pac"><thead><tr><th>Pacote</th><th>Serviço</th><th>Sessões restantes</th><th>Vence</th></tr></thead><tbody>${pac.map(i => `<tr><td>${esc(i.pacote.name)}</td><td>${esc(nomeServ(i.service_id))}</td><td><b>${i.quantity_total - i.quantity_used}</b> de ${i.quantity_total}</td><td>${dataBr(i.pacote.expires_at)}</td></tr>`).join("")}</tbody></table>`);
+  $("dCred").innerHTML = partes.length ? partes.join("") + '<span style="font-size:12px">O pacote e o crédito são usados na comanda.</span>' : "Sem créditos ou pacotes comprados.";
 }
 async function salvarAgendamentoPopup(a) {
   const obs = $("dObs").value.trim() || null, agora = new Date().toISOString();
@@ -2794,9 +2808,12 @@ async function listarComandas() {
   const tot = (c) => c.comanda_items.reduce((t, i) => t + totalItem(i), 0), pago = (c) => c.payments.reduce((t, p) => t + p.amount_cents, 0);
   const falta = (c) => c.status === "open" ? Math.max(tot(c) - pago(c), 0) : 0;
   const diaDe = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date(t)), hoje = hojeLocal();
-  const tc = $("kfCli").value.trim(), ts = semAcento($("kfServ").value.trim());
+  const tc = $("kfCli").value.trim(), ts = semAcento($("kfServ").value.trim()), tp = semAcento($("kfProf").value.trim());
+  const nomeProfK = (id) => semAcento(profissionais.find(p => p.id === id)?.name || "");
+  sugestoesComandas(data);
   comandas = data.filter(c => (!tc || clienteBate(c.clients || {}, tc))
     && (!ts || c.comanda_items.some(i => semAcento(i.description || "").includes(ts)))
+    && (!tp || c.comanda_items.some(i => i.professional_id && nomeProfK(i.professional_id).includes(tp)))
     && (st !== "agendadas" || c.comanda_items.some(i => ["scheduled", "confirmed"].includes(i.appointments?.status))));
   const SITK = { open: "aberta", closed: "fechada", cancelled: "cancelada" };
   const profsDe = (c) => [...new Set(c.comanda_items.map(i => profissionais.find(p => p.id === i.professional_id)?.name).filter(Boolean))].join(", ");
@@ -2813,7 +2830,16 @@ async function listarComandas() {
   $("kLista").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.k; abrirComanda().then(() => $("kDet").scrollIntoView({ behavior: "smooth" })); });
 }
 for (const id of ["kfStatus", "kfDe", "kfAte"]) $(id).onchange = listarComandas;
-{ let t; for (const id of ["kfCli", "kfServ"]) $(id).oninput = () => { clearTimeout(t); t = setTimeout(listarComandas, 250); }; }
+// Sugestões enquanto digita nos filtros (cliente, serviço, profissional)
+let kfClientes = null;
+async function sugestoesComandas(lista) {
+  const op = (l) => [...new Set(l.filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")).map(n => `<option value="${esc(n)}"></option>`).join("");
+  if (!kfClientes) { const r = await sb.from("clients").select("full_name").eq("tenant_id", tenantId).order("full_name").limit(2000); kfClientes = r.error ? [] : r.data.map(c => c.full_name); }
+  $("kfCliL").innerHTML = op([...kfClientes, ...lista.map(c => c.clients?.full_name)]);
+  $("kfServL").innerHTML = op(servicos.filter(x => x.active).map(x => x.name).concat(produtos.filter(x => x.active).map(x => x.name)));
+  $("kfProfL").innerHTML = op(profissionais.filter(p => p.active).map(p => p.name));
+}
+{ let t; for (const id of ["kfCli", "kfServ", "kfProf"]) $(id).oninput = () => { clearTimeout(t); t = setTimeout(listarComandas, 250); }; }
 
 async function carregarComandas() {
   const { data, error } = await sb.from("comandas")
