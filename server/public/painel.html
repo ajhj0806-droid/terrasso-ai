@@ -4,10 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Painel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#f7f5f2; --card:#fff; --ink:#2b2622; --muted:#7a716a; --line:#e6e0d9; --brand:#8a5a3c; --brand-ink:#fff; --danger:#b3261e; --ok:#2e7d32; }
+  :root { --bg:#f6f1ea; --card:#fff; --ink:#2b2420; --muted:#6e645c; --line:#e5dcd0; --brand:#b4532f; --brand-ink:#fff; --danger:#b3261e; --ok:#2e6b45; --sage:#5e7a63; --side:#2f3a33; --side-ink:#e9e4da; --side-muted:#a9b8ad; --side-on:#435047; --tint:#f6e7de; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); font-size:15px; }
+  body { margin:0; font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); font-size:15px; }
   header { background:var(--card); border-bottom:1px solid var(--line); padding:12px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   header { position:sticky; top:0; z-index:30; }
   header h1 { font-size:18px; margin:0 8px 0 0; }
@@ -27,7 +30,7 @@
   .grp.aberto .grp-menu { display:flex; }
   .grp-menu button { text-align:left; background:none !important; border:0 !important; color:var(--ink) !important; padding:8px 10px; border-radius:6px; font-weight:400; }
   .grp-menu button:hover { background:var(--bg) !important; }
-  .grp-menu button.on { font-weight:700; background:#f3ebe3 !important; }
+  .grp-menu button.on { font-weight:700; background:var(--tint) !important; }
   @media (max-width:700px) { header { position:static; } header h1 { width:100%; } .tabs { order:5; width:100%; } }
   button { font:inherit; border:0; border-radius:8px; padding:9px 14px; cursor:pointer; background:var(--brand); color:var(--brand-ink); }
   button.ghost { background:transparent; color:var(--brand); border:1px solid var(--line); }
@@ -52,12 +55,12 @@
   .ajuda-box { margin:8px 0 0; }
   .sug { position:absolute; left:0; right:0; top:100%; z-index:20; background:var(--card); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 20px rgba(0,0,0,.12); max-height:280px; overflow:auto; }
   .sug button { display:flex; justify-content:space-between; gap:10px; width:100%; text-align:left; background:none; color:var(--ink); border-radius:0; padding:8px 10px; border-bottom:1px solid var(--line); }
-  .sug button:hover, .sug button.ativo { background:#f3ebe3; }
+  .sug button:hover, .sug button.ativo { background:var(--tint); }
   .sug .muted { font-size:13px; white-space:nowrap; }
   .sug .sl { padding:8px 10px; border-bottom:1px solid var(--line); font-size:14px; }
   .sug .sl .chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
   .sug .sl .chips button { display:inline-block; width:auto; padding:3px 8px; border:1px solid var(--line); border-radius:12px; font-size:12px; background:var(--card); }
-  .sug .sl .chips button:hover { background:#f3ebe3; }
+  .sug .sl .chips button:hover { background:var(--tint); }
   .chk { display:inline-flex; align-items:center; gap:6px; font-size:14px; }
   .chk input { width:auto; }
   .kcli { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px; margin-top:10px; }
@@ -105,8 +108,8 @@
   .horas, .col { position:relative; }
   .hora { position:absolute; left:0; right:4px; font-size:11px; color:var(--muted); text-align:right; transform:translateY(-6px); }
   .cel { position:absolute; left:0; right:0; border-top:1px dashed var(--line); cursor:pointer; }
-  .cel.fora { background:repeating-linear-gradient(45deg,#f1ede8,#f1ede8 6px,#f7f5f2 6px,#f7f5f2 12px); }
-  .cel:hover { background:#f3ebe3; }
+  .cel.fora { background:repeating-linear-gradient(45deg,#efe8de,#efe8de 6px,#f6f1ea 6px,#f6f1ea 12px); }
+  .cel:hover { background:var(--tint); }
   .bloq { position:absolute; left:2px; right:2px; background:#e6e0d9; border-radius:6px; font-size:11px; color:var(--muted); padding:2px 6px; overflow:hidden; }
   .ap { position:absolute; left:2px; right:2px; border-radius:8px; padding:3px 7px; font-size:12px; line-height:1.3; overflow:hidden; cursor:pointer; background:#fff; border:1px solid var(--line); border-left-width:5px; box-shadow:0 1px 2px rgba(0,0,0,.06); }
   .ap b { font-size:13px; }
@@ -134,16 +137,16 @@
   .card { padding:12px 14px; margin-bottom:12px; border-radius:10px; }
   label { font-size:12px; margin:6px 0 3px; font-weight:600; color:#6b625b; }
   input, select, textarea { padding:6px 8px; border-radius:6px; font-size:14px; min-height:32px; }
-  input:focus, select:focus, textarea:focus { outline:2px solid #d9b89f; border-color:var(--brand); }
+  input:focus, select:focus, textarea:focus { outline:2px solid #e8b9a3; border-color:var(--brand); }
   textarea { min-height:48px; }
   .row { grid-template-columns: repeat(auto-fill, minmax(170px, 250px)); gap:6px 10px; }
   th, td { padding:6px 8px; }
   .actions { margin-top:10px; gap:6px; }
   button { padding:7px 14px; font-weight:600; border-radius:7px; }
-  button:not(.ghost):not(.danger):not(.grp-bt):not(.info-bt):not(.xcanc) { box-shadow:0 2px 6px rgba(138,90,60,.35); }
+  button:not(.ghost):not(.danger):not(.grp-bt):not(.info-bt):not(.xcanc) { box-shadow:0 2px 6px rgba(180,83,47,.30); }
   button:not(.ghost):not(.danger):not(.grp-bt):not(.info-bt):not(.xcanc):hover { filter:brightness(1.08); }
-  button.ghost { border-color:#cfb39e; background:#fbf7f3; }
-  button.ghost:hover { background:#f3ebe3; }
+  button.ghost { border-color:#e0cfc2; background:#fffdfb; }
+  button.ghost:hover { background:var(--tint); }
   button.danger { border-color:#e3b8b4; }
   .grp-menu button, .sug button, .sug .sl .chips button, .seg button, .ap-bt button { box-shadow:none !important; }
   .card h2 { font-size:17px; color:var(--brand); border-left:4px solid var(--brand); padding-left:8px; margin:0 0 8px; }
@@ -152,12 +155,12 @@
   .msg { padding:12px 40px 12px 16px; font-size:15px; }
   .p-sel { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px; }
   .p-sel-cat { font-size:12px; font-weight:600; color:var(--muted); min-width:90px; }
-  .p-chip { display:inline-flex; align-items:center; gap:4px; background:#f3ebe3; color:var(--ink); border-radius:999px; padding:3px 4px 3px 10px; font-size:13px; }
+  .p-chip { display:inline-flex; align-items:center; gap:4px; background:var(--tint); color:var(--ink); border-radius:999px; padding:3px 4px 3px 10px; font-size:13px; }
   .p-chip button { background:none; border:0; color:var(--muted); padding:0 6px; font-size:15px; line-height:1; cursor:pointer; }
   .p-chip button:hover { color:var(--danger); }
   .p-chip input { width:52px; padding:1px 4px; font-size:12px; border:1px solid var(--line, #ddd); border-radius:6px; margin-left:4px; background:#fff; }
   .p-chip .p-pct { font-size:12px; color:var(--muted); }
-  .p-chip-com { background:#e7d6c4; }
+  .p-chip-com { background:#efd9cc; }
   .conv-bt { display:flex; gap:6px; flex-wrap:wrap; }
   tr.bloqueada td { opacity:.65; }
   .estrela { font-size:15px; line-height:1; }
@@ -167,7 +170,7 @@
   .badge { display:inline-block; min-width:18px; padding:0 5px; margin-left:6px; border-radius:999px; background:var(--danger); color:#fff; font-size:11px; line-height:18px; text-align:center; }
   .bloq { cursor:pointer; z-index:1; }
   .ap[draggable=true] { cursor:grab; }
-  .cel.alvo { background:#e8dccf; outline:2px dashed var(--brand); }
+  .cel.alvo { background:#f3dccf; outline:2px dashed var(--brand); }
   .resp { margin-top:12px; border-top:1px solid var(--line); padding-top:12px; }
   #cMsgs { max-height:420px; overflow-y:auto; }
   @media (max-width:600px) { .day { grid-template-columns: 1fr; } td, th { padding:8px 4px; } }
@@ -215,22 +218,51 @@
   .pj-estudo input, .pj-estudo select { width:220px; }
   .pj-aviso { font-size:13px; color:#8a3b00; background:#fff4e5; border-radius:8px; padding:8px 10px; margin-top:10px; }
   /* popups da agenda */
-  .pop:not(.hidden) { position:fixed; z-index:60; top:50%; left:50%; transform:translate(-50%,-50%); width:min(820px, calc(100vw - 32px)); max-height:calc(100vh - 40px); overflow:auto; margin:0; box-shadow:0 0 0 100vmax rgba(20,16,12,.45), 0 12px 32px rgba(0,0,0,.3); }
+  .pop:not(.hidden) { position:fixed; z-index:60; top:50%; left:50%; transform:translate(-50%,-50%); width:min(820px, calc(100vw - 32px)); max-height:calc(100vh - 40px); overflow:auto; margin:0; box-shadow:0 0 0 100vmax rgba(30,36,32,.45), 0 12px 32px rgba(0,0,0,.3); }
   /* caixa do dia */
   .cd-tab td { padding:6px 8px; border-bottom:1px solid var(--line); }
   .cd-tab td:last-child { text-align:right; white-space:nowrap; }
-  .cd-tab tr.cl { cursor:pointer; } .cd-tab tr.cl:hover td { background:#f3ebe3; }
+  .cd-tab tr.cl { cursor:pointer; } .cd-tab tr.cl:hover td { background:var(--tint); }
   .cd-tab tr.cl td:first-child::after { content:" ›"; color:var(--muted, #888); }
   .cd-tab tr.tot td { font-weight:700; border-top:2px solid var(--line); }
   .cd-tab tr.info td { color:#888; font-size:13px; }
   .cd-cols { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px; }
+
+  /* ---- tema Terra: tipografia, status e menu lateral recolhível ---- */
+  h1, h2, .card h2, .lat-marca { font-family: Fraunces, Georgia, serif; }
+  .card { border-radius:14px; }
+  .card h2 { color:var(--ink); border-left:0; padding-left:0; font-weight:600; font-size:18px; }
+  .card > b:first-child, .card > .actions:first-child > b, .card h3 { color:var(--ink); }
+  .kpi { background:var(--bg); border:1px solid var(--line); border-radius:12px; }
+  .ap.checked_in { background:#fff1d6; } .ap.in_service { background:#fbe4d7; } .ap.done { background:#e5eee6; }
+  .st.scheduled, .st.confirmed { background:#e9eef5; color:#2f4f7a; } .st.checked_in, .st.in_service { background:#f3c9b5; color:#7a2e12; } .st.done { background:#cfe0d2; color:#2e5a3a; }
+  .seg button.on, .grp.on .grp-bt { background:var(--brand); }
+  #btnMenu { display:none; width:40px; height:36px; padding:0; font-size:18px; line-height:1; }
+  .lat-marca { display:none; }
+  @media (min-width:901px) {
+    #btnMenu:not(.hidden) { display:inline-flex; align-items:center; justify-content:center; }
+    body.lateral header, body.lateral main { margin-left:232px; }
+    body.lateral #menu { position:fixed; top:0; left:0; bottom:0; width:232px; z-index:40; background:var(--side); color:var(--side-ink); flex-direction:column; flex-wrap:nowrap; align-items:stretch; gap:16px; padding:18px 12px 24px; overflow-y:auto; }
+    body.lateral .lat-marca { display:block; font-size:24px; font-weight:600; color:#fff; padding:2px 8px 4px; }
+    body.lateral header h1 { display:none; }
+    body.lateral .grp { position:static; }
+    body.lateral .grp-bt { width:100%; text-align:left; cursor:default; background:transparent !important; color:var(--side-muted) !important; font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-weight:600; padding:0 8px 4px; }
+    body.lateral .grp-bt::after, body.lateral .grp-bt small { display:none; }
+    body.lateral .grp-menu { display:flex; position:static; flex-direction:column; min-width:0; background:transparent; border:0; box-shadow:none; padding:0; gap:2px; }
+    body.lateral .grp-menu button { color:var(--side-ink) !important; padding:8px 10px; border-radius:8px; font-size:14px; }
+    body.lateral .grp-menu button:hover { background:rgba(255,255,255,.08) !important; }
+    body.lateral .grp-menu button.on { background:var(--side-on) !important; color:#fff !important; font-weight:600; }
+    body.lateral .pop:not(.hidden) { left:calc(50% + 116px); width:min(820px, calc(100vw - 264px)); }
+  }
 </style>
 </head>
 <body>
 
 <header>
+  <button type="button" class="ghost hidden" id="btnMenu" aria-label="Mostrar ou ocultar o menu lateral" title="Mostrar ou ocultar o menu lateral">☰</button>
   <h1>Painel</h1>
-  <nav class="tabs hidden" id="menu">
+  <nav class="tabs hidden" id="menu" aria-label="Menu principal">
+    <div class="lat-marca">Terrasso</div>
     <div class="grp" data-grp="agenda"><button type="button" class="grp-bt">Agenda</button><div class="grp-menu">
       <button data-tab="agenda" class="on">Agenda</button>
       <button data-tab="horarios">Horários</button>
@@ -995,7 +1027,11 @@ function paraCentavos(t) {
   const n = Number(String(t).replace(/\s|R\$/g, "").replace(/\./g, "").replace(",", "."));
   return Number.isFinite(n) ? Math.round(n * 100) : NaN;
 }
-function mostrar(v) { for (const id of ["vLogin","vSemAcesso","vApp"]) $(id).classList.toggle("hidden", id !== v); $("menu").classList.toggle("hidden", v !== "vApp"); }
+function mostrar(v) { for (const id of ["vLogin","vSemAcesso","vApp"]) $(id).classList.toggle("hidden", id !== v); $("menu").classList.toggle("hidden", v !== "vApp"); $("btnMenu").classList.toggle("hidden", v !== "vApp"); aplicarMenuLateral(); }
+// Menu lateral: aparece por padrão em telas largas; o botão ☰ oculta ou mostra (oculto, o menu volta para o topo em grupos). A escolha fica salva neste aparelho.
+function menuLateralLigado() { try { return localStorage.getItem("painel.menuLateral") !== "oculto"; } catch { return true; } }
+function aplicarMenuLateral() { document.body.classList.toggle("lateral", !$("menu").classList.contains("hidden") && menuLateralLigado()); }
+$("btnMenu").onclick = () => { try { localStorage.setItem("painel.menuLateral", menuLateralLigado() ? "oculto" : "visivel"); } catch {} aplicarMenuLateral(); };
 
 // ---------- Login ----------
 $("btnEntrar").onclick = async () => {
