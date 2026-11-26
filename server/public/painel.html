@@ -349,8 +349,14 @@
   /* gerencial */
   .ge-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; } .ge-grid > .card { min-width:0; }
   @media (max-width:900px) { .ge-grid { grid-template-columns:1fr; } }
-  .ge-kpis { grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); }
-  .ge-var { display:block; font-size:11px; font-weight:600; color:var(--muted); margin-top:2px; } .ge-var.bom { color:var(--ok); } .ge-var.ruim { color:var(--danger); }
+  .ge-kpis { grid-template-columns:repeat(10, minmax(0, 1fr)); gap:6px; margin-top:10px; }
+  @media (max-width:1100px) { .ge-kpis { grid-template-columns:repeat(5, minmax(0, 1fr)); } }
+  @media (max-width:600px) { .ge-kpis { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+  .ge-kpis .ge-k { padding:7px 9px 6px; border-radius:10px; border-top:3px solid var(--brand); min-width:0; cursor:default; }
+  .ge-kpis .ge-k.op { border-top-color:var(--sage); }
+  .ge-k .ge-t { display:block; font-size:11.5px; font-weight:600; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ge-kpis .ge-k b { font-size:15px; margin:2px 0 1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ge-var { display:inline-block; font-size:10.5px; font-weight:600; color:var(--muted); border-radius:6px; padding:0 5px; background:var(--bg); white-space:nowrap; } .ge-var.bom { color:var(--ok); background:#e5f1e8; } .ge-var.ruim { color:var(--danger); background:#f8e4e2; }
   .ge-graf { margin-top:8px; overflow-x:auto; }
   .ge-barras { display:flex; align-items:flex-end; gap:3px; height:190px; min-width:100%; padding-top:16px; }
   .ge-b { flex:1 1 0; min-width:16px; max-width:64px; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; position:relative; }
@@ -739,7 +745,7 @@
         <div class="card"><b>Produtos mais vendidos</b><div class="ge-ord" data-geord="prod"></div><table><thead><tr><th>Produto</th><th>Qtd.</th><th>Valor</th><th></th></tr></thead><tbody id="geProd"></tbody></table></div>
       </div>
       <div class="card"><b>Agenda do período</b><table><thead><tr><th>Situação</th><th>Quantidade</th><th>%</th><th>Valor</th></tr></thead><tbody id="geAg"></tbody></table>
-        <p class="muted" style="font-size:12px;margin-bottom:0">Faturamento, despesas e resultado usam a mesma conta do Caixa (comandas fechadas no período, comissões, custos, taxas de cartão, lançamentos e despesas da sede). Ocupação = minutos com atendimento ÷ minutos de trabalho na escala (menos bloqueios). Os rankings vêm das comandas fechadas no período; sessões de pacote contam como atendimento mas o valor já entrou na venda do pacote.</p>
+        <p class="muted" style="font-size:12px;margin-bottom:0">Faturamento, despesas e resultado usam a mesma conta do Caixa (comandas fechadas no período, comissões, custos, taxas de cartão, lançamentos e despesas da sede). Ocupação = minutos com atendimento ÷ minutos de trabalho na escala (menos bloqueios). Os rankings vêm das comandas fechadas no período. Sessão de pacote entra com o valor proporcional (preço do pacote ÷ soma dos preços avulsos × preço avulso do serviço); no ranking de clientes conta o que a cliente consumiu, sem a compra do pacote ou do crédito, para não contar duas vezes.</p>
       </div>
     </div>
 
@@ -3604,8 +3610,9 @@ async function geDados(de, ate, settings) {
     const dia = new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date(c.closed_at));
     let nServ = 0, vCli = 0;
     for (const i of c.comanda_items || []) {
-      const pac = !!i.client_package_item_id, v = pac ? 0 : totalItem(i);
-      vCli += v;
+      // sessão de pacote: vale o preço do pacote rateado pelos preços avulsos (fator = pacote ÷ soma avulsa), já gravado no item
+      const pac = !!i.client_package_item_id, v = totalItem(i);
+      if (!i.sold_package_id && !/^cr[eé]dito antecipado/i.test(i.description || "")) vCli += v; // cliente: o que consumiu (sem a compra do pacote/crédito, para não contar duas vezes)
       if (!pac && !i.is_gift) fatDia[dia] = (fatDia[dia] || 0) + v;
       if (i.service_id) {
         nServ += Number(i.quantity) || 1;
@@ -3656,24 +3663,26 @@ async function carregarGerencial() {
   const A = await geDados(de, ate, settings); if (!A) return;
   const P = await geDados(pde, pate, settings);
   ge = { de, ate, A, P };
-  $("geComp").textContent = `Setas ▲▼ comparam com o período anterior de mesmo tamanho (${fmtDia(pde)} a ${fmtDia(pate)}).`;
-  const var_ = (a, b, menorMelhor) => { if (!P || !b) return ""; const v = (a - b) / Math.abs(b) * 100; if (Math.abs(v) < 0.5) return '<span class="ge-var">= 0%</span>';
-    const bom = menorMelhor ? v < 0 : v > 0; return `<span class="ge-var ${bom ? "bom" : "ruim"}">${v > 0 ? "▲" : "▼"} ${Math.abs(v).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%</span>`; };
-  const pct = (x) => (x * 100).toLocaleString("pt-BR", { maximumFractionDigits: 0 }) + "%";
+  $("geComp").textContent = `▲▼ comparação com o período anterior de mesmo tamanho (${fmtDia(pde)} a ${fmtDia(pate)}). Verde = melhorou, vermelho = piorou. Passe o mouse num quadro para ver o valor anterior.`;
+  const var_ = (a, b, menorMelhor, dinheiro) => { if (!P || !b) return '<span class="ge-var">—</span>';
+    const v = (a - b) / Math.abs(b) * 100; if (Math.abs(v) < 0.5) return '<span class="ge-var">= anterior</span>';
+    const bom = menorMelhor ? v < 0 : v > 0, txt = dinheiro && (a < 0 || b < 0) ? (a > b ? "+ " : "− ") + reais(Math.abs(a - b)) : Math.abs(v).toLocaleString("pt-BR", { maximumFractionDigits: 0 }) + "%";
+    return `<span class="ge-var ${bom ? "bom" : "ruim"}" title="Período anterior: ${dinheiro ? reais(b) : typeof b === "number" && b < 1 ? pct(b) : b}">${v > 0 ? "▲" : "▼"} ${txt}</span>`; };
+  const pct = (x) => (x * 100).toLocaleString("pt-BR", { maximumFractionDigits: x < 0.1 ? 1 : 0 }) + "%";
   const k = A.k, pk = P?.k || {}, taxaF = k.agend ? k.faltas / k.agend : 0;
   const itens = [
-    ["Faturamento", reais(k.fat), var_(k.fat, pk.fat)],
-    ["Despesas", reais(k.desp), var_(k.desp, pk.desp, true)],
-    ["Resultado", `<span style="${k.res < 0 ? "color:var(--danger)" : ""}">${reais(k.res)}</span>`, var_(k.res, pk.res)],
-    ["Ticket médio (por comanda)", reais(k.ticket), var_(k.ticket, pk.ticket)],
-    ["Atendimentos (serviços feitos)", k.atend, var_(k.atend, pk.atend)],
-    ["Agendamentos", k.agend, var_(k.agend, pk.agend)],
-    ["Cancelamentos", k.canc, var_(k.canc, pk.canc, true)],
-    [`Faltas (no-show ${pct(taxaF)})`, k.faltas, var_(k.faltas, pk.faltas, true)],
-    ["Taxa de ocupação", pct(A.ocup), var_(A.ocup, P?.ocup)],
-    ["Comandas fechadas", k.comandas, var_(k.comandas, pk.comandas)],
+    ["fin", "Faturamento", reais(k.fat), var_(k.fat, pk.fat, false, true)],
+    ["fin", "Despesas", reais(k.desp), var_(k.desp, pk.desp, true, true)],
+    ["fin", "Resultado", `<span style="${k.res < 0 ? "color:var(--danger)" : "color:var(--ok)"}">${reais(k.res)}</span>`, var_(k.res, pk.res, false, true)],
+    ["fin", "Ticket médio", reais(k.ticket), var_(k.ticket, pk.ticket, false, true), "Faturamento ÷ comandas fechadas"],
+    ["op", "Atendimentos", k.atend, var_(k.atend, pk.atend), "Serviços feitos (comandas fechadas)"],
+    ["op", "Agendados", k.agend, var_(k.agend, pk.agend)],
+    ["op", "Cancelados", k.canc, var_(k.canc, pk.canc, true)],
+    ["op", `Faltas · ${pct(taxaF)}`, k.faltas, var_(k.faltas, pk.faltas, true), "Faltas e taxa de no-show (faltas ÷ agendamentos)"],
+    ["op", "Ocupação", pct(A.ocup), var_(A.ocup, P?.ocup), "Minutos com atendimento ÷ minutos de trabalho na escala (menos bloqueios), de todos os profissionais ativos"],
+    ["op", "Comandas", k.comandas, var_(k.comandas, pk.comandas), "Comandas fechadas no período"],
   ];
-  $("geKpis").innerHTML = itens.map(([t, v, c]) => `<div class="kpi"><b>${v}</b>${t} ${c}</div>`).join("");
+  $("geKpis").innerHTML = itens.map(([g, t, v, c, dica]) => `<div class="kpi ge-k ${g}" ${dica ? `title="${esc(dica)}"` : ""}><span class="ge-t">${t}</span><b>${v}</b>${c}</div>`).join("");
   // gráficos
   const barras = (lista, fmt, cor) => { const mx = Math.max(1, ...lista.map(x => x.v));
     return lista.length ? `<div class="ge-barras">${lista.map(x => `<div class="ge-b" title="${esc(x.r)}: ${fmt(x.v)}"><span class="ge-bv">${fmt(x.v)}</span><i style="height:${Math.max(2, x.v / mx * 100)}%;background:${cor}"></i><span class="ge-bl">${esc(x.l)}</span></div>`).join("")}</div>` : '<p class="muted">Sem dados no período.</p>'; };
