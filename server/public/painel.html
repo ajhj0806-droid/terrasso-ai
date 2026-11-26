@@ -309,6 +309,43 @@
   .pop:not(.hidden) { border-radius:18px; }
   .cd-tab tr.cl:hover td { background:var(--tint); }
   @media (min-width:901px) { body.lateral main { max-width:none; } }
+  /* ---- agenda: calendário e filtros ao lado, cores pela comanda, horas fixas à esquerda ---- */
+  .ag-corpo { display:flex; gap:16px; align-items:flex-start; }
+  .ag-main { flex:1; min-width:0; }
+  #agLado { width:230px; flex:none; position:sticky; top:8px; padding:12px; max-height:calc(100vh - 16px); overflow:auto; }
+  @media (max-width:900px) { .ag-corpo { flex-direction:column; align-items:stretch; } #agLado { width:auto; position:static; max-height:none; } }
+  #agLadoBtn.on { background:var(--tint); border-color:var(--brand); }
+  .mcal-top { display:flex; align-items:center; justify-content:space-between; gap:4px; }
+  .mcal-top b { font-size:14px; } .mcal-top b::first-letter { text-transform:uppercase; }
+  .mcal-top button { padding:2px 9px; }
+  .mcal-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; margin-top:6px; text-align:center; }
+  .mcal-grid span { color:var(--muted); font-size:11px; padding:2px 0; }
+  .mcal-grid button { padding:4px 0; background:transparent !important; color:var(--ink) !important; border-radius:6px; box-shadow:none !important; font-size:12px; }
+  .mcal-grid button:hover { background:var(--tint) !important; }
+  .mcal-grid button.hoje { font-weight:700; color:var(--brand) !important; box-shadow:inset 0 0 0 1px var(--brand) !important; }
+  .mcal-grid button.sel { background:var(--brand) !important; color:#fff !important; font-weight:700; }
+  .lado-t { display:flex; justify-content:space-between; align-items:baseline; margin:14px 0 4px; font-size:12px; text-transform:uppercase; color:var(--muted); letter-spacing:.04em; }
+  .lado-ac { text-transform:none; letter-spacing:0; font-weight:400; }
+  .lnk { background:none !important; color:var(--brand) !important; padding:0; border:0; text-decoration:underline; font-size:12px; box-shadow:none !important; }
+  .lado-lista label { display:flex; gap:6px; align-items:center; margin:2px 0 !important; padding:0 !important; min-height:0 !important; font-size:13px; color:var(--ink); cursor:pointer; }
+  .lado-lista label input { width:auto; margin:0; }
+  .lado-lista label.fora { opacity:.45; }
+  .lado-lista .g { font-size:11px; color:var(--muted); margin:8px 0 2px; font-weight:600; }
+  .lado-lista .bola { display:inline-block; width:9px; height:9px; border-radius:50%; }
+  .ag-leg { display:inline-flex; flex-wrap:wrap; gap:4px 10px; align-items:center; font-size:12px; color:var(--muted); margin-left:auto; }
+  .ag-leg i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:-6px; }
+  .ag-leg .l-sem, .grade .ap.cm-sem { background:#dcefdc; } .ag-leg .l-aberta, .grade .ap.cm-aberta { background:#fff0b8; } .ag-leg .l-fechada, .grade .ap.cm-fechada { background:#f7d3ce; } .ag-leg .l-bloq, .grade .bloq { background:#e2e2e2; }
+  .grade .ap.cm-sem { box-shadow:inset 0 0 0 1px #a9d3ac; } .grade .ap.cm-aberta { box-shadow:inset 0 0 0 1px #e6c95c; } .grade .ap.cm-fechada { box-shadow:inset 0 0 0 1px #e29e95; }
+  .grade .bloq { color:#555; }
+  .grade > .horas, .grade > .gh0 { position:sticky; left:0; z-index:4; background:var(--card); box-shadow:3px 0 0 var(--card), 4px 0 0 var(--line); }
+  /* ---- popup do agendamento editável ---- */
+  .d-data { text-align:center; font-family:Fraunces, Georgia, serif; font-size:18px; font-weight:600; color:var(--brand); background:var(--tint); border-radius:10px; padding:6px 10px; margin:6px 0 10px; }
+  .d-tab { width:100%; }
+  .d-tab th { font-size:11px; padding:4px; }
+  .d-tab td { padding:4px; vertical-align:middle; }
+  .d-tab input, .d-tab select { padding:5px 6px; min-height:0; font-size:13px; }
+  .d-tab .w-t { width:62px; } .d-tab .w-h { width:104px; } .d-tab .w-v { width:84px; }
+  .d-cred { font-size:13px; margin:8px 0 0; }
 </style>
 </head>
 <body>
@@ -382,6 +419,7 @@
           <input type="date" id="agData">
           <button class="ghost" id="agDepois" aria-label="Próximo dia">›</button>
           <button class="ghost" id="agHoje">Hoje</button>
+          <button class="ghost" id="agLadoBtn" title="Mostrar ou ocultar o calendário e os filtros">Calendário e filtros</button>
           <b id="agDiaNome" style="flex:1"></b>
           <button class="ghost" id="agBloqBtn">Bloquear horário</button>
           <button id="agNovoBtn">+ Novo horário</button>
@@ -443,10 +481,21 @@
         <div class="actions" id="dAcoes"></div>
       </div>
 
+      <div class="ag-corpo">
+      <aside class="card" id="agLado">
+        <div class="mcal-top"><button type="button" class="ghost" id="mcAntes" aria-label="Mês anterior">‹</button><b id="mcMes"></b><button type="button" class="ghost" id="mcDepois" aria-label="Próximo mês">›</button></div>
+        <div class="mcal-grid" id="mcGrid"></div>
+        <b class="lado-t">Categorias</b>
+        <div id="agfCats" class="lado-lista"></div>
+        <b class="lado-t">Profissionais <span class="lado-ac"><button type="button" class="lnk" id="agfTodos">todos</button> · <button type="button" class="lnk" id="agfNenhum">nenhum</button></span></b>
+        <div id="agfProfs" class="lado-lista"></div>
+      </aside>
+      <div class="ag-main">
       <div class="card">
         <div class="ag-vis">
           <span class="seg"><button type="button" data-agvis="prof" class="on">Por profissional</button><button type="button" data-agvis="serv">Por serviço</button></span>
           <button type="button" class="ghost" id="agCompacto" title="Mostra todas as colunas na tela. Clique num horário ou coluna para ampliar de novo.">Ver todos</button>
+          <span class="ag-leg"><i class="l-sem"></i>Agendado <i class="l-aberta"></i>Comanda aberta <i class="l-fechada"></i>Comanda fechada (pago) <i class="l-bloq"></i>Bloqueado</span>
         </div>
         <div class="grade-box">
           <button type="button" class="ag-seta esq hidden" id="agEsq" aria-label="Voltar colunas">‹</button>
@@ -454,6 +503,8 @@
           <button type="button" class="ag-seta dir hidden" id="agDir" aria-label="Avançar colunas">›</button>
         </div>
         <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. Arraste um horário para remarcar. Clique num bloqueio cinza para removê-lo. Clique na situação para avançar: Agendado → Atendendo → Concluído ("Atrasado" é agendado com o horário já passado). "Feito" abre a comanda para lançar no caixa; o ✕ cancela o horário e conta na classificação da cliente. Clique no horário para ver mais opções. Áreas listradas ficam fora do horário de trabalho. "Ver todos" encolhe a grade para caber todas as colunas; clique numa coluna ou horário para ampliar de novo. As setas azuis passam as colunas para os lados. "Por serviço" mostra uma coluna para cada serviço marcado no dia, com o profissional em cada horário. A agenda se atualiza sozinha a cada minuto.</p>
+      </div>
+      </div>
       </div>
     </div>
 
@@ -2005,13 +2056,19 @@ async function carregarAgenda(silencioso) {
   const data = $("agData").value || hojeLocal();
   const ini = localParaUtc(data, "00:00"), fim = localParaUtc(somarDias(data, 1), "00:00");
   const [a, e, b] = await Promise.all([
-    sb.from("appointments").select("id, period, status, price_cents, source, notes, by_turn, client_id, professional_id, service_id, clients(full_name, phone_e164), services(name)")
+    sb.from("appointments").select("*, clients(full_name, phone_e164), services(name)")
       .eq("tenant_id", tenantId).overlaps("period", faixa(ini, fim)),
     sb.from("work_schedules").select("professional_id, weekday, start_time, end_time").eq("tenant_id", tenantId),
     sb.from("blocks").select("id, professional_id, period, reason").eq("tenant_id", tenantId).overlaps("period", faixa(ini, fim)),
   ]);
   for (const r of [a, e, b]) if (r.error) return silencioso ? console.error(r.error) : erro(r.error);
   agenda = { data, ini, fim, ags: a.data.map(x => ({ ...x, ...lerFaixa(x.period) })), escalas: e.data, bloqueios: b.data.map(x => ({ ...x, ...lerFaixa(x.period) })) };
+  // situação da comanda de cada atendimento (cor do cartão): aberta, fechada ou sem comanda
+  agCmd = {};
+  if (a.data.length) {
+    const r = await sb.from("comanda_items").select("appointment_id, comandas(status)").in("appointment_id", a.data.map(x => x.id));
+    if (!r.error) for (const x of r.data) { const st = x.comandas?.status; if (!x.appointment_id || !st || st === "cancelled") continue; agCmd[x.appointment_id] = agCmd[x.appointment_id] === "open" || st === "open" ? "open" : "closed"; }
+  }
   const ids = [...new Set(agenda.ags.map(x => x.client_id))];
   if (!categorias.length) await carregarCategorias();
   if (ids.length) {
@@ -2019,7 +2076,7 @@ async function carregarAgenda(silencioso) {
     if (!st.error) for (const x of st.data) clientStats[x.client_id] = x;
   }
   $("agDiaNome").textContent = DIAS[diaSemana(data)] + (data === hojeLocal() ? " · hoje" : "");
-  desenharKpis(); desenharGrade();
+  desenharKpis(); desenharLado(); desenharGrade();
   if (agSel) { const x = agenda.ags.find(y => y.id === agSel); x ? abrirAgendamento(x.id) : $("agDetalhe").classList.add("hidden"); }
 }
 
@@ -2041,6 +2098,43 @@ function desenharKpis() {
 
 function escalaDo(profId, wd) { return agenda.escalas.filter(s => s.professional_id === profId && s.weekday === wd).map(s => [hm(s.start_time), hm(s.end_time)]); }
 function hm(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
+
+let agCmd = {}, agLado = true, agfCats = [], agfOcultos = [], mcMes = null;
+try { agLado = localStorage.getItem("agLado") !== "0"; agfCats = JSON.parse(localStorage.getItem("agfCats") || "[]"); agfOcultos = JSON.parse(localStorage.getItem("agfOcultos") || "[]"); } catch (e) {}
+const salvarFiltrosAg = () => { try { localStorage.setItem("agfCats", JSON.stringify(agfCats)); localStorage.setItem("agfOcultos", JSON.stringify(agfOcultos)); localStorage.setItem("agLado", agLado ? "1" : "0"); } catch (e) {} };
+const catsDoProf = (pid) => vinculos.filter(v => v.professional_id === pid).map(v => servicos.find(s => s.id === v.service_id)?.category).filter(Boolean);
+function catPrincipal(pid) { const n = {}; for (const c of catsDoProf(pid)) n[c] = (n[c] || 0) + 1; return Object.keys(n).sort((a, b) => n[b] - n[a] || a.localeCompare(b, "pt-BR"))[0] || "Outros"; }
+const profNoFiltro = (p) => !agfOcultos.includes(p.id) && (!agfCats.length || catsDoProf(p.id).some(c => agfCats.includes(c)));
+const servNoFiltro = (sv) => !agfCats.length || agfCats.includes(sv.category);
+function desenharLado() {
+  $("agLado").classList.toggle("hidden", !agLado); $("agLadoBtn").classList.toggle("on", agLado);
+  if (!agLado) return;
+  // calendário do mês, com o dia escolhido marcado
+  const sel = $("agData").value || hojeLocal(), hoje = hojeLocal(), mes = mcMes || sel.slice(0, 7);
+  const [y, m] = mes.split("-").map(Number), primeiro = new Date(Date.UTC(y, m - 1, 1)), nDias = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  $("mcMes").textContent = primeiro.toLocaleDateString("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" });
+  let g = ["D", "S", "T", "Q", "Q", "S", "S"].map(d => `<span>${d}</span>`).join("") + "<span></span>".repeat(primeiro.getUTCDay());
+  for (let d = 1; d <= nDias; d++) { const ds = `${mes}-${String(d).padStart(2, "0")}`; g += `<button type="button" data-mcdia="${ds}" class="${ds === sel ? "sel" : ""} ${ds === hoje ? "hoje" : ""}">${d}</button>`; }
+  $("mcGrid").innerHTML = g;
+  $("mcGrid").querySelectorAll("[data-mcdia]").forEach(b => b.onclick = () => { $("agData").value = b.dataset.mcdia; mcMes = null; carregarAgenda(); });
+  // categorias de serviço
+  const todas = [...new Set(servicos.filter(s => s.active).map(s => s.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  agfCats = agfCats.filter(c => todas.includes(c));
+  $("agfCats").innerHTML = todas.map(c => `<label><input type="checkbox" data-fcat="${esc(c)}" ${agfCats.includes(c) ? "checked" : ""}> ${esc(c)}</label>`).join("") || '<span class="muted" style="font-size:12px">Cadastre categorias nos serviços.</span>';
+  // profissionais agrupados pela categoria principal do que fazem
+  const base = profissionais.filter(p => p.active && (!ehProf() || meusProfs().includes(p.id)));
+  const grupos = {}; for (const p of base) (grupos[catPrincipal(p.id)] ||= []).push(p);
+  $("agfProfs").innerHTML = Object.keys(grupos).sort((a, b) => (a === "Outros") - (b === "Outros") || a.localeCompare(b, "pt-BR")).map(gr => `<div class="g">${esc(gr)}</div>` + grupos[gr].map(p =>
+    `<label class="${agfCats.length && !catsDoProf(p.id).some(c => agfCats.includes(c)) ? "fora" : ""}"><input type="checkbox" data-fprof="${p.id}" ${agfOcultos.includes(p.id) ? "" : "checked"}> <span class="bola" style="background:${esc(p.color || "#ccc")}"></span> ${esc(p.name)}</label>`).join("")).join("");
+  const mudou = () => { salvarFiltrosAg(); desenharLado(); desenharGrade(); };
+  $("agfCats").querySelectorAll("[data-fcat]").forEach(c => c.onchange = () => { agfCats = c.checked ? [...agfCats, c.dataset.fcat] : agfCats.filter(x => x !== c.dataset.fcat); mudou(); });
+  $("agfProfs").querySelectorAll("[data-fprof]").forEach(c => c.onchange = () => { agfOcultos = c.checked ? agfOcultos.filter(x => x !== c.dataset.fprof) : [...agfOcultos, c.dataset.fprof]; mudou(); });
+  $("agfTodos").onclick = () => { agfOcultos = []; mudou(); };
+  $("agfNenhum").onclick = () => { agfOcultos = base.map(p => p.id); mudou(); };
+}
+$("agLadoBtn").onclick = () => { agLado = !agLado; salvarFiltrosAg(); desenharLado(); requestAnimationFrame(setasAgenda); };
+$("mcAntes").onclick = () => { const b = mcMes || ($("agData").value || hojeLocal()).slice(0, 7); mcMes = somarDias(b + "-01", -1).slice(0, 7); desenharLado(); };
+$("mcDepois").onclick = () => { const b = mcMes || ($("agData").value || hojeLocal()).slice(0, 7); mcMes = somarDias(b + "-28", 7).slice(0, 7); desenharLado(); };
 
 let agVis = "prof", agCompacto = false;
 try { agVis = localStorage.getItem("agVis") === "serv" ? "serv" : "prof"; agCompacto = localStorage.getItem("agCompacto") === "1"; } catch (e) {}
@@ -2092,7 +2186,9 @@ function desenharGrade() {
   $("agCompacto").classList.toggle("on", agCompacto); $("agCompacto").textContent = agCompacto ? "Ampliar" : "Ver todos";
   $("agGrade").classList.toggle("compacto", agCompacto);
   const comAg = new Set(agenda.ags.map(a => a.professional_id));
-  const profs = profissionais.filter(p => (p.active || comAg.has(p.id)) && (!ehProf() || meusProfs().includes(p.id)));
+  const profsBase = profissionais.filter(p => (p.active || comAg.has(p.id)) && (!ehProf() || meusProfs().includes(p.id)));
+  const profs = profsBase.filter(profNoFiltro);
+  if (profsBase.length && !profs.length) { $("agGrade").style.gridTemplateColumns = "1fr"; $("agGrade").innerHTML = '<p class="muted">Nenhum profissional com esses filtros. Marque profissionais ou categorias em "Calendário e filtros".</p>'; setasAgenda(); return; }
   if (!profs.length) { $("agGrade").innerHTML = ehProf() ? '<p class="muted">Seu login ainda não está ligado a um profissional. Peça ao administrador para ligar na aba Profissionais.</p>' : '<p class="muted">Cadastre os profissionais na aba Profissionais.</p>'; setasAgenda(); return; }
   const balcao = !ehProf(), porServ = agVis === "serv";
   const visiveis = agenda.ags.filter(a => a.status !== "cancelled" && profs.some(p => p.id === a.professional_id));
@@ -2112,7 +2208,8 @@ function desenharGrade() {
     const ini = Math.max(de, minutoNoDia(a.ini, agenda.ini)), fim = Math.min(ate, minutoNoDia(a.fim, agenda.ini));
     const arrasta = !porServ && balcao && ["scheduled", "confirmed"].includes(a.status), aberto = balcao && ["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status);
     const n = porServ ? (a.nFaixas || 1) : 1, larg = 100 / n, pos = porServ ? `left:calc(${(a.faixa || 0) * larg}% + 2px);right:auto;width:calc(${larg}% - 4px);` : "";
-    return `<div class="ap ${a.status} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" ${arrasta ? 'draggable="true"' : ""} style="${pos}top:${top(ini)}px;height:${Math.max(18, (fim - ini) * px - 2)}px;border-left-color:${esc(p?.color || "#b4532f")}">
+    const cm = ["cancelled", "no_show"].includes(a.status) ? "" : agCmd[a.id] === "closed" ? "cm-fechada" : agCmd[a.id] === "open" ? "cm-aberta" : "cm-sem";
+    return `<div class="ap ${a.status} ${cm} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" ${arrasta ? 'draggable="true"' : ""} style="${pos}top:${top(ini)}px;height:${Math.max(18, (fim - ini) * px - 2)}px;border-left-color:${esc(p?.color || "#b4532f")}">
       ${aberto && n === 1 && a.status !== "scheduled" ? `<span class="ap-bt"><button class="feito" data-feito="${a.id}" title="Abrir a comanda deste atendimento">Comanda</button></span>` : ""}
       <b>${hhmm(minutoNoDia(a.ini, agenda.ini))} ${esc(a.clients?.full_name || "Cliente")}</b> ${estrela(a.client_id)}<br>
       ${extra} ${seloStatus(a)}${aberto ? `<button class="xcanc" data-canc="${a.id}" title="Cancelar horário">✕</button>` : ""}${a.source === "whatsapp_ai" ? " 💬" : ""}</div>`;
@@ -2139,7 +2236,7 @@ function desenharGrade() {
     // Agenda por serviço: uma coluna para cada serviço com horário marcado no dia
     const ids = [...new Set(visiveis.map(a => a.service_id))];
     const lista = ids.map(id => servicos.find(s => s.id === id) || { id, name: visiveis.find(a => a.service_id === id)?.services?.name || "Serviço", category: "" })
-      .sort((a, b) => (a.category || "").localeCompare(b.category || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR"));
+      .filter(servNoFiltro).sort((a, b) => (a.category || "").localeCompare(b.category || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR"));
     if (!lista.length) { $("agGrade").style.gridTemplateColumns = "1fr"; $("agGrade").innerHTML = '<p class="muted">Nenhum serviço marcado neste dia.</p>'; setasAgenda(); return; }
     titulos = lista.map(sv => `${esc(sv.name)}${sv.category ? ` <span class="muted" style="font-weight:400;font-size:11px">${esc(sv.category)}</span>` : ""}`);
     colunas = lista.map(sv => {
@@ -2152,7 +2249,7 @@ function desenharGrade() {
   }
 
   $("agGrade").style.gridTemplateColumns = agCompacto ? `40px repeat(${colunas.length}, minmax(0, 1fr))` : `48px repeat(${colunas.length}, minmax(${porServ ? 170 : 150}px, 1fr))`;
-  $("agGrade").innerHTML = `<div></div>` + titulos.map((t, i) => `<div class="gh" data-colidx="${i}" title="${agCompacto ? "Clique para ampliar" : ""}">${t}</div>`).join("")
+  $("agGrade").innerHTML = `<div class="gh0"></div>` + titulos.map((t, i) => `<div class="gh" data-colidx="${i}" title="${agCompacto ? "Clique para ampliar" : ""}">${t}</div>`).join("")
     + `<div class="horas" style="height:${altura}px">${horas.join("")}</div>` + colunas.map((c, i) => `<div class="col" data-colidx="${i}" style="height:${altura}px">${c.html}${linhaAgora}</div>`).join("");
   $("agGrade").querySelectorAll("[data-ag]").forEach(el => el.onclick = () => abrirAgendamento(el.dataset.ag));
   $("agGrade").querySelectorAll("[data-feito]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); comandaDoAgendamento(agenda.ags.find(x => x.id === el.dataset.feito)); });
@@ -2250,14 +2347,36 @@ const PROXIMOS = {
   no_show: [["scheduled", "Restaurar horário"]],
   cancelled: [["scheduled", "Restaurar horário"]],
 };
+// Popup do agendamento: data em destaque, e (na recepção) tabela editável com serviço, profissional, tempo, início, fim, valor e desconto
+let dLin = [], dSujo = false;
 function abrirAgendamento(id) {
   const a = agenda.ags.find(x => x.id === id); if (!a) return;
+  if (dSujo && agSel === id && !$("agDetalhe").classList.contains("hidden")) { desenharGrade(); return; } // não apaga o que está sendo editado
+  dSujo = false;
   agSel = id; $("agNovo").classList.add("hidden");
   const p = profissionais.find(x => x.id === a.professional_id);
   const ini = minutoNoDia(a.ini, agenda.ini), fim = minutoNoDia(a.fim, agenda.ini);
   const cat = categoriaDe(clientStats[a.client_id]?.points);
-  $("dTitulo").innerHTML = `${esc(a.clients?.full_name || "Cliente")} ${estrela(a.client_id)} <span class="muted" style="font-weight:400;font-size:13px">${esc(cat?.name || "")}</span> ${seloStatus(a)}`;
-  $("dInfo").innerHTML = `${esc(a.services?.name || "")} com ${esc(p?.name || "")}${a.by_turn ? " (profissional da vez)" : ""} · ${hhmm(ini)} às ${hhmm(fim)}${ehProf() ? "" : " · " + reais(a.price_cents)}<br>
+  const tel = a.clients?.phone_e164 || "", telTxt = !tel ? "" : ehAdmin() ? tel : ehProf() ? "" : "•••• " + tel.slice(-4);
+  $("dTitulo").innerHTML = `${esc(a.clients?.full_name || "Cliente")}${telTxt ? ` <span class="muted" style="font-weight:400;font-size:13px">📱 ${esc(telTxt)}</span>` : ""} ${estrela(a.client_id)} <span class="muted" style="font-weight:400;font-size:13px">${esc(cat?.name || "")}</span> ${seloStatus(a)}`;
+  const dataTxt = `${DIAS[diaSemana(agenda.data)]}, ${fmtDia(agenda.data)}`;
+  const editavel = !ehProf() && ["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status) && agCmd[a.id] !== "closed";
+  if (editavel) {
+    dLin = [{ id: a.id, serv: a.service_id, prof: a.professional_id, vez: !!a.by_turn, ini, dur: fim - ini, preco: a.price_cents, desc: Number(a.discount_cents || 0) }];
+    $("dInfo").innerHTML = `<div class="d-data">${dataTxt}</div>
+      <table class="d-tab"><thead><tr><th>Serviço</th><th>Profissional</th><th>Tempo (min)</th><th>Início</th><th>Fim</th><th>Valor (R$)</th><th>Desconto (R$)</th><th></th></tr></thead><tbody id="dLinhas"></tbody></table>
+      <button type="button" class="ghost" id="dAddServ" style="margin-top:6px">+ Adicionar serviço</button>
+      <div class="d-cred muted" id="dCred">Procurando créditos e pacotes da cliente…</div>
+      <label for="dObs">Observação</label><input id="dObs" value="${esc(a.notes || "")}" placeholder="Ex.: prefere água sem gás">
+      <p class="muted" style="font-size:12px;margin:6px 0 0">${ehAdmin() ? `WhatsApp ${esc(tel)} · ` : ""}marcado ${a.source === "whatsapp_ai" ? "pela IA no WhatsApp" : a.source === "avec_import" ? "no AVEC" : "pela recepção"}${agCmd[a.id] === "open" ? " · comanda aberta: as mudanças deste serviço vão para a comanda" : ""}</p>
+      <div class="actions"><button id="dSalvar">Salvar</button></div>`;
+    desenharLinhasAg(a);
+    $("dAddServ").onclick = () => { const u = dLin[dLin.length - 1]; dLin.push({ id: null, serv: "", prof: "", vez: false, ini: u.ini + u.dur, dur: 30, preco: 0, desc: 0 }); dSujo = true; desenharLinhasAg(a); };
+    $("dObs").oninput = () => { dSujo = true; };
+    $("dSalvar").onclick = () => salvarAgendamentoPopup(a);
+    creditosDaClienteAg(a.client_id);
+  } else
+  $("dInfo").innerHTML = `<div class="d-data">${dataTxt}</div>${esc(a.services?.name || "")} com ${esc(p?.name || "")}${a.by_turn ? " (profissional da vez)" : ""} · ${hhmm(ini)} às ${hhmm(fim)}${ehProf() ? "" : " · " + reais(a.price_cents)}<br>
     ${ehAdmin() ? `WhatsApp ${esc(a.clients?.phone_e164 || "")} · ` : ""}marcado ${a.source === "whatsapp_ai" ? "pela IA no WhatsApp" : a.source === "avec_import" ? "no AVEC" : "pela recepção"}
     ${a.notes ? `<br>Obs.: ${esc(a.notes)}` : ""}`;
   $("dAcoes").innerHTML = (PROXIMOS[a.status] || []).filter(([st]) => !ehProf() || ["in_service", "done", "scheduled"].includes(st)).map(([st, t]) =>
@@ -2273,6 +2392,94 @@ function abrirAgendamento(id) {
   $("agDetalhe").classList.remove("hidden");
   desenharGrade();
 }
+function desenharLinhasAg(a) {
+  const podeDesc = podeDesconto();
+  $("dLinhas").innerHTML = dLin.map((l, i) => {
+    const profsS = l.serv ? profsDoServico(l.serv) : profissionais.filter(p => p.active);
+    const lista = profsS.concat(profissionais.filter(p => p.id === l.prof && !profsS.some(q => q.id === p.id)));
+    return `<tr>
+      <td><select data-lserv="${i}"><option value="">Escolha…</option>${servicos.filter(x => x.active || x.id === l.serv).map(x => `<option value="${x.id}" ${x.id === l.serv ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></td>
+      <td><select data-lprof="${i}"><option value="vez" ${!l.prof && l.vez ? "selected" : ""}>Da vez (sem preferência)</option>${lista.map(p => `<option value="${p.id}" ${p.id === l.prof ? "selected" : ""}>${esc(p.name)}${p.id === l.prof && l.vez ? " (da vez)" : ""}</option>`).join("")}</select></td>
+      <td><input class="w-t" data-ldur="${i}" value="${l.dur}" inputmode="numeric"></td>
+      <td><input class="w-h" type="time" step="300" data-lini="${i}" value="${hhmm(l.ini)}"></td>
+      <td><input class="w-h" type="time" step="300" data-lfim="${i}" value="${hhmm(l.ini + l.dur)}"></td>
+      <td><input class="w-v" data-lpreco="${i}" value="${(l.preco / 100).toFixed(2).replace(".", ",")}" inputmode="decimal"></td>
+      <td><input class="w-v" data-ldesc="${i}" value="${l.desc ? (l.desc / 100).toFixed(2).replace(".", ",") : ""}" inputmode="decimal" placeholder="0,00" ${podeDesc ? "" : 'disabled title="Só dono ou gerente dá desconto"'}></td>
+      <td>${l.id ? "" : `<button type="button" class="danger" data-lrm="${i}" title="Tirar este serviço" style="padding:4px 8px">✕</button>`}</td></tr>`;
+  }).join("");
+  const q = (sel) => $("dLinhas").querySelectorAll(sel), sujo = () => { dSujo = true; };
+  q("[data-lserv]").forEach(el => el.onchange = () => { const l = dLin[el.dataset.lserv], sv = servicos.find(x => x.id === el.value); l.serv = el.value;
+    if (sv) { l.dur = sv.duration_min || 30; l.preco = sv.price_cents; if (l.prof && !profsDoServico(sv.id).some(p => p.id === l.prof)) l.prof = ""; if (!l.prof) l.vez = true; }
+    sujo(); desenharLinhasAg(a); });
+  q("[data-lprof]").forEach(el => el.onchange = () => { const l = dLin[el.dataset.lprof]; if (el.value === "vez") { l.prof = ""; l.vez = true; } else { l.prof = el.value; l.vez = false; } sujo(); });
+  q("[data-ldur]").forEach(el => el.oninput = () => { const l = dLin[el.dataset.ldur], v = parseInt(el.value, 10); if (v > 0) { l.dur = v; q(`[data-lfim="${el.dataset.ldur}"]`)[0].value = hhmm(l.ini + v); } sujo(); });
+  q("[data-lini]").forEach(el => el.onchange = () => { const l = dLin[el.dataset.lini]; if (el.value) { l.ini = hm(el.value); q(`[data-lfim="${el.dataset.lini}"]`)[0].value = hhmm(l.ini + l.dur); } sujo(); });
+  q("[data-lfim]").forEach(el => el.onchange = () => { const l = dLin[el.dataset.lfim]; if (el.value && hm(el.value) > l.ini) { l.dur = hm(el.value) - l.ini; q(`[data-ldur="${el.dataset.lfim}"]`)[0].value = l.dur; } sujo(); });
+  q("[data-lpreco]").forEach(el => el.oninput = () => { dLin[el.dataset.lpreco].preco = paraCentavos(el.value); sujo(); });
+  q("[data-ldesc]").forEach(el => el.oninput = () => { dLin[el.dataset.ldesc].desc = el.value.trim() ? paraCentavos(el.value) : 0; sujo(); });
+  q("[data-lrm]").forEach(el => el.onclick = () => { dLin.splice(Number(el.dataset.lrm), 1); desenharLinhasAg(a); });
+}
+async function creditosDaClienteAg(clientId) {
+  const [pac, sd] = await Promise.all([pacotesDaCliente(clientId), sb.from("client_credit_balances").select("balance_cents").eq("tenant_id", tenantId).eq("client_id", clientId)]);
+  if (!$("dCred")) return;
+  const saldo = Number(sd.data?.[0]?.balance_cents || 0);
+  const nomeServ = (id) => servicos.find(s => s.id === id)?.name || "serviço";
+  const partes = [];
+  if (saldo > 0) partes.push(`<b>Crédito antecipado:</b> ${reais(saldo)}`);
+  if (pac.length) partes.push(`<b>Pacotes:</b> ${pac.map(i => `${esc(i.pacote.name)} (${esc(nomeServ(i.service_id))}: ${i.quantity_total - i.quantity_used} de ${i.quantity_total} sessões, vence ${dataBr(i.pacote.expires_at)})`).join(" · ")}`);
+  $("dCred").innerHTML = partes.length ? partes.join("<br>") + '<br><span style="font-size:12px">O pacote e o crédito são usados na comanda.</span>' : "Sem créditos ou pacotes comprados.";
+}
+async function salvarAgendamentoPopup(a) {
+  const obs = $("dObs").value.trim() || null, agora = new Date().toISOString();
+  for (const l of dLin) {
+    const sv = servicos.find(x => x.id === l.serv);
+    if (!sv) return aviso("Escolha o serviço de cada linha.", "err");
+    if (!(l.dur > 0) || l.ini + l.dur > 24 * 60) return aviso(`Confira o tempo e o horário de ${sv.name}.`, "err");
+    if (!(l.preco >= 0)) return aviso(`Confira o valor de ${sv.name}, por exemplo 120,00.`, "err");
+    if (!(l.desc >= 0) || l.desc > l.preco) return aviso(`O desconto de ${sv.name} não pode passar do valor.`, "err");
+  }
+  $("dSalvar").disabled = true;
+  try {
+    let n = 0;
+    for (const l of dLin) {
+      const sv = servicos.find(x => x.id === l.serv);
+      const ini = localParaUtc(agenda.data, hhmm(l.ini)), fim = new Date(ini.getTime() + l.dur * 60000);
+      let prof = l.prof, vez = l.vez && !l.prof;
+      if (!prof) {
+        const r = await sb.rpc("take_turn_slot", { p_tenant: tenantId, p_service: sv.id, p_ini: ini.toISOString(), p_fim: fim.toISOString() });
+        if (r.error) return erro(r.error);
+        if (!r.data) return aviso(`Nenhum profissional da fila está livre às ${hhmm(l.ini)} para ${sv.name}. Escolha um profissional ou outro horário.`, "err");
+        prof = r.data; vez = true;
+      }
+      const nomeP = profissionais.find(p => p.id === prof)?.name || "";
+      if (l.id) {
+        const up = { service_id: sv.id, professional_id: prof, period: faixa(ini, fim), price_cents: l.preco, notes: obs, updated_at: agora };
+        if (vez) up.by_turn = true; else if (prof !== a.professional_id) up.by_turn = false;
+        if (ini.getTime() !== a.ini.getTime()) up.reminder_sent_at = null;
+        if (l.desc !== Number(a.discount_cents || 0)) up.discount_cents = l.desc;
+        const { error } = await sb.from("appointments").update(up).eq("id", l.id);
+        if (error) return error.code === "23P01" ? aviso(`${nomeP} já tem atendimento nesse horário. Escolha outro horário.`, "err") : erro(error);
+        // comanda aberta: leva serviço, profissional, valor e desconto para o item (menos sessão de pacote)
+        const mudouServ = sv.id !== a.service_id || prof !== a.professional_id || l.preco !== a.price_cents || l.desc !== Number(a.discount_cents || 0);
+        if (agCmd[a.id] === "open" && mudouServ) {
+          const it = await sb.from("comanda_items").select("id, client_package_item_id, is_gift").eq("appointment_id", l.id);
+          for (const x of (it.data || []).filter(x => !x.client_package_item_id)) {
+            await sb.from("comanda_items").update({ service_id: sv.id, professional_id: prof, description: sv.name + (x.is_gift ? " (cortesia)" : ""), unit_price_cents: l.preco, discount_cents: x.is_gift ? l.preco : l.desc, discount_approved_by: l.desc > 0 || x.is_gift ? usuarioId : null }).eq("id", x.id);
+          }
+        }
+      } else {
+        const ins = { tenant_id: tenantId, client_id: a.client_id, professional_id: prof, service_id: sv.id, period: faixa(ini, fim), price_cents: l.preco, source: "reception", by_turn: vez, notes: obs, created_by: usuarioId };
+        if (l.desc > 0) ins.discount_cents = l.desc;
+        const { error } = await sb.from("appointments").insert(ins);
+        if (error) return error.code === "23P01" ? aviso(`${nomeP} já tem atendimento às ${hhmm(l.ini)}. Escolha outro horário para ${sv.name}.`, "err") : erro(error);
+      }
+      n++;
+    }
+    dSujo = false;
+    aviso(`Agendamento salvo${n > 1 ? ` (${n} serviços)` : ""}.${dLin.some(l => !l.id) && agCmd[a.id] === "open" ? " Os serviços novos entram na comanda pelo painel da cliente (Lançar)." : ""}`);
+    carregarAgenda();
+  } finally { if ($("dSalvar")) $("dSalvar").disabled = false; }
+}
 async function mudarStatus(a, st) {
   if (st === "cancelled" && !confirm(`Cancelar o horário de ${a.clients?.full_name || "cliente"}? O espaço fica livre na agenda e o cancelamento conta na classificação da cliente.`)) return;
   if (st === "no_show" && !confirm("Marcar que a cliente faltou?")) return;
@@ -2281,7 +2488,7 @@ async function mudarStatus(a, st) {
   aviso(`Situação alterada para "${STATUS[st]}".` + (["confirmed", "in_service"].includes(st) && !ehProf() ? " Já pode abrir a comanda." : ""));
   carregarAgenda();
 }
-$("dFechar").onclick = () => { agSel = null; $("agDetalhe").classList.add("hidden"); desenharGrade(); };
+$("dFechar").onclick = () => { agSel = null; dSujo = false; $("agDetalhe").classList.add("hidden"); desenharGrade(); };
 // Popups da agenda: Esc fecha; clicar fora fecha o detalhe (os formulários só fecham pelo botão, para não perder o que foi digitado)
 function fecharPops() {
   if (!$("agDetalhe").classList.contains("hidden")) $("dFechar").onclick();
@@ -2290,7 +2497,7 @@ function fecharPops() {
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && document.querySelector(".pop:not(.hidden)")) fecharPops(); });
 document.addEventListener("mousedown", (ev) => {
   const d = $("agDetalhe");
-  if (!d.classList.contains("hidden") && !d.contains(ev.target) && !ev.target.closest("#msg")) $("dFechar").onclick();
+  if (!d.classList.contains("hidden") && !d.contains(ev.target) && !ev.target.closest("#msg") && !dSujo) $("dFechar").onclick();
 });
 // Filtra as opções de um select conforme se digita (sem acento, qualquer parte do nome)
 function filtrarSelect(inpId, selId) {
@@ -2556,7 +2763,7 @@ async function comandaDoAgendamento(a, { abrir = true, chegou = true } = {}) {
     }
     const serv = servicos.find(s => s.id === a.service_id) || { id: a.service_id, name: a.services?.name || "Serviço", duration_min: 30 };
     const pac = pacoteDoServico(await pacotesDaCliente(a.client_id), a.service_id);
-    try { await lancarServico({ comanda: cid, clientId: a.client_id, serv, prof: a.professional_id, preco: a.price_cents, pacItem: pac, appointment: a.id, agendar: false, byTurn: a.by_turn }); }
+    try { await lancarServico({ comanda: cid, clientId: a.client_id, serv, prof: a.professional_id, preco: a.price_cents, desc: Math.min(Number(a.discount_cents || 0), a.price_cents), pacItem: pac, appointment: a.id, agendar: false, byTurn: a.by_turn }); }
     catch (e) { return erro(e); }
     if (pac) msg = ` Usou 1 sessão do pacote ${pac.pacote.name}.`;
     if (chegou && ["scheduled", "confirmed"].includes(a.status)) await sb.from("appointments").update({ status: "checked_in", updated_at: new Date().toISOString() }).eq("id", a.id);
