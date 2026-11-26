@@ -577,6 +577,18 @@
         </div>
       </div>
       <div class="card">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Abertura do caixa</h2><button class="ghost" type="button" data-mostra="cdAbBox">Mostrar</button></div>
+        <div class="hidden" id="cdAbBox">
+        <p class="muted" style="font-size:13px;margin-top:0">O saldo do dia anterior é o saldo de abertura mais o resultado, menos as retiradas, de cada dia desde a data de abertura. Defina aqui o dia em que o caixa começou e quanto havia nele.</p>
+        <div class="row">
+          <div><label for="cdAbData">Data de abertura</label><input id="cdAbData" type="date"></div>
+          <div><label for="cdAbSaldo">Saldo de abertura (R$)</label><input id="cdAbSaldo" inputmode="decimal" placeholder="0,00"></div>
+        </div>
+        <p class="muted" id="cdAbInfo" style="font-size:13px"></p>
+        <div class="actions"><button id="cdAbSalvar">Salvar abertura</button></div>
+        </div>
+      </div>
+      <div class="card">
         <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Despesas da sede (valor por mês)</h2><button class="ghost" type="button" data-mostra="cdSedeBox">Mostrar</button></div>
         <div class="hidden" id="cdSedeBox">
         <p class="muted" style="font-size:13px;margin-top:0">Aluguel, luz, água, internet, contador, sistema... O caixa divide o valor do mês pelos dias do mês e lança a parte de cada dia.</p>
@@ -3051,27 +3063,18 @@ $("cdTipo").onchange = () => {
   $("cdDesc").placeholder = { expense: "Ex.: manutenção do secador", cleaning: "Ex.: diarista", advance: "Ex.: vale", withdrawal: "Ex.: depósito no banco" }[t];
 };
 
-async function carregarCaixaDia() {
-  if (!tenantId) return;
-  if (!$("cdDe").value) { $("cdDe").value = $("cdAte").value = hojeLocal(); }
-  const { de, ate } = cdPer(); $("cdAte").value = ate;
-  if (!$("cdData").value) $("cdData").value = de;
-  $("cdProf").innerHTML = profissionais.filter(p => p.active).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+// Calcula receitas, despesas e retiradas de um período (usado no caixa e no saldo anterior)
+async function cdCalcular(de, ate, settings) {
+  const taxas = settings.taxas_cartao || {};
   const ini = localParaUtc(de, "00:00"), fim = localParaUtc(somarDias(ate, 1), "00:00");
-  const [k, ag, ce, st] = await Promise.all([
+  const [k, ag, ce] = await Promise.all([
     sb.from("comandas").select("id, closed_at, client_id, clients(full_name), comanda_items(id, description, quantity, unit_price_cents, discount_cents, commission_cents, service_id, product_id, product_use, client_package_item_id, sold_package_id, is_gift, professional_id), payments(method, amount_cents, installments, comanda_item_id)")
       .eq("tenant_id", tenantId).eq("status", "closed").gte("closed_at", ini.toISOString()).lt("closed_at", fim.toISOString()).order("closed_at"),
     sb.from("appointments").select("id, period, status, price_cents, client_id, professional_id, service_id, clients(full_name), services(name)")
       .eq("tenant_id", tenantId).in("status", ["scheduled", "confirmed", "checked_in", "in_service"]).overlaps("period", faixa(ini, fim)),
     sb.from("cash_entries").select("*").eq("tenant_id", tenantId).gte("entry_date", de).lte("entry_date", ate).order("entry_date").order("created_at"),
-    sb.from("tenants").select("settings").eq("id", tenantId).single(),
   ]);
-  for (const r of [k, ag, ce, st]) if (r.error) return erro(r.error);
-  const settings = st.data?.settings || {}, taxas = settings.taxas_cartao || {};
-  cdSede = Array.isArray(settings.caixa_sede) ? settings.caixa_sede
-    : (settings.projecao?.prem?.estrutura ?? settings.projecao?.estrutura) ? [{ nome: "Estrutura (valor da Projeção, confira)", mensal_cents: Math.round(Number(settings.projecao.prem?.estrutura ?? settings.projecao.estrutura) * 100) }] : [];
-  desenharSede();
-
+  for (const r of [k, ag, ce]) if (r.error) { erro(r.error); return null; }
   // linhas: chave -> { v, det: [{ quem, quando, v, comanda }] }
   const L = {}; const add = (ch, v, d) => { const x = L[ch] || (L[ch] = { v: 0, det: [] }); x.v += v; if (d) x.det.push({ ...d, v }); };
   const nomeProf = (id) => profissionais.find(p => p.id === id)?.name || "";
@@ -3111,11 +3114,42 @@ async function carregarCaixaDia() {
   const rec = ["serv", "prod", "prodUso", "pacVenda", "cred", "outros"].reduce((t, ch) => t + val(ch), 0) - val("prepUso");
   const desp = ["comissao", "custoUso", "custoProd", "taxa", "ce_advance", "ce_cleaning", "ce_expense", "sede"].reduce((t, ch) => t + val(ch), 0);
   const res = rec - desp, ret = val("ce_withdrawal");
+  return { L, val, rec, desp, res, ret, dias, nComandas: k.data.length };
+}
+
+async function carregarCaixaDia() {
+  if (!tenantId) return;
+  if (!$("cdDe").value) { $("cdDe").value = $("cdAte").value = hojeLocal(); }
+  const { de, ate } = cdPer(); $("cdAte").value = ate;
+  if (!$("cdData").value) $("cdData").value = de;
+  $("cdProf").innerHTML = profissionais.filter(p => p.active).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+  const st = await sb.from("tenants").select("settings").eq("id", tenantId).single();
+  if (st.error) return erro(st.error);
+  const settings = st.data?.settings || {};
+  cdSede = Array.isArray(settings.caixa_sede) ? settings.caixa_sede
+    : (settings.projecao?.prem?.estrutura ?? settings.projecao?.estrutura) ? [{ nome: "Estrutura (valor da Projeção, confira)", mensal_cents: Math.round(Number(settings.projecao.prem?.estrutura ?? settings.projecao.estrutura) * 100) }] : [];
+  desenharSede();
+
+  const C = await cdCalcular(de, ate, settings); if (!C) return;
+  const { L, val, rec, desp, res, ret, dias } = C, k = { data: { length: C.nComandas } };
+  // saldo do dia anterior: saldo de abertura + (resultado − retiradas) de todos os dias desde a abertura até a véspera
+  const ab = settings.caixa_abertura || {};
+  let inicio = ab.data;
+  if (!inicio) {
+    const p = await sb.from("comandas").select("closed_at").eq("tenant_id", tenantId).eq("status", "closed").order("closed_at").limit(1);
+    inicio = p.data?.[0]?.closed_at ? new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date(p.data[0].closed_at)) : de;
+  }
+  let saldoAnt = Number(ab.saldo_cents || 0);
+  if (de > inicio) { const A = await cdCalcular(inicio, somarDias(de, -1), settings); if (!A) return; saldoAnt += A.res - A.ret; }
+  $("cdAbData").value = ab.data || ""; $("cdAbSaldo").value = ab.saldo_cents != null ? (ab.saldo_cents / 100).toFixed(2).replace(".", ",") : "";
+  $("cdAbInfo").textContent = ab.data ? "" : `Sem data de abertura definida: o saldo anterior está sendo somado desde ${fmtDia(inicio)} (primeira comanda fechada), com saldo inicial zero.`;
   cd = { L, de, ate };
 
   const lin = (ch, txt, op = {}) => { const v = op.v ?? val(ch); if (!v && !op.sempre) return "";
     return `<tr class="${L[ch]?.det.length ? "cl" : ""} ${op.cls || ""}" ${L[ch]?.det.length ? `data-cd="${ch}" data-cdt="${esc(txt)}"` : ""}><td>${txt}</td><td>${op.neg ? "− " : ""}${reais(v)}</td></tr>`; };
-  $("cdRec").innerHTML = lin("serv", "Serviços realizados (comandas)", { sempre: true }) + lin("prod", "Produtos vendidos") + lin("prodUso", "Produtos usados no serviço (cobrados)")
+  const saldoFim = saldoAnt + res - ret, cor = (v) => v < 0 ? "color:var(--danger)" : "";
+  const linAnt = `<tr class="info"><td>Saldo do dia anterior${de > inicio || ab.data ? "" : " (abertura)"}</td><td style="${cor(saldoAnt)}">${reais(saldoAnt)}</td></tr>`;
+  $("cdRec").innerHTML = linAnt + lin("serv", "Serviços realizados (comandas)", { sempre: true }) + lin("prod", "Produtos vendidos") + lin("prodUso", "Produtos usados no serviço (cobrados)")
     + lin("pacVenda", "Pacotes vendidos") + lin("cred", "Créditos antecipados recebidos") + lin("outros", "Outros")
     + lin("prepUso", "Pago com crédito antecipado (já faturado no depósito)", { neg: true })
     + `<tr class="tot"><td>Receitas realizadas</td><td>${reais(rec)}</td></tr>`
@@ -3127,12 +3161,13 @@ async function carregarCaixaDia() {
   $("cdDesp").innerHTML = lin("comissao", "Comissões", { sempre: true }) + lin("custoUso", "Produtos usados (custo)") + lin("custoProd", "Produtos vendidos (custo)")
     + lin("taxa", "Taxas de cartão") + lin("ce_advance", "Adiantamentos a profissionais") + lin("ce_cleaning", "Limpeza") + lin("ce_expense", "Despesas extras")
     + lin("sede", `Despesas da sede (${dias.length} dia${dias.length > 1 ? "s" : ""})`) + `<tr class="tot"><td>Total de despesas</td><td>${reais(desp)}</td></tr>`;
-  $("cdRes").innerHTML = `<tr class="tot"><td>Resultado ${dias.length > 1 ? "do período" : "do dia"}</td><td style="color:${res < 0 ? "var(--danger)" : "inherit"}">${reais(res)}</td></tr>`
+  $("cdRes").innerHTML = linAnt
+    + `<tr class="tot"><td>Resultado ${dias.length > 1 ? "do período" : "do dia"} (receitas − despesas)</td><td style="${cor(res)}">${reais(res)}</td></tr>`
     + lin("ce_withdrawal", "Retiradas de caixa", { sempre: true, neg: true })
-    + `<tr class="tot"><td>Saldo depois das retiradas</td><td>${reais(res - ret)}</td></tr>`
+    + `<tr class="tot"><td>Saldo final (anterior + resultado − retiradas)</td><td style="${cor(saldoFim)}">${reais(saldoFim)}</td></tr>`
     + `<tr class="info"><td>Previsto (resultado + agendamentos a receber, antes das comissões deles)</td><td>${reais(res + val("aReceber"))}</td></tr>`;
   $("cdTitulo").textContent = de === ate ? `${DIAS[diaSemana(de)]}, ${fmtDia(de)}${de === hojeLocal() ? " · hoje" : de > hojeLocal() ? " · futuro" : ""}` : `${fmtDia(de)} a ${fmtDia(ate)} (${dias.length} dias)`;
-  $("cdKpis").innerHTML = `<div class="kpi"><b>${reais(rec)}</b>Receitas</div><div class="kpi"><b>${reais(desp)}</b>Despesas</div><div class="kpi"><b>${reais(res)}</b>Resultado</div>`
+  $("cdKpis").innerHTML = `<div class="kpi"><b>${reais(rec)}</b>Receitas</div><div class="kpi"><b>${reais(desp)}</b>Despesas</div><div class="kpi"><b>${reais(res)}</b>Resultado</div><div class="kpi"><b style="${cor(saldoFim)}">${reais(saldoFim)}</b>Saldo final</div>`
     + `<div class="kpi"><b>${reais(val("aReceber"))}</b>A receber (agendados)</div><div class="kpi"><b>${k.data.length}</b>Comandas fechadas</div>`;
   document.querySelectorAll("#tab-caixadia [data-cd]").forEach(tr => tr.onclick = () => cdDetalhe(tr.dataset.cd, tr.dataset.cdt));
   if (!$("cdDetCard").classList.contains("hidden") && cd.aberto) { const tr = document.querySelector(`#tab-caixadia [data-cd="${cd.aberto}"]`); tr ? cdDetalhe(cd.aberto, tr.dataset.cdt) : $("cdDetCard").classList.add("hidden"); }
@@ -3192,6 +3227,18 @@ function desenharSede() {
   $("cdSede").querySelectorAll("input").forEach(el => el.oninput = () => { ler(); $("cdSedeTot").textContent = reais(cdSede.reduce((t, x) => t + (x.mensal_cents || 0), 0)); });
   $("cdSede").querySelectorAll("[data-sx]").forEach(b => b.onclick = () => { ler(); cdSede.splice(Number(b.dataset.sx), 1); desenharSede(); });
 }
+$("cdAbSalvar").onclick = async () => {
+  const data = $("cdAbData").value, t = $("cdAbSaldo").value.trim(), saldo = t ? paraCentavos(t.replace(/^-/, "")) * (t.startsWith("-") ? -1 : 1) : 0;
+  if (!data) return aviso("Informe a data de abertura do caixa.", "err");
+  if (!Number.isFinite(saldo)) return aviso("Confira o saldo, por exemplo 500,00 (ou -200,00 se negativo).", "err");
+  const atual = await sb.from("tenants").select("settings").eq("id", tenantId).single();
+  if (atual.error) return erro(atual.error);
+  const novo = { ...(atual.data.settings || {}), caixa_abertura: { data, saldo_cents: saldo } };
+  const r = await sb.from("tenants").update({ settings: novo }).eq("id", tenantId).select("id");
+  if (r.error) return erro(r.error);
+  if (!r.data?.length) return aviso("Só o administrador grava a abertura do caixa.", "err");
+  settingsAtuais = novo; aviso("Abertura do caixa salva."); carregarCaixaDia();
+};
 $("cdSedeAdd").onclick = () => { cdSede.push({ nome: "", mensal_cents: 0 }); desenharSede(); $("cdSede").querySelector(`[data-sn="${cdSede.length - 1}"]`)?.focus(); };
 $("cdSedeSalvar").onclick = async () => {
   const lista = cdSede.filter(x => x.nome || x.mensal_cents).map(x => ({ nome: x.nome || "Despesa", mensal_cents: Math.max(0, Math.round(x.mensal_cents || 0)) }));
