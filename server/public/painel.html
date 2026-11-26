@@ -240,7 +240,6 @@
     </div></div>
     <div class="grp" data-grp="financas"><button type="button" class="grp-bt">Finanças</button><div class="grp-menu">
       <button data-tab="caixadia">Caixa</button>
-      <button data-tab="lancamentos">Despesas e retiradas</button>
       <button data-tab="caixa">Faturamento</button>
       <button data-tab="projecao">Projeções</button>
       <button data-tab="creditos">Créditos</button>
@@ -536,26 +535,6 @@
     </div>
 
     <!-- Caixa: relatório de faturamento -->
-    <!-- Lançamentos da recepção (sem ver saldo nem resultado) -->
-    <div id="tab-lancamentos" class="hidden">
-      <div class="card">
-        <h2 style="margin-top:0">Despesas e retiradas</h2>
-        <p class="muted" style="font-size:13px;margin-top:0">Registre aqui despesas extras, limpeza, adiantamentos a profissionais e retiradas de caixa. Fica gravado com o seu login, a data e a hora. Para corrigir um lançamento, fale com o administrador.</p>
-        <div class="row">
-          <div><label for="lcTipo">Tipo</label><select id="lcTipo"><option value="expense">Despesa extra</option><option value="cleaning">Limpeza</option><option value="advance">Adiantamento a profissional</option><option value="withdrawal">Retirada de caixa</option></select></div>
-          <div class="hidden" id="lcProfBox"><label for="lcProf">Profissional</label><select id="lcProf"></select></div>
-          <div><label for="lcDesc" id="lcDescLbl">Descrição</label><input id="lcDesc" placeholder="Ex.: material de limpeza"></div>
-          <div><label for="lcValor">Valor (R$)</label><input id="lcValor" inputmode="decimal" placeholder="0,00"></div>
-          <div><label for="lcData">Data</label><input id="lcData" type="date"></div>
-        </div>
-        <div class="actions"><button id="lcLancar">Lançar</button></div>
-      </div>
-      <div class="card">
-        <h2 style="margin-top:0">Meus lançamentos de hoje</h2>
-        <table><thead><tr><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Hora</th></tr></thead><tbody id="lcLista"></tbody></table>
-      </div>
-    </div>
-
     <!-- Caixa do dia -->
     <div id="tab-caixadia" class="hidden">
       <div class="card">
@@ -1080,7 +1059,6 @@ document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () 
   if (b.dataset.tab === "comandas") { if (!manterComanda) comandaAberta = null; manterComanda = false; carregarComandas(); }
   if (b.dataset.tab === "caixa") carregarCaixa();
   if (b.dataset.tab === "caixadia") carregarCaixaDia();
-  if (b.dataset.tab === "lancamentos") carregarLancamentos();
   if (b.dataset.tab === "clientes") carregarClientes();
   if (b.dataset.tab === "produtos") desenharProdutos();
   if (b.dataset.tab === "horarios") desenharHorarios();
@@ -1092,9 +1070,9 @@ document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () 
   if (b.dataset.tab === "creditos") carregarCreditos();
 });
 
-const TODAS_ABAS = ["agenda","pacotes","creditos","comandas","caixadia","lancamentos","caixa","comissoes","clientes","produtos","servicos","profissionais","horarios","conversas","perfil","equipe"];
+const TODAS_ABAS = ["agenda","pacotes","creditos","comandas","caixadia","caixa","comissoes","clientes","produtos","servicos","profissionais","horarios","conversas","perfil","equipe"];
 const ABAS_POR_FUNCAO = {
-  reception: ["agenda", "pacotes", "creditos", "comandas", "lancamentos", "clientes", "produtos", "conversas"],
+  reception: ["agenda", "pacotes", "creditos", "comandas", "clientes", "produtos", "conversas"],
   professional: ["agenda", "comissoes"],
 };
 const ehAdmin = () => ["owner", "manager"].includes(meuPapel);
@@ -1108,9 +1086,6 @@ function aplicarPermissoes() {
   $("eConvite").classList.toggle("hidden", !["owner", "manager"].includes(meuPapel));
   for (const id of ["agNovoBtn", "agBloqBtn"]) $(id).classList.toggle("hidden", ehProf());
   $("btnKiara").classList.toggle("hidden", ehProf());
-  // o administrador lança pelo próprio Caixa; a recepção usa esta tela, sem ver saldo nem resultado
-  document.querySelector('.tabs button[data-tab="lancamentos"]').classList.toggle("hidden", !podeVer("lancamentos") || ehAdmin());
-  marcarGrupo();
 }
 
 // ---------- Kiara: liga/desliga geral ----------
@@ -3070,39 +3045,6 @@ $("cdTipo").onchange = () => {
   $("cdProfBox").classList.toggle("hidden", t !== "advance");
   $("cdDescLbl").textContent = t === "withdrawal" ? "Finalidade" : "Descrição";
   $("cdDesc").placeholder = { expense: "Ex.: manutenção do secador", cleaning: "Ex.: diarista", advance: "Ex.: vale", withdrawal: "Ex.: depósito no banco" }[t];
-};
-
-// ---------- Despesas e retiradas (recepção) ----------
-$("lcTipo").onchange = () => {
-  const t = $("lcTipo").value;
-  $("lcProfBox").classList.toggle("hidden", t !== "advance");
-  $("lcDescLbl").textContent = t === "withdrawal" ? "Finalidade" : "Descrição";
-  $("lcDesc").placeholder = { expense: "Ex.: manutenção do secador", cleaning: "Ex.: diarista", advance: "Ex.: vale", withdrawal: "Ex.: depósito no banco" }[t];
-};
-async function carregarLancamentos() {
-  if (!$("lcData").value) $("lcData").value = hojeLocal();
-  $("lcProf").innerHTML = profissionais.filter(p => p.active).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
-  const { data, error } = await sb.from("cash_entries").select("kind, description, amount_cents, created_at, professional_id")
-    .eq("tenant_id", tenantId).eq("created_by", usuarioId).gte("created_at", localParaUtc(hojeLocal(), "00:00").toISOString()).order("created_at");
-  if (error) return erro(error);
-  $("lcLista").innerHTML = data.map(e => `<tr><td>${CD_TIPOS[e.kind] || e.kind}</td><td>${esc(e.description)}${e.professional_id ? " · " + esc(profissionais.find(p => p.id === e.professional_id)?.name || "") : ""}</td><td>${reais(e.amount_cents)}</td><td class="muted">${new Date(e.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: TZ })}</td></tr>`).join("")
-    || '<tr><td colspan="4" class="muted">Nenhum lançamento seu hoje.</td></tr>';
-}
-$("lcLancar").onclick = async () => {
-  const kind = $("lcTipo").value, desc = $("lcDesc").value.trim(), valor = paraCentavos($("lcValor").value), dia = $("lcData").value;
-  if (!desc) return aviso(kind === "withdrawal" ? "Informe a finalidade da retirada." : "Informe a descrição.", "err");
-  if (!(valor > 0)) return aviso("Informe o valor, por exemplo 50,00.", "err");
-  if (!dia) return aviso("Informe a data.", "err");
-  const prof = kind === "advance" ? $("lcProf").value : null;
-  if (kind === "advance" && !prof) return aviso("Escolha o profissional.", "err");
-  $("lcLancar").disabled = true;
-  try {
-    const { error } = await sb.from("cash_entries").insert({ tenant_id: tenantId, kind, description: desc, amount_cents: valor, entry_date: dia, professional_id: prof, created_by_name: meuNome });
-    if (error) return erro(error);
-    aviso(`${CD_TIPOS[kind]} de ${reais(valor)} lançado em ${fmtDia(dia)}.`);
-    $("lcDesc").value = ""; $("lcValor").value = "";
-    carregarLancamentos();
-  } finally { $("lcLancar").disabled = false; }
 };
 
 async function carregarCaixaDia() {
