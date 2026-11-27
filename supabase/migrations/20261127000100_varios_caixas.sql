@@ -1,7 +1,9 @@
--- Vários caixas por dia (Caixa 1, Caixa 2...), cada um aberto por um login, com data e horário de abertura e fechamento.
--- O pagamento recebido na comanda fica ligado ao caixa aberto de quem recebeu. Tudo aditivo.
+-- Vários caixas por dia (Caixa 1, Caixa 2...). Só o administrador abre e fecha os caixas e escolhe o
+-- responsável de cada um; fica gravado o login de quem abriu e fechou, com data e horário.
+-- O pagamento recebido na comanda fica ligado ao caixa aberto do responsável que recebeu.
+-- Pode ser rodado mais de uma vez sem problema.
 
-create table public.cash_registers (
+create table if not exists public.cash_registers (
   id                    uuid primary key default gen_random_uuid(),
   tenant_id             uuid not null references public.tenants(id) on delete cascade,
   name                  text not null,
@@ -17,18 +19,22 @@ create table public.cash_registers (
   notes                 text,
   unique (tenant_id, business_date, name)
 );
-create index on public.cash_registers (tenant_id, business_date);
+alter table public.cash_registers add column if not exists responsible_id uuid references auth.users(id);
+alter table public.cash_registers add column if not exists responsible_name text;
+create index if not exists cash_registers_tenant_date_idx on public.cash_registers (tenant_id, business_date);
 alter table public.cash_registers enable row level security;
--- recepção e administrador veem e abrem caixas; cada um abre no próprio login
+
+drop policy if exists cash_registers_read on public.cash_registers;
+drop policy if exists cash_registers_insert on public.cash_registers;
+drop policy if exists cash_registers_update on public.cash_registers;
+drop policy if exists cash_registers_delete on public.cash_registers;
+-- recepção só enxerga (para saber em qual caixa está); abrir, fechar e apagar é só do administrador
 create policy cash_registers_read on public.cash_registers for select using (private.is_desk(tenant_id));
-create policy cash_registers_insert on public.cash_registers for insert with check (private.is_desk(tenant_id) and opened_by = auth.uid());
--- fecha quem abriu; o administrador pode fechar ou corrigir qualquer um
-create policy cash_registers_update on public.cash_registers for update
-  using (private.is_admin(tenant_id) or (private.is_desk(tenant_id) and opened_by = auth.uid()))
-  with check (private.is_admin(tenant_id) or (private.is_desk(tenant_id) and opened_by = auth.uid()));
+create policy cash_registers_insert on public.cash_registers for insert with check (private.is_admin(tenant_id) and opened_by = auth.uid());
+create policy cash_registers_update on public.cash_registers for update using (private.is_admin(tenant_id)) with check (private.is_admin(tenant_id));
 create policy cash_registers_delete on public.cash_registers for delete using (private.is_admin(tenant_id));
 grant select, insert, update, delete on public.cash_registers to authenticated;
 revoke all on public.cash_registers from anon;
 
-alter table public.payments add column cash_register_id uuid references public.cash_registers(id) on delete set null;
-create index on public.payments (cash_register_id);
+alter table public.payments add column if not exists cash_register_id uuid references public.cash_registers(id) on delete set null;
+create index if not exists payments_cash_register_idx on public.payments (cash_register_id);

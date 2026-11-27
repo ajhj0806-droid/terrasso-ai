@@ -402,6 +402,7 @@
   .cx-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; padding:6px 10px; border-radius:8px; background:var(--bg, #f6f6f6); font-size:13px; }
   .cx-bar.aberto { background:#e8f6ec; } .cx-bar.fechado { background:#fff4e0; }
   .cx-bar input, .cx-bar select { width:auto; min-width:90px; } .cx-bar #cxInicial, .cx-bar #cxContado { width:110px; }
+  .cx-item { display:inline-flex; gap:4px; align-items:center; background:#fff; border-radius:6px; padding:2px 6px; }
   .cx-tab td, .cx-tab th { white-space:nowrap; font-size:12.5px; }
 </style>
 </head>
@@ -802,8 +803,8 @@
       </div>
       <div class="card hidden" id="cxCard">
         <h2 style="margin-top:0">Caixas abertos no período</h2>
-        <p class="muted" style="font-size:12.5px;margin-top:0">Cada caixa fica com o login de quem abriu, data e hora. Os recebimentos lançados com o caixa aberto entram nele. Dinheiro esperado = valor inicial + recebido em dinheiro.</p>
-        <div style="overflow-x:auto"><table class="cx-tab"><thead><tr><th>Caixa</th><th>Dia</th><th>Aberto por</th><th>Valor inicial</th><th>Pix</th><th>Dinheiro</th><th>Débito</th><th>Crédito</th><th>Outros</th><th>Total recebido</th><th>Dinheiro esperado</th><th>Contado</th><th>Diferença</th><th>Fechamento</th></tr></thead><tbody id="cxTab"></tbody></table></div>
+        <p class="muted" style="font-size:12.5px;margin-top:0">Só o administrador abre e fecha caixas e escolhe o responsável. Fica gravado o login de quem abriu e fechou, com data e hora. O que o responsável recebe entra no caixa dele. Dinheiro esperado = valor inicial + recebido em dinheiro.</p>
+        <div style="overflow-x:auto"><table class="cx-tab"><thead><tr><th>Caixa</th><th>Dia</th><th>Responsável</th><th>Aberto por</th><th>Valor inicial</th><th>Pix</th><th>Dinheiro</th><th>Débito</th><th>Crédito</th><th>Outros</th><th>Total recebido</th><th>Dinheiro esperado</th><th>Contado</th><th>Diferença</th><th>Fechamento</th></tr></thead><tbody id="cxTab"></tbody></table></div>
         <p class="muted" id="cxSem" style="font-size:12.5px;margin-bottom:0"></p>
       </div>
       <div class="card hidden" id="cdDetCard">
@@ -3774,6 +3775,8 @@ $("geXlsx").onclick = async () => {
 let meuCaixa = null, cxTemTabela = false;
 const comCaixa = () => meuCaixa ? { cash_register_id: meuCaixa.id } : {};
 const horaDe = (t) => t ? new Date(t).toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }) : "";
+// Só o administrador abre e fecha caixas e escolhe o responsável; a recepção só vê em qual caixa está
+const respDe = (c) => c.responsible_id || c.opened_by;
 async function carregarMeuCaixa() {
   const bar = $("cxBar");
   if (!tenantId || ehProf()) { bar.classList.add("hidden"); return; }
@@ -3781,37 +3784,43 @@ async function carregarMeuCaixa() {
   const r = await sb.from("cash_registers").select("*").eq("tenant_id", tenantId).eq("business_date", hoje).order("opened_at");
   if (r.error) { cxTemTabela = false; meuCaixa = null; bar.classList.add("hidden"); return; } // banco ainda sem a tabela de caixas
   cxTemTabela = true;
-  const lista = r.data || [], outros = lista.filter(c => !c.closed_at && c.opened_by !== usuarioId);
-  meuCaixa = lista.find(c => c.opened_by === usuarioId && !c.closed_at) || null;
-  const txtOutros = outros.length ? `<span class="muted">Também abertos: ${outros.map(c => `${esc(c.name)} (${esc(c.opened_by_name || "")}, ${horaDe(c.opened_at)})`).join(", ")}</span>` : "";
+  const lista = r.data || [], abertos = lista.filter(c => !c.closed_at);
+  meuCaixa = abertos.find(c => respDe(c) === usuarioId) || null;
   bar.classList.remove("hidden", "aberto", "fechado");
-  if (meuCaixa) {
-    bar.classList.add("aberto");
-    bar.innerHTML = `<span>🟢 <b>${esc(meuCaixa.name)}</b> aberto por ${esc(meuCaixa.opened_by_name || meuNome)} em ${fmtDia(meuCaixa.business_date)} às ${horaDe(meuCaixa.opened_at)}. Os recebimentos entram neste caixa.</span>`
-      + `<button class="ghost" id="cxFecharBtn">Fechar caixa</button>`
-      + `<span id="cxFecharBox" class="hidden" style="display:inline-flex;gap:6px;align-items:center"><label for="cxContado" style="margin:0">Dinheiro contado (R$)</label><input id="cxContado" inputmode="decimal" placeholder="0,00"><input id="cxObs" placeholder="Observação (opcional)"><button id="cxFecharOk">Confirmar fechamento</button></span>` + txtOutros;
-    $("cxFecharBtn").onclick = () => { $("cxFecharBox").classList.remove("hidden"); $("cxFecharBtn").classList.add("hidden"); $("cxContado").focus(); };
-    $("cxFecharOk").onclick = () => fecharCaixa(meuCaixa.id, $("cxContado").value, $("cxObs").value);
-  } else {
-    const usados = new Set(lista.map(c => c.name)), livres = [];
-    for (let n = 1; livres.length < 4; n++) if (!usados.has("Caixa " + n)) livres.push("Caixa " + n);
-    const fechouHoje = lista.filter(c => c.opened_by === usuarioId && c.closed_at).pop();
-    bar.classList.add("fechado");
-    bar.innerHTML = `<span>${fechouHoje ? `Você fechou o ${esc(fechouHoje.name)} às ${horaDe(fechouHoje.closed_at)}.` : "Você ainda não abriu um caixa hoje."}</span>`
-      + `<select id="cxNome" aria-label="Caixa">${livres.map(n => `<option>${n}</option>`).join("")}</select>`
-      + `<label for="cxInicial" style="margin:0">Valor inicial (R$)</label><input id="cxInicial" inputmode="decimal" placeholder="0,00">`
-      + `<button id="cxAbrirBtn">Abrir caixa</button>` + txtOutros;
-    $("cxAbrirBtn").onclick = abrirCaixa;
+  bar.classList.add(meuCaixa ? "aberto" : "fechado");
+  const infoMeu = meuCaixa ? `<span>🟢 Você está no <b>${esc(meuCaixa.name)}</b> (aberto por ${esc(meuCaixa.opened_by_name || "")} às ${horaDe(meuCaixa.opened_at)}). Os recebimentos entram neste caixa.</span>` : "";
+  if (!ehAdmin()) {
+    bar.innerHTML = infoMeu || `<span>Nenhum caixa aberto para você hoje. Peça ao administrador para abrir o seu caixa antes de receber.</span>`;
+    return;
   }
+  const eq = await sb.from("staff_members").select("user_id, full_name, role").eq("tenant_id", tenantId).eq("active", true).order("full_name");
+  const pessoas = (eq.data || []).filter(e => e.role !== "professional" && e.user_id && !abertos.some(c => respDe(c) === e.user_id));
+  const usados = new Set(lista.map(c => c.name)), livres = [];
+  for (let n = 1; livres.length < 4; n++) if (!usados.has("Caixa " + n)) livres.push("Caixa " + n);
+  const listaAbertos = abertos.map(c => `<span class="cx-item"><b>${esc(c.name)}</b> · ${esc(c.responsible_name || c.opened_by_name || "")} · desde ${horaDe(c.opened_at)} `
+    + `<button class="ghost" data-cxfb="${c.id}" style="min-height:26px;padding:2px 8px">Fechar</button>`
+    + `<span class="hidden" data-cxfx="${c.id}"><input data-cxcv="${c.id}" inputmode="decimal" placeholder="dinheiro contado" style="width:120px;min-height:26px"> <button data-cxok="${c.id}" style="min-height:26px;padding:2px 8px">Confirmar</button></span></span>`).join("");
+  bar.innerHTML = (listaAbertos ? `<span>Abertos hoje:</span>${listaAbertos}<span style="flex-basis:100%;height:0"></span>` : `<span>Nenhum caixa aberto hoje.</span>`)
+    + `<select id="cxNome" aria-label="Caixa">${livres.map(n => `<option>${n}</option>`).join("")}</select>`
+    + `<select id="cxResp" aria-label="Responsável">${pessoas.map(e => `<option value="${e.user_id}">${esc(e.full_name || "")}</option>`).join("")}</select>`
+    + `<label for="cxInicial" style="margin:0">Valor inicial (R$)</label><input id="cxInicial" inputmode="decimal" placeholder="0,00">`
+    + `<button id="cxAbrirBtn">Abrir caixa</button>`;
+  $("cxAbrirBtn").onclick = abrirCaixa;
+  bar.querySelectorAll("[data-cxfb]").forEach(b => b.onclick = () => { b.classList.add("hidden"); bar.querySelector(`[data-cxfx="${b.dataset.cxfb}"]`).classList.remove("hidden"); });
+  bar.querySelectorAll("[data-cxok]").forEach(b => b.onclick = () => fecharCaixa(b.dataset.cxok, bar.querySelector(`[data-cxcv="${b.dataset.cxok}"]`).value, ""));
 }
 async function abrirCaixa() {
+  if (!ehAdmin()) return aviso("Só o administrador abre caixas.", "err");
+  const resp = $("cxResp").value; if (!resp) return aviso("Escolha o responsável pelo caixa (todos já têm um caixa aberto).", "err");
   const ini = $("cxInicial").value.trim() ? paraCentavos($("cxInicial").value) : 0;
   if (!(ini >= 0)) return aviso("Valor inicial inválido. Exemplo: 100,00.", "err");
+  const respNome = $("cxResp").selectedOptions[0].textContent, nome = $("cxNome").value;
   $("cxAbrirBtn").disabled = true;
-  const { error } = await sb.from("cash_registers").insert({ tenant_id: tenantId, name: $("cxNome").value, business_date: hojeLocal(), opening_cents: ini, opened_by: usuarioId, opened_by_name: meuNome });
-  if (error) { $("cxAbrirBtn").disabled = false; return aviso(/duplicate|unique/i.test(error.message) ? "Esse caixa já foi aberto hoje por outra pessoa. Escolha outro número." : "Não deu para abrir o caixa: " + error.message, "err"); }
-  aviso(`${$("cxNome").value} aberto por ${meuNome} às ${horaDe(new Date())}.`);
+  const { error } = await sb.from("cash_registers").insert({ tenant_id: tenantId, name: nome, business_date: hojeLocal(), opening_cents: ini, opened_by: usuarioId, opened_by_name: meuNome, responsible_id: resp, responsible_name: respNome });
+  if (error) { $("cxAbrirBtn").disabled = false; return aviso(/duplicate|unique/i.test(error.message) ? "Esse caixa já foi aberto hoje. Escolha outro número." : "Não deu para abrir o caixa: " + error.message, "err"); }
+  aviso(`${nome} aberto para ${respNome} por ${meuNome} às ${horaDe(new Date())}.`);
   await carregarMeuCaixa();
+  if (!$("tab-caixadia").classList.contains("hidden")) carregarCaixaDia();
 }
 async function fecharCaixa(id, contadoTxt, obs) {
   const contado = String(contadoTxt || "").trim() ? paraCentavos(contadoTxt) : null;
@@ -3841,8 +3850,8 @@ function desenharCaixas(regs) {
     const tot = pix + din + deb + cre + out, esp = c.opening_cents + din, dif = c.closing_counted_cents != null ? c.closing_counted_cents - esp : null;
     const fech = c.closed_at ? `${esc(c.closed_by_name || "")} às ${horaDe(c.closed_at)}${c.notes ? ` <span class="muted" title="${esc(c.notes)}">· obs.</span>` : ""}`
       : `<span style="color:#1a7f37">aberto</span> <input data-cxc="${c.id}" inputmode="decimal" placeholder="contado" style="width:80px;min-height:26px"> <button class="ghost" data-cxf="${c.id}" style="min-height:26px;padding:2px 8px">Fechar</button>`;
-    return `<tr><td><b>${esc(c.name)}</b></td><td>${fmtDia(c.business_date)}</td><td>${esc(c.opened_by_name || "")} às ${horaDe(c.opened_at)}</td><td>${reais(c.opening_cents)}</td><td>${reais(pix)}</td><td>${reais(din)}</td><td>${reais(deb)}</td><td>${reais(cre)}</td><td>${reais(out)}</td><td><b>${reais(tot)}</b></td><td>${reais(esp)}</td><td>${c.closing_counted_cents != null ? reais(c.closing_counted_cents) : "—"}</td><td style="${dif != null ? cor(dif) : ""}">${dif != null ? (dif > 0 ? "+" : "") + reais(dif) : "—"}</td><td>${fech}</td></tr>`;
-  }).join("") : `<tr><td colspan="14" class="muted">Nenhum caixa aberto neste período. A recepção abre o caixa dela na tela Comandas.</td></tr>`;
+    return `<tr><td><b>${esc(c.name)}</b></td><td>${fmtDia(c.business_date)}</td><td>${esc(c.responsible_name || c.opened_by_name || "")}</td><td>${esc(c.opened_by_name || "")} às ${horaDe(c.opened_at)}</td><td>${reais(c.opening_cents)}</td><td>${reais(pix)}</td><td>${reais(din)}</td><td>${reais(deb)}</td><td>${reais(cre)}</td><td>${reais(out)}</td><td><b>${reais(tot)}</b></td><td>${reais(esp)}</td><td>${c.closing_counted_cents != null ? reais(c.closing_counted_cents) : "—"}</td><td style="${dif != null ? cor(dif) : ""}">${dif != null ? (dif > 0 ? "+" : "") + reais(dif) : "—"}</td><td>${fech}</td></tr>`;
+  }).join("") : `<tr><td colspan="15" class="muted">Nenhum caixa aberto neste período. Abra os caixas na tela Comandas, escolhendo o responsável de cada um.</td></tr>`;
   $("cxSem").textContent = regs.length ? "Pacote e crédito antecipado não aparecem aqui porque não entra dinheiro." : "";
   document.querySelectorAll("#cxTab [data-cxf]").forEach(b => b.onclick = () => fecharCaixa(b.dataset.cxf, document.querySelector(`#cxTab [data-cxc="${b.dataset.cxf}"]`).value, ""));
 }
