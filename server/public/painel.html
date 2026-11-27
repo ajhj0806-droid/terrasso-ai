@@ -761,8 +761,8 @@
         <div class="card"><b>Ocupação por dia</b><div id="geGrOcup" class="ge-graf"></div></div>
       </div>
       <div class="ge-grid">
-        <div class="card"><b>Melhores clientes</b><div class="ge-ord" data-geord="cli"></div><table><thead><tr><th>Cliente</th><th>Atend.</th><th>Valor</th><th></th></tr></thead><tbody id="geCli"></tbody></table></div>
-        <div class="card"><b>Melhores profissionais</b><div class="ge-ord" data-geord="prof"></div><table><thead><tr><th>Profissional</th><th>Atend.</th><th>Valor</th><th>Ocupação</th></tr></thead><tbody id="geProf"></tbody></table></div>
+        <div class="card"><b>Melhores clientes</b><div class="ge-ord" data-geord="cli"></div><table><thead><tr><th>Cliente</th><th>Atend.</th><th>Valor</th><th>Ticket médio</th><th></th></tr></thead><tbody id="geCli"></tbody></table></div>
+        <div class="card"><b>Melhores profissionais</b><div class="ge-ord" data-geord="prof"></div><table><thead><tr><th>Profissional</th><th>Atend.</th><th>Valor</th><th>Ticket médio</th><th>Ocupação</th></tr></thead><tbody id="geProf"></tbody></table></div>
       </div>
       <div class="ge-grid">
         <div class="card"><b>Serviços mais vendidos</b><div class="ge-ord" data-geord="serv"></div><table><thead><tr><th>Serviço</th><th>Qtd.</th><th>Valor</th><th></th></tr></thead><tbody id="geServ"></tbody></table></div>
@@ -3722,10 +3722,10 @@ async function carregarGerencial() {
   const ordem = {}; document.querySelectorAll("[data-geord]").forEach(d => { ordem[d.dataset.geord] = d.dataset.por || "v"; });
   const rank = (m, por) => Object.entries(m).map(([id, x]) => ({ id, ...x })).sort((a, b) => b[por] - a[por] || b.v - a.v).slice(0, 15);
   const fq = (q) => Number(q).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
-  const linhas = (lista, extra) => { const mx = Math.max(1, ...lista.map(x => x.v));
-    return lista.map((x, i) => `<tr><td>${i + 1}. ${esc(x.nome)}</td><td>${fq(x.q)}</td><td>${reais(x.v)}</td><td style="min-width:90px">${extra ? extra(x) : `<div class="ge-mini"><i style="width:${x.v / mx * 100}%"></i></div>`}</td></tr>`).join("") || '<tr><td colspan="4" class="muted">Nada no período.</td></tr>'; };
-  $("geCli").innerHTML = linhas(rank(A.R.cli, ordem.cli));
-  $("geProf").innerHTML = linhas(rank(A.R.prof, ordem.prof), (x) => { const o = A.ocProf[x.id]; return o?.t ? pct(o.o / o.t) : "—"; });
+  const linhas = (lista, extra, ticket) => { const mx = Math.max(1, ...lista.map(x => x.v));
+    return lista.map((x, i) => `<tr><td>${i + 1}. ${esc(x.nome)}</td><td>${fq(x.q)}</td><td>${reais(x.v)}</td>${ticket ? `<td>${x.q ? reais(Math.round(x.v / x.q)) : "—"}</td>` : ""}<td style="min-width:90px">${extra ? extra(x) : `<div class="ge-mini"><i style="width:${x.v / mx * 100}%"></i></div>`}</td></tr>`).join("") || `<tr><td colspan="${ticket ? 5 : 4}" class="muted">Nada no período.</td></tr>`; };
+  $("geCli").innerHTML = linhas(rank(A.R.cli, ordem.cli), null, true);
+  $("geProf").innerHTML = linhas(rank(A.R.prof, ordem.prof), (x) => { const o = A.ocProf[x.id]; return o?.t ? pct(o.o / o.t) : "—"; }, true);
   $("geServ").innerHTML = linhas(rank(A.R.serv, ordem.serv));
   $("geProd").innerHTML = linhas(rank(A.R.prod, ordem.prod));
   document.querySelectorAll("[data-geord]").forEach(d => { const por = d.dataset.por || "v";
@@ -3747,8 +3747,9 @@ $("geXlsx").onclick = async () => {
   aba("Resumo", ["Indicador", "Valor"], [["Período", `${fmtDia(de)} a ${fmtDia(ate)}`], ["Faturamento (R$)", r(k.fat)], ["Despesas (R$)", r(k.desp)], ["Resultado (R$)", r(k.res)], ["Ticket médio (R$)", r(k.ticket)],
     ["Comandas fechadas", k.comandas], ["Atendimentos", k.atend], ["Agendamentos", k.agend], ["Cancelamentos", k.canc], ["Faltas", k.faltas], ["Taxa de ocupação (%)", Math.round(A.ocup * 1000) / 10]]);
   const lst = (m) => Object.values(m).sort((a, b) => b.v - a.v).map(x => [x.nome, x.q, r(x.v)]);
-  aba("Clientes", ["Cliente", "Atendimentos", "Valor (R$)"], lst(A.R.cli));
-  aba("Profissionais", ["Profissional", "Atendimentos", "Valor (R$)", "Ocupação (%)"], Object.entries(A.R.prof).sort((a, b) => b[1].v - a[1].v).map(([id, x]) => [x.nome, x.q, r(x.v), A.ocProf[id]?.t ? Math.round(A.ocProf[id].o / A.ocProf[id].t * 1000) / 10 : ""]));
+  const tk = (x) => x.q ? r(Math.round(x.v / x.q)) : "";
+  aba("Clientes", ["Cliente", "Atendimentos", "Valor (R$)", "Ticket médio (R$)"], Object.values(A.R.cli).sort((a, b) => b.v - a.v).map(x => [x.nome, x.q, r(x.v), tk(x)]));
+  aba("Profissionais", ["Profissional", "Atendimentos", "Valor (R$)", "Ticket médio (R$)", "Ocupação (%)"], Object.entries(A.R.prof).sort((a, b) => b[1].v - a[1].v).map(([id, x]) => [x.nome, x.q, r(x.v), tk(x), A.ocProf[id]?.t ? Math.round(A.ocProf[id].o / A.ocProf[id].t * 1000) / 10 : ""]));
   aba("Serviços", ["Serviço", "Quantidade", "Valor (R$)"], lst(A.R.serv));
   aba("Produtos", ["Produto", "Quantidade", "Valor (R$)"], lst(A.R.prod));
   aba("Por dia", ["Dia", "Faturamento (R$)", "Ocupação (%)"], A.dias.map(d => [fmtDia(d), r(A.fatDia[d] || 0), A.ocDia[d]?.t ? Math.round(A.ocDia[d].o / A.ocDia[d].t * 1000) / 10 : ""]));
