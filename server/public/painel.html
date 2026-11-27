@@ -728,7 +728,7 @@
             <div><label for="gMetodo">Forma</label><select id="gMetodo"></select></div>
             <div><label for="gValor">Valor (R$)</label><input id="gValor" inputmode="decimal"></div>
             <div id="gParcBox" class="hidden"><label for="gParc">Parcelas</label><select id="gParc"><option>1</option><option>2</option><option>3</option></select></div>
-            <div></div>
+            <div id="gCaixaBox" class="hidden"><label for="gCaixa">Caixa</label><select id="gCaixa"></select></div>
           </div>
           <div class="actions"><button class="ghost" id="gAdd">+ Registrar pagamento</button></div>
         </div>
@@ -3185,7 +3185,8 @@ $("gAdd").onclick = async () => {
     installments: metodo === "credit" ? parseInt($("gParc").value, 10) : 1, received_by: usuarioId, ...comCaixa(),
   });
   if (error) return aviso(error.message, "err");
-  aviso(`Pagamento em ${METODOS[metodo]} registrado${meuCaixa ? " no " + meuCaixa.name : ""}.` + (cxTemTabela && !meuCaixa ? " Atenção: você não abriu um caixa hoje, então este recebimento ficou sem caixa." : ""), cxTemTabela && !meuCaixa ? "err" : undefined); $("gMetodo").value = "pix"; $("gMetodo").onchange(); carregarComandas();
+  const cxUsado = caixaEscolhido();
+  aviso(`Pagamento em ${METODOS[metodo]} registrado${cxUsado ? " em " + cxUsado.name : ""}.` + (cxTemTabela && !cxUsado ? " Atenção: não há caixa aberto hoje, então este recebimento ficou sem caixa." : ""), cxTemTabela && !cxUsado ? "err" : undefined); $("gMetodo").value = "pix"; $("gMetodo").onchange(); carregarComandas();
 };
 // Salva as alterações dos itens (quantidade, preço, desconto, profissional) sem fechar a comanda
 async function salvarItensComanda(silencioso) {
@@ -3772,8 +3773,10 @@ $("geXlsx").onclick = async () => {
 };
 
 // ===== Vários caixas (Caixa 1, Caixa 2...): cada um com quem abriu, data e hora =====
-let meuCaixa = null, cxTemTabela = false;
-const comCaixa = () => meuCaixa ? { cash_register_id: meuCaixa.id } : {};
+let meuCaixa = null, cxTemTabela = false, cxAbertos = [];
+// caixa escolhido no lançamento do pagamento (padrão: o caixa de quem está lançando)
+const caixaEscolhido = () => cxAbertos.find(c => c.id === $("gCaixa").value) || meuCaixa;
+const comCaixa = () => { const c = caixaEscolhido(); return c ? { cash_register_id: c.id } : {}; };
 const horaDe = (t) => t ? new Date(t).toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }) : "";
 // Só o administrador abre e fecha caixas e escolhe o responsável; a recepção só vê em qual caixa está
 const respDe = (c) => c.responsible_id || c.opened_by;
@@ -3786,22 +3789,28 @@ async function carregarMeuCaixa() {
   cxTemTabela = true;
   const lista = r.data || [], abertos = lista.filter(c => !c.closed_at);
   meuCaixa = abertos.find(c => respDe(c) === usuarioId) || null;
+  cxAbertos = abertos;
+  $("gCaixa").innerHTML = abertos.map(c => `<option value="${c.id}">${esc(c.name)} · ${esc(c.responsible_name || c.opened_by_name || "")}</option>`).join("");
+  if (meuCaixa) $("gCaixa").value = meuCaixa.id;
+  $("gCaixaBox").classList.toggle("hidden", !abertos.length);
   bar.classList.remove("hidden", "aberto", "fechado");
   bar.classList.add(meuCaixa ? "aberto" : "fechado");
   const infoMeu = meuCaixa ? `<span>🟢 Você está no <b>${esc(meuCaixa.name)}</b> (aberto por ${esc(meuCaixa.opened_by_name || "")} às ${horaDe(meuCaixa.opened_at)}). Os recebimentos entram neste caixa.</span>` : "";
   if (!ehAdmin()) {
-    bar.innerHTML = infoMeu || `<span>Nenhum caixa aberto para você hoje. Peça ao administrador para abrir o seu caixa antes de receber.</span>`;
+    bar.innerHTML = infoMeu || `<span>Nenhum caixa aberto para você hoje. Ao registrar um pagamento, escolha o caixa no campo "Caixa", ou peça ao administrador para abrir um caixa para você.</span>`;
     return;
   }
   const eq = await sb.from("staff_members").select("user_id, full_name, role").eq("tenant_id", tenantId).eq("active", true).order("full_name");
   const pessoas = (eq.data || []).filter(e => e.role !== "professional" && e.user_id && !abertos.some(c => respDe(c) === e.user_id));
   const usados = new Set(lista.map(c => c.name)), livres = [];
-  for (let n = 1; livres.length < 4; n++) if (!usados.has("Caixa " + n)) livres.push("Caixa " + n);
+  for (let n = 1; livres.length < 3; n++) if (!usados.has("Caixa " + n)) livres.push("Caixa " + n);
+  if (!usados.has("Caixa especial")) livres.push("Caixa especial");
   const listaAbertos = abertos.map(c => `<span class="cx-item"><b>${esc(c.name)}</b> · ${esc(c.responsible_name || c.opened_by_name || "")} · desde ${horaDe(c.opened_at)} `
     + `<button class="ghost" data-cxfb="${c.id}" style="min-height:26px;padding:2px 8px">Fechar</button>`
     + `<span class="hidden" data-cxfx="${c.id}"><input data-cxcv="${c.id}" inputmode="decimal" placeholder="dinheiro contado" style="width:120px;min-height:26px"> <button data-cxok="${c.id}" style="min-height:26px;padding:2px 8px">Confirmar</button></span></span>`).join("");
   bar.innerHTML = (listaAbertos ? `<span>Abertos hoje:</span>${listaAbertos}<span style="flex-basis:100%;height:0"></span>` : `<span>Nenhum caixa aberto hoje.</span>`)
-    + `<select id="cxNome" aria-label="Caixa">${livres.map(n => `<option>${n}</option>`).join("")}</select>`
+    + `<label for="cxNome" style="margin:0">Nome do caixa</label><input id="cxNome" list="cxNomesL" value="${esc(livres[0])}" placeholder="Ex.: Caixa 1, Caixa do Paulo" style="width:160px"><datalist id="cxNomesL">${livres.map(n => `<option value="${esc(n)}">`).join("")}</datalist>`
+    + `<label for="cxResp" style="margin:0">Responsável</label>`
     + `<select id="cxResp" aria-label="Responsável">${pessoas.map(e => `<option value="${e.user_id}">${esc(e.full_name || "")}</option>`).join("")}</select>`
     + `<label for="cxInicial" style="margin:0">Valor inicial (R$)</label><input id="cxInicial" inputmode="decimal" placeholder="0,00">`
     + `<button id="cxAbrirBtn">Abrir caixa</button>`;
@@ -3814,10 +3823,11 @@ async function abrirCaixa() {
   const resp = $("cxResp").value; if (!resp) return aviso("Escolha o responsável pelo caixa (todos já têm um caixa aberto).", "err");
   const ini = $("cxInicial").value.trim() ? paraCentavos($("cxInicial").value) : 0;
   if (!(ini >= 0)) return aviso("Valor inicial inválido. Exemplo: 100,00.", "err");
-  const respNome = $("cxResp").selectedOptions[0].textContent, nome = $("cxNome").value;
+  const respNome = $("cxResp").selectedOptions[0].textContent, nome = $("cxNome").value.trim().replace(/\s+/g, " ");
+  if (!nome) return aviso("Dê um nome ao caixa, por exemplo Caixa 1 ou Caixa do Paulo.", "err");
   $("cxAbrirBtn").disabled = true;
   const { error } = await sb.from("cash_registers").insert({ tenant_id: tenantId, name: nome, business_date: hojeLocal(), opening_cents: ini, opened_by: usuarioId, opened_by_name: meuNome, responsible_id: resp, responsible_name: respNome });
-  if (error) { $("cxAbrirBtn").disabled = false; return aviso(/duplicate|unique/i.test(error.message) ? "Esse caixa já foi aberto hoje. Escolha outro número." : "Não deu para abrir o caixa: " + error.message, "err"); }
+  if (error) { $("cxAbrirBtn").disabled = false; return aviso(/duplicate|unique/i.test(error.message) ? "Já existe um caixa com esse nome hoje. Use outro nome." : "Não deu para abrir o caixa: " + error.message, "err"); }
   aviso(`${nome} aberto para ${respNome} por ${meuNome} às ${horaDe(new Date())}.`);
   await carregarMeuCaixa();
   if (!$("tab-caixadia").classList.contains("hidden")) carregarCaixaDia();
