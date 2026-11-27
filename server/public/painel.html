@@ -700,6 +700,7 @@
           <button class="ghost" id="kFecharDet">Fechar</button>
         </div>
         <div id="kCli" class="kcli"></div>
+        <div id="kCxBox" class="hidden" style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label for="kCaixa" style="margin:0"><b>Caixa desta comanda</b></label><select id="kCaixa" style="width:auto;min-width:200px"></select><span class="muted" id="kCxInfo" style="font-size:12.5px"></span></div>
         <table style="margin-top:8px"><thead><tr><th>Item</th><th>Qtd</th><th>Valor</th><th></th></tr></thead><tbody id="kItens"></tbody></table>
         <div id="kAddItem">
           <div class="row" style="margin-top:8px;grid-template-columns:minmax(260px,620px)">
@@ -3009,6 +3010,7 @@ async function desenharClienteComanda(c) {
 }
 
 async function abrirComanda() {
+  await carregarMeuCaixa();
   const { data: c, error } = await sb.from("comandas").select("*, clients(full_name, phone_e164)").eq("id", comandaAberta).single();
   if (error) return erro(error);
   kComanda = c;
@@ -3021,6 +3023,7 @@ async function abrirComanda() {
   const aberta = c.status === "open";
   kPacItens = aberta ? await pacotesDaCliente(c.client_id) : [];
   $("kDet").classList.remove("hidden");
+  desenharCaixaComanda(c, aberta);
   $("kTitulo").innerHTML = `Comanda ${c.number ? "nº " + c.number + " " : ""}de ${esc(c.clients?.full_name || "Cliente")} ${aberta ? "" : `<span class="pill ${c.status === "cancelled" ? "off" : ""}">${c.status === "closed" ? "fechada" : "cancelada"}</span>`}`;
   const SIT = { scheduled: "scheduled", confirmed: "scheduled", checked_in: "in_service", in_service: "in_service", done: "done", cancelled: "cancelled", no_show: "cancelled" };
   const SIT_TXT = { scheduled: "Agendado", in_service: "Atendendo", done: "Concluído", cancelled: "Cancelado" };
@@ -3831,6 +3834,35 @@ async function fecharCaixa(id, contadoTxt, obs) {
   await carregarMeuCaixa();
   if (!$("tab-caixadia").classList.contains("hidden")) carregarCaixaDia();
 }
+// Caixa associado à comanda: os pagamentos dela vão para ele
+async function desenharCaixaComanda(c, aberta) {
+  const box = $("kCxBox");
+  if (!cxTemTabela || !("cash_register_id" in c)) { box.classList.add("hidden"); return; }
+  const ops = [...cxAbertos];
+  if (c.cash_register_id && !ops.some(x => x.id === c.cash_register_id)) {
+    const r = await sb.from("cash_registers").select("*").eq("id", c.cash_register_id).maybeSingle();
+    if (r.data) ops.unshift(r.data);
+  }
+  if (!ops.length && !c.cash_register_id) { box.classList.remove("hidden"); $("kCaixa").innerHTML = `<option value="">Nenhum caixa aberto hoje</option>`; $("kCaixa").disabled = true; $("kCxInfo").textContent = "Abra um caixa em Finanças › Caixa › Abertura do caixa."; return; }
+  box.classList.remove("hidden");
+  const padrao = c.cash_register_id || (aberta ? (meuCaixa?.id || (ops.length === 1 ? ops[0].id : "")) : "");
+  $("kCaixa").innerHTML = (c.cash_register_id ? "" : `<option value="">Escolha o caixa…</option>`)
+    + ops.map(x => `<option value="${x.id}">${esc(x.name)} · ${esc(x.responsible_name || x.opened_by_name || "")}${x.closed_at ? " (fechado)" : ""}</option>`).join("");
+  $("kCaixa").value = padrao; $("kCaixa").disabled = !aberta;
+  if (padrao && $("gCaixa").querySelector(`option[value="${padrao}"]`)) $("gCaixa").value = padrao;
+  $("kCxInfo").textContent = c.cash_register_id ? "Os pagamentos desta comanda entram neste caixa." : padrao ? "Sugestão: confirme o caixa ou escolha outro." : "";
+  if (aberta && padrao && !c.cash_register_id) await associarCaixaComanda(padrao, true);
+}
+async function associarCaixaComanda(id, silencioso) {
+  if (!comandaAberta) return;
+  const { error } = await sb.from("comandas").update({ cash_register_id: id || null }).eq("id", comandaAberta);
+  if (error) return aviso("Não deu para associar o caixa: " + error.message, "err");
+  if (kComanda) kComanda.cash_register_id = id || null;
+  if (id && $("gCaixa").querySelector(`option[value="${id}"]`)) $("gCaixa").value = id;
+  $("kCxInfo").textContent = id ? "Os pagamentos desta comanda entram neste caixa." : "";
+  if (!silencioso) aviso(id ? `Comanda associada ao ${$("kCaixa").selectedOptions[0].textContent.split(" · ")[0]}.` : "Comanda sem caixa.");
+}
+$("kCaixa").onchange = () => associarCaixaComanda($("kCaixa").value);
 async function prepararAbertura() {
   if (!ehAdmin()) return;
   const dia = $("cdAbData").value || hojeLocal();
