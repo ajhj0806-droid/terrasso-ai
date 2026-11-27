@@ -399,6 +399,10 @@
   .muted { font-size:inherit; }
   .pill { font-size:11px; }
   .cd-tab td { padding:5px 6px; }
+  .cx-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; padding:6px 10px; border-radius:8px; background:var(--bg, #f6f6f6); font-size:13px; }
+  .cx-bar.aberto { background:#e8f6ec; } .cx-bar.fechado { background:#fff4e0; }
+  .cx-bar input, .cx-bar select { width:auto; min-width:90px; } .cx-bar #cxInicial, .cx-bar #cxContado { width:110px; }
+  .cx-tab td, .cx-tab th { white-space:nowrap; font-size:12.5px; }
 </style>
 </head>
 <body>
@@ -664,6 +668,7 @@
             <button id="kNovaBtn" class="hidden">+ Nova comanda</button>
           </span>
         </div>
+        <div id="cxBar" class="cx-bar hidden"></div>
         <div class="hidden" id="kNova" style="margin-top:8px">
           <div class="row">
             <div style="position:relative"><label for="kNome">Cliente (nome ou celular)</label><input id="kNome" placeholder="Nome ou celular" autocomplete="off"><div id="kSug" class="sug hidden"></div></div>
@@ -794,6 +799,12 @@
           <h3 style="margin:14px 0 4px;font-size:15px">Por forma de pagamento</h3><table class="cd-tab"><tbody id="cdMet"></tbody></table></div>
         <div class="card"><h2 style="margin-top:0">Despesas</h2><table class="cd-tab"><tbody id="cdDesp"></tbody></table>
           <h3 style="margin:14px 0 4px;font-size:15px">Resultado</h3><table class="cd-tab"><tbody id="cdRes"></tbody></table></div>
+      </div>
+      <div class="card hidden" id="cxCard">
+        <h2 style="margin-top:0">Caixas abertos no período</h2>
+        <p class="muted" style="font-size:12.5px;margin-top:0">Cada caixa fica com o login de quem abriu, data e hora. Os recebimentos lançados com o caixa aberto entram nele. Dinheiro esperado = valor inicial + recebido em dinheiro.</p>
+        <div style="overflow-x:auto"><table class="cx-tab"><thead><tr><th>Caixa</th><th>Dia</th><th>Aberto por</th><th>Valor inicial</th><th>Pix</th><th>Dinheiro</th><th>Débito</th><th>Crédito</th><th>Outros</th><th>Total recebido</th><th>Dinheiro esperado</th><th>Contado</th><th>Diferença</th><th>Fechamento</th></tr></thead><tbody id="cxTab"></tbody></table></div>
+        <p class="muted" id="cxSem" style="font-size:12.5px;margin-bottom:0"></p>
       </div>
       <div class="card hidden" id="cdDetCard">
         <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><b id="cdDetTit"></b><button class="ghost" id="cdDetFechar">Fechar</button></div>
@@ -2825,7 +2836,7 @@ async function lancarServico({ comanda, clientId, serv, prof, preco, desc = 0, p
   if (ins.error) throw ins.error;
   const itemId = ins.data?.id;
   if (pacItem && valor > 0) {
-    const pg = await sb.from("payments").insert({ tenant_id: tenantId, comanda_id: comanda, method: "package", amount_cents: valor, comanda_item_id: itemId, received_by: usuarioId });
+    const pg = await sb.from("payments").insert({ tenant_id: tenantId, comanda_id: comanda, method: "package", amount_cents: valor, comanda_item_id: itemId, received_by: usuarioId, ...comCaixa() });
     if (pg.error) { await sb.from("comanda_items").delete().eq("id", itemId); throw pg.error; }
   }
   let agenda = null;
@@ -2922,6 +2933,7 @@ async function sugestoesComandas(lista) {
 { let t; for (const id of ["kfCli", "kfServ", "kfProf"]) $(id).oninput = () => { clearTimeout(t); t = setTimeout(listarComandas, 250); }; }
 
 async function carregarComandas() {
+  carregarMeuCaixa();
   const { data, error } = await sb.from("comandas")
     .select("id, status, opened_at, closed_at, client_id, clients(full_name, phone_e164), comanda_items(quantity, unit_price_cents, discount_cents), payments(amount_cents)")
     .eq("tenant_id", tenantId).eq("status", "open").order("opened_at");
@@ -3169,10 +3181,10 @@ $("gAdd").onclick = async () => {
   if (metodo === "prepaid" && valor > kSaldo) return aviso(`O saldo de crédito da cliente é ${reais(kSaldo)}.`, "err");
   const { error } = await sb.from("payments").insert({
     tenant_id: tenantId, comanda_id: comandaAberta, method: metodo, amount_cents: valor,
-    installments: metodo === "credit" ? parseInt($("gParc").value, 10) : 1, received_by: usuarioId,
+    installments: metodo === "credit" ? parseInt($("gParc").value, 10) : 1, received_by: usuarioId, ...comCaixa(),
   });
   if (error) return aviso(error.message, "err");
-  aviso(`Pagamento em ${METODOS[metodo]} registrado.`); $("gMetodo").value = "pix"; $("gMetodo").onchange(); carregarComandas();
+  aviso(`Pagamento em ${METODOS[metodo]} registrado${meuCaixa ? " no " + meuCaixa.name : ""}.` + (cxTemTabela && !meuCaixa ? " Atenção: você não abriu um caixa hoje, então este recebimento ficou sem caixa." : ""), cxTemTabela && !meuCaixa ? "err" : undefined); $("gMetodo").value = "pix"; $("gMetodo").onchange(); carregarComandas();
 };
 // Salva as alterações dos itens (quantidade, preço, desconto, profissional) sem fechar a comanda
 async function salvarItensComanda(silencioso) {
@@ -3758,6 +3770,83 @@ $("geXlsx").onclick = async () => {
   a.download = `gerencial-${de}-a-${ate}.xlsx`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 };
 
+// ===== Vários caixas (Caixa 1, Caixa 2...): cada um com quem abriu, data e hora =====
+let meuCaixa = null, cxTemTabela = false;
+const comCaixa = () => meuCaixa ? { cash_register_id: meuCaixa.id } : {};
+const horaDe = (t) => t ? new Date(t).toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }) : "";
+async function carregarMeuCaixa() {
+  const bar = $("cxBar");
+  if (!tenantId || ehProf()) { bar.classList.add("hidden"); return; }
+  const hoje = hojeLocal();
+  const r = await sb.from("cash_registers").select("*").eq("tenant_id", tenantId).eq("business_date", hoje).order("opened_at");
+  if (r.error) { cxTemTabela = false; meuCaixa = null; bar.classList.add("hidden"); return; } // banco ainda sem a tabela de caixas
+  cxTemTabela = true;
+  const lista = r.data || [], outros = lista.filter(c => !c.closed_at && c.opened_by !== usuarioId);
+  meuCaixa = lista.find(c => c.opened_by === usuarioId && !c.closed_at) || null;
+  const txtOutros = outros.length ? `<span class="muted">Também abertos: ${outros.map(c => `${esc(c.name)} (${esc(c.opened_by_name || "")}, ${horaDe(c.opened_at)})`).join(", ")}</span>` : "";
+  bar.classList.remove("hidden", "aberto", "fechado");
+  if (meuCaixa) {
+    bar.classList.add("aberto");
+    bar.innerHTML = `<span>🟢 <b>${esc(meuCaixa.name)}</b> aberto por ${esc(meuCaixa.opened_by_name || meuNome)} em ${fmtDia(meuCaixa.business_date)} às ${horaDe(meuCaixa.opened_at)}. Os recebimentos entram neste caixa.</span>`
+      + `<button class="ghost" id="cxFecharBtn">Fechar caixa</button>`
+      + `<span id="cxFecharBox" class="hidden" style="display:inline-flex;gap:6px;align-items:center"><label for="cxContado" style="margin:0">Dinheiro contado (R$)</label><input id="cxContado" inputmode="decimal" placeholder="0,00"><input id="cxObs" placeholder="Observação (opcional)"><button id="cxFecharOk">Confirmar fechamento</button></span>` + txtOutros;
+    $("cxFecharBtn").onclick = () => { $("cxFecharBox").classList.remove("hidden"); $("cxFecharBtn").classList.add("hidden"); $("cxContado").focus(); };
+    $("cxFecharOk").onclick = () => fecharCaixa(meuCaixa.id, $("cxContado").value, $("cxObs").value);
+  } else {
+    const usados = new Set(lista.map(c => c.name)), livres = [];
+    for (let n = 1; livres.length < 4; n++) if (!usados.has("Caixa " + n)) livres.push("Caixa " + n);
+    const fechouHoje = lista.filter(c => c.opened_by === usuarioId && c.closed_at).pop();
+    bar.classList.add("fechado");
+    bar.innerHTML = `<span>${fechouHoje ? `Você fechou o ${esc(fechouHoje.name)} às ${horaDe(fechouHoje.closed_at)}.` : "Você ainda não abriu um caixa hoje."}</span>`
+      + `<select id="cxNome" aria-label="Caixa">${livres.map(n => `<option>${n}</option>`).join("")}</select>`
+      + `<label for="cxInicial" style="margin:0">Valor inicial (R$)</label><input id="cxInicial" inputmode="decimal" placeholder="0,00">`
+      + `<button id="cxAbrirBtn">Abrir caixa</button>` + txtOutros;
+    $("cxAbrirBtn").onclick = abrirCaixa;
+  }
+}
+async function abrirCaixa() {
+  const ini = $("cxInicial").value.trim() ? paraCentavos($("cxInicial").value) : 0;
+  if (!(ini >= 0)) return aviso("Valor inicial inválido. Exemplo: 100,00.", "err");
+  $("cxAbrirBtn").disabled = true;
+  const { error } = await sb.from("cash_registers").insert({ tenant_id: tenantId, name: $("cxNome").value, business_date: hojeLocal(), opening_cents: ini, opened_by: usuarioId, opened_by_name: meuNome });
+  if (error) { $("cxAbrirBtn").disabled = false; return aviso(/duplicate|unique/i.test(error.message) ? "Esse caixa já foi aberto hoje por outra pessoa. Escolha outro número." : "Não deu para abrir o caixa: " + error.message, "err"); }
+  aviso(`${$("cxNome").value} aberto por ${meuNome} às ${horaDe(new Date())}.`);
+  await carregarMeuCaixa();
+}
+async function fecharCaixa(id, contadoTxt, obs) {
+  const contado = String(contadoTxt || "").trim() ? paraCentavos(contadoTxt) : null;
+  if (contado !== null && !(contado >= 0)) return aviso("Valor contado inválido. Exemplo: 350,00.", "err");
+  const { error } = await sb.from("cash_registers").update({ closed_at: new Date().toISOString(), closed_by: usuarioId, closed_by_name: meuNome, closing_counted_cents: contado, notes: (obs || "").trim() || null }).eq("id", id);
+  if (error) return aviso("Não deu para fechar o caixa: " + error.message, "err");
+  aviso("Caixa fechado.");
+  await carregarMeuCaixa();
+  if (!$("tab-caixadia").classList.contains("hidden")) carregarCaixaDia();
+}
+async function caixasDoPeriodo(de, ate) {
+  const r = await sb.from("cash_registers").select("*").eq("tenant_id", tenantId).gte("business_date", de).lte("business_date", ate).order("business_date").order("opened_at");
+  if (r.error) return null;
+  const regs = (r.data || []).filter(c => c.business_date >= de && c.business_date <= ate), ids = regs.map(c => c.id);
+  let pags = [];
+  if (ids.length) { const p = await sb.from("payments").select("cash_register_id, method, amount_cents").in("cash_register_id", ids); if (!p.error) pags = (p.data || []).filter(x => ids.includes(x.cash_register_id)); }
+  return regs.map(c => { const m = {}; for (const x of pags.filter(x => x.cash_register_id === c.id)) m[x.method] = (m[x.method] || 0) + x.amount_cents; return { ...c, m }; });
+}
+function desenharCaixas(regs) {
+  const card = $("cxCard");
+  if (!regs) { card.classList.add("hidden"); return; }
+  card.classList.remove("hidden");
+  const cor = (v) => v < 0 ? "color:var(--danger)" : v > 0 ? "color:#1a7f37" : "";
+  $("cxTab").innerHTML = regs.length ? regs.map(c => {
+    const pix = c.m.pix || 0, din = c.m.cash || 0, deb = c.m.debit || 0, cre = c.m.credit || 0;
+    const out = Object.entries(c.m).filter(([k]) => !["pix", "cash", "debit", "credit", "package", "prepaid"].includes(k)).reduce((t, [, v]) => t + v, 0);
+    const tot = pix + din + deb + cre + out, esp = c.opening_cents + din, dif = c.closing_counted_cents != null ? c.closing_counted_cents - esp : null;
+    const fech = c.closed_at ? `${esc(c.closed_by_name || "")} às ${horaDe(c.closed_at)}${c.notes ? ` <span class="muted" title="${esc(c.notes)}">· obs.</span>` : ""}`
+      : `<span style="color:#1a7f37">aberto</span> <input data-cxc="${c.id}" inputmode="decimal" placeholder="contado" style="width:80px;min-height:26px"> <button class="ghost" data-cxf="${c.id}" style="min-height:26px;padding:2px 8px">Fechar</button>`;
+    return `<tr><td><b>${esc(c.name)}</b></td><td>${fmtDia(c.business_date)}</td><td>${esc(c.opened_by_name || "")} às ${horaDe(c.opened_at)}</td><td>${reais(c.opening_cents)}</td><td>${reais(pix)}</td><td>${reais(din)}</td><td>${reais(deb)}</td><td>${reais(cre)}</td><td>${reais(out)}</td><td><b>${reais(tot)}</b></td><td>${reais(esp)}</td><td>${c.closing_counted_cents != null ? reais(c.closing_counted_cents) : "—"}</td><td style="${dif != null ? cor(dif) : ""}">${dif != null ? (dif > 0 ? "+" : "") + reais(dif) : "—"}</td><td>${fech}</td></tr>`;
+  }).join("") : `<tr><td colspan="14" class="muted">Nenhum caixa aberto neste período. A recepção abre o caixa dela na tela Comandas.</td></tr>`;
+  $("cxSem").textContent = regs.length ? "Pacote e crédito antecipado não aparecem aqui porque não entra dinheiro." : "";
+  document.querySelectorAll("#cxTab [data-cxf]").forEach(b => b.onclick = () => fecharCaixa(b.dataset.cxf, document.querySelector(`#cxTab [data-cxc="${b.dataset.cxf}"]`).value, ""));
+}
+
 async function carregarCaixaDia() {
   if (!tenantId) return;
   if (!$("cdDe").value) { $("cdDe").value = $("cdAte").value = hojeLocal(); }
@@ -3773,17 +3862,19 @@ async function carregarCaixaDia() {
   const C = await cdCalcular(de, ate, settings); if (!C) return;
   const { L, val, rec, desp, res, ret, dias } = C, k = { data: { length: C.nComandas } };
   // valor inicial do caixa = abertura lançada para o (primeiro) dia
-  const abs = settings.caixa_aberturas || {}, inicial = Number(abs[de] || 0);
+  const regs = await caixasDoPeriodo(de, ate); desenharCaixas(regs);
+  const regsDe = (regs || []).filter(c => c.business_date === de);
+  const abs = settings.caixa_aberturas || {}, inicial = regsDe.length ? regsDe.reduce((t, c) => t + c.opening_cents, 0) : Number(abs[de] || 0);
   $("cdAbData").value = de; settingsAtuais = settings;
   const abDia = $("cdAbData").value;
   $("cdAbSaldo").value = abs[abDia] != null ? (abs[abDia] / 100).toFixed(2).replace(".", ",") : "";
-  $("cdAbInfo").textContent = abs[de] != null ? "" : `Sem abertura lançada para ${fmtDia(de)}: o valor inicial fica zero.`;
+  $("cdAbInfo").textContent = regsDe.length ? `Em ${fmtDia(de)} o valor inicial é a soma dos ${regsDe.length} caixa(s) abertos (${reais(inicial)}); este campo só vale para dias sem caixa aberto.` : abs[de] != null ? "" : `Sem abertura lançada para ${fmtDia(de)}: o valor inicial fica zero.`;
   cd = { L, de, ate };
 
   const lin = (ch, txt, op = {}) => { const v = op.v ?? val(ch); if (!v && !op.sempre) return "";
     return `<tr class="${L[ch]?.det.length ? "cl" : ""} ${op.cls || ""}" ${L[ch]?.det.length ? `data-cd="${ch}" data-cdt="${esc(txt)}"` : ""}><td>${txt}</td><td>${op.neg ? "− " : ""}${reais(v)}</td></tr>`; };
   const saldoFim = inicial + res - ret, cor = (v) => v < 0 ? "color:var(--danger)" : "";
-  const linAnt = `<tr class="info"><td>Valor inicial (abertura do caixa${de !== ate ? " de " + fmtDia(de) : ""})</td><td style="${cor(inicial)}">${reais(inicial)}</td></tr>`;
+  const linAnt = `<tr class="info"><td>Valor inicial (${regsDe.length ? (regsDe.length > 1 ? "soma dos " + regsDe.length + " caixas" : regsDe[0].name) : "abertura do caixa"}${de !== ate ? " de " + fmtDia(de) : ""})</td><td style="${cor(inicial)}">${reais(inicial)}</td></tr>`;
   $("cdRec").innerHTML = linAnt + lin("serv", "Serviços realizados (comandas)", { sempre: true }) + lin("prod", "Produtos vendidos") + lin("prodUso", "Produtos usados no serviço (cobrados)")
     + lin("pacVenda", "Pacotes vendidos") + lin("cred", "Créditos antecipados recebidos") + lin("outros", "Outros")
     + lin("prepUso", "Pago com crédito antecipado (já faturado no depósito)", { neg: true })
