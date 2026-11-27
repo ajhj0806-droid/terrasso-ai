@@ -402,6 +402,9 @@
   .cx-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; padding:6px 10px; border-radius:8px; background:var(--bg, #f6f6f6); font-size:13px; }
   .cx-bar.aberto { background:#e8f6ec; } .cx-bar.fechado { background:#fff4e0; }
   .cx-bar input, .cx-bar select { width:auto; min-width:90px; } .cx-bar #cxInicial, .cx-bar #cxContado { width:110px; }
+  .kdiv { margin-top:8px; padding:8px 10px; border-radius:8px; background:#fdecea; color:#8a1f17; font-size:13px; border:1px solid #f1b5ae; }
+  .kdiv-l { margin-top:4px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .cd-pop .row { margin-top:6px; }
   .cx-item { display:inline-flex; gap:4px; align-items:center; background:#fff; border-radius:6px; padding:2px 6px; }
   .cx-tab td, .cx-tab th { white-space:nowrap; font-size:12.5px; }
 </style>
@@ -688,8 +691,9 @@
           <div><label for="kfCli">Cliente</label><input id="kfCli" list="kfCliL" placeholder="Nome ou celular" autocomplete="off"><datalist id="kfCliL"></datalist></div>
           <div><label for="kfServ">Serviço</label><input id="kfServ" list="kfServL" placeholder="Ex.: escova" autocomplete="off"><datalist id="kfServL"></datalist></div>
           <div><label for="kfProf">Profissional</label><input id="kfProf" list="kfProfL" placeholder="Ex.: Israel" autocomplete="off"><datalist id="kfProfL"></datalist></div>
+          <div><label for="kfCaixa">Caixa</label><select id="kfCaixa"><option value="">Todos</option><option value="-">Sem caixa</option></select></div>
         </div>
-        <table><thead><tr><th>Nº</th><th>Cliente</th><th>Aberta</th><th>Situação</th><th>Total</th><th>Falta</th><th></th></tr></thead><tbody id="kLista"></tbody><tfoot id="kSoma"></tfoot></table>
+        <table><thead><tr><th>Nº</th><th>Cliente</th><th>Aberta</th><th>Caixa</th><th>Situação</th><th>Total</th><th>Falta</th><th></th></tr></thead><tbody id="kLista"></tbody><tfoot id="kSoma"></tfoot></table>
         <div id="kAlerta" class="hidden" style="margin-top:8px;padding:8px 10px;border-radius:8px;background:#fdecea;color:#8a1f17;font-size:13px"></div>
         <p class="muted" style="font-size:13px;margin-bottom:0">A comanda é aberta pela <b>Agenda</b>: clique no agendamento confirmado e em <b>Abrir comanda</b>. Aqui você acrescenta produtos e outros serviços e recebe o pagamento.</p>
       </div>
@@ -700,6 +704,7 @@
           <button class="ghost" id="kFecharDet">Fechar</button>
         </div>
         <div id="kCli" class="kcli"></div>
+        <div id="kDiv" class="hidden kdiv"></div>
         <div id="kCxBox" class="hidden" style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label for="kCaixa" style="margin:0"><b>Caixa desta comanda</b></label><select id="kCaixa" style="width:auto;min-width:200px"></select><span class="muted" id="kCxInfo" style="font-size:12.5px"></span></div>
         <table style="margin-top:8px"><thead><tr><th>Item</th><th>Qtd</th><th>Valor</th><th></th></tr></thead><tbody id="kItens"></tbody></table>
         <div id="kAddItem">
@@ -792,7 +797,14 @@
           <button class="ghost" id="cdAmanha">Amanhã</button>
           <button class="ghost" id="cdSemana">Esta semana</button>
           <button class="ghost" id="cdMes">Este mês</button>
+          <select id="cdFiltroCx" aria-label="Filtrar por caixa" style="width:auto"><option value="">Todos os caixas</option></select>
           <b id="cdTitulo" style="flex:1"></b>
+        </div>
+        <div class="actions" style="margin-top:6px">
+          <button data-abrepop="cdAbPop">Abrir caixa</button>
+          <button data-abrepop="cdFechaPop">Fechar caixa</button>
+          <button class="ghost" data-abrepop="cdLancPop">Lançar no caixa</button>
+          <button class="ghost" data-abrepop="cdSedePop">Despesas da sede</button>
         </div>
         <div class="kpis" id="cdKpis"></div>
       </div>
@@ -812,23 +824,27 @@
         <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><b id="cdDetTit"></b><button class="ghost" id="cdDetFechar">Fechar</button></div>
         <table><thead id="cdDetHead"></thead><tbody id="cdDet"></tbody></table>
       </div>
-      <div class="card">
-        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Lançar no caixa</h2><button class="ghost" type="button" data-mostra="cdLancBox">Mostrar</button></div>
-        <div class="hidden" id="cdLancBox">
+
+
+
+      <div class="card pop hidden cd-pop" id="cdLancPop">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Lançar no caixa</h2><button class="ghost" type="button" data-fechapop="cdLancPop">Fechar</button></div>
+        <div>
         <div class="row">
           <div><label for="cdTipo">Tipo</label><select id="cdTipo"><option value="expense">Despesa extra</option><option value="cleaning">Limpeza</option><option value="advance">Adiantamento a profissional</option><option value="withdrawal">Retirada de caixa</option></select></div>
           <div class="hidden" id="cdProfBox"><label for="cdProf">Profissional</label><select id="cdProf"></select></div>
           <div><label for="cdDesc" id="cdDescLbl">Descrição</label><input id="cdDesc" placeholder="Ex.: material de limpeza"></div>
           <div><label for="cdValor">Valor (R$)</label><input id="cdValor" inputmode="decimal" placeholder="0,00"></div>
           <div><label for="cdData">Data</label><input id="cdData" type="date"></div>
+          <div><label for="cdCaixaL">Caixa</label><select id="cdCaixaL"></select></div>
         </div>
         <div class="actions"><button id="cdLancar">Lançar</button></div>
         <p class="muted" style="font-size:13px;margin-bottom:0">Fica registrado com o seu login, a data e a hora. Só o administrador apaga um lançamento.</p>
         </div>
       </div>
-      <div class="card">
-        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Abertura do caixa</h2><button class="ghost" type="button" data-mostra="cdAbBox">Mostrar</button></div>
-        <div class="hidden" id="cdAbBox">
+      <div class="card pop hidden cd-pop" id="cdAbPop">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Abrir caixa</h2><button class="ghost" type="button" data-fechapop="cdAbPop">Fechar</button></div>
+        <div>
         <p class="muted" style="font-size:13px;margin-top:0">Abra um caixa para cada responsável: dê um nome (Caixa 1, Caixa especial, Caixa do Paulo...), escolha o responsável e informe o valor inicial (troco, fundo de caixa). Fica gravado o seu login, a data e a hora. Na comanda, cada pagamento é direcionado para um caixa aberto.</p>
         <div class="row" style="grid-template-columns:repeat(4,minmax(0,1fr))">
           <div><label for="cdAbData">Dia</label><input id="cdAbData" type="date"></div>
@@ -840,13 +856,23 @@
         <div class="actions"><button id="cdAbSalvar">Abrir caixa</button></div>
         </div>
       </div>
-      <div class="card">
-        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Despesas da sede (valor por mês)</h2><button class="ghost" type="button" data-mostra="cdSedeBox">Mostrar</button></div>
-        <div class="hidden" id="cdSedeBox">
+      <div class="card pop hidden cd-pop" id="cdSedePop">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Despesas da sede (valor por mês)</h2><button class="ghost" type="button" data-fechapop="cdSedePop">Fechar</button></div>
+        <div>
         <p class="muted" style="font-size:13px;margin-top:0">Aluguel, luz, água, internet, contador, sistema... O caixa divide o valor do mês pelos dias do mês e lança a parte de cada dia.</p>
         <table><tbody id="cdSede"></tbody></table>
         <div class="actions"><button class="ghost" id="cdSedeAdd">+ Despesa</button><button id="cdSedeSalvar">Salvar despesas da sede</button></div>
         </div>
+      </div>
+      <div class="card pop hidden cd-pop" id="cdFechaPop">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center"><h2 style="margin:0">Fechar caixa</h2><button class="ghost" type="button" data-fechapop="cdFechaPop">Fechar</button></div>
+        <div class="row" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+          <div><label for="cfCaixa">Caixa</label><select id="cfCaixa"></select></div>
+          <div><label for="cfContado">Dinheiro contado (R$)</label><input id="cfContado" inputmode="decimal" placeholder="0,00"></div>
+          <div><label for="cfObs">Observação</label><input id="cfObs" placeholder="opcional"></div>
+        </div>
+        <div id="cfResumo" style="margin-top:8px"></div>
+        <div class="actions"><button id="cfOk">Fechar caixa</button></div>
       </div>
     </div>
 
@@ -2600,6 +2626,7 @@ async function mudarStatus(a, st) {
 $("dFechar").onclick = () => { agSel = null; dSujo = false; $("agDetalhe").classList.add("hidden"); desenharGrade(); };
 // Popups da agenda: Esc fecha; clicar fora fecha o detalhe (os formulários só fecham pelo botão, para não perder o que foi digitado)
 function fecharPops() {
+  document.querySelectorAll(".cd-pop:not(.hidden)").forEach(x => x.classList.add("hidden"));
   if (!$("agDetalhe").classList.contains("hidden")) $("dFechar").onclick();
   $("agNovo").classList.add("hidden"); $("agBloq").classList.add("hidden");
 }
@@ -2857,12 +2884,16 @@ function textoLancado(r, serv) {
 }
 
 // Comanda a partir do agendamento. abrir=false cria/acha a comanda sem sair da agenda (usado ao confirmar).
+const inicioDeHoje = () => localParaUtc(hojeLocal(), "00:00").toISOString();
+const diaLocal = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date(t));
 async function comandaDoAgendamento(a, { abrir = true, chegou = true } = {}) {
+  // a comanda só recebe serviços do dia
+  { const f = a.period ? lerFaixa(a.period) : null; if (f && diaLocal(f.ini) !== hojeLocal()) return aviso(`Este atendimento é de ${fmtDia(diaLocal(f.ini))}. A comanda só recebe serviços do dia: abra a comanda no dia do atendimento.`, "err"); }
   const ja = await sb.from("comanda_items").select("comanda_id").eq("appointment_id", a.id).limit(1);
   if (ja.error) return erro(ja.error);
   let cid = ja.data[0]?.comanda_id, msg = "";
   if (!cid) {
-    const aberta = await sb.from("comandas").select("id").eq("tenant_id", tenantId).eq("client_id", a.client_id).eq("status", "open").order("opened_at", { ascending: false }).limit(1);
+    const aberta = await sb.from("comandas").select("id").eq("tenant_id", tenantId).eq("client_id", a.client_id).eq("status", "open").gte("opened_at", inicioDeHoje()).order("opened_at", { ascending: false }).limit(1);
     if (aberta.error) return erro(aberta.error);
     cid = aberta.data[0]?.id;
     if (!cid) {
@@ -2890,6 +2921,8 @@ async function desenharFila() {
 }
 
 // Lista de comandas com filtros (situação, período, cliente, serviço), total e o que falta
+let kCxNomes = {};
+$("kfCaixa").onchange = () => listarComandas();
 async function listarComandas() {
   const st = $("kfStatus").value, de = $("kfDe").value, ate = $("kfAte").value;
   let q = sb.from("comandas").select("*, clients(full_name, phone_e164), comanda_items(quantity, unit_price_cents, discount_cents, description, professional_id, appointment_id, appointments(status)), payments(amount_cents)")
@@ -2900,6 +2933,14 @@ async function listarComandas() {
   if (ate) q = q.lt("opened_at", localParaUtc(somarDias(ate, 1), "00:00").toISOString());
   const { data, error } = await q.order("opened_at", { ascending: st === "open" || st === "agendadas" }).limit(300);
   if (error) return erro(error);
+  // nomes dos caixas (para a coluna e o filtro)
+  { const ids = [...new Set(data.map(c => c.cash_register_id).filter(Boolean))].filter(id => !kCxNomes[id]);
+    if (ids.length) { const r = await sb.from("cash_registers").select("id, name, business_date").in("id", ids); for (const x of r.data || []) kCxNomes[x.id] = x; }
+    for (const x of cxAbertos) kCxNomes[x.id] = x;
+    const sel = $("kfCaixa").value, opts = Object.values(kCxNomes).sort((a, b) => (b.business_date || "").localeCompare(a.business_date || "") || a.name.localeCompare(b.name));
+    $("kfCaixa").innerHTML = `<option value="">Todos</option><option value="-">Sem caixa</option>` + opts.map(x => `<option value="${x.id}">${esc(x.name)}${x.business_date ? " · " + fmtDia(x.business_date) : ""}</option>`).join("");
+    $("kfCaixa").value = sel && (sel === "-" || kCxNomes[sel]) ? sel : ""; }
+  const fcx = $("kfCaixa").value;
   const tot = (c) => c.comanda_items.reduce((t, i) => t + totalItem(i), 0), pago = (c) => c.payments.reduce((t, p) => t + p.amount_cents, 0);
   const falta = (c) => c.status === "open" ? Math.max(tot(c) - pago(c), 0) : 0;
   const diaDe = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date(t)), hoje = hojeLocal();
@@ -2909,19 +2950,21 @@ async function listarComandas() {
   comandas = data.filter(c => (!tc || clienteBate(c.clients || {}, tc))
     && (!ts || c.comanda_items.some(i => semAcento(i.description || "").includes(ts)))
     && (!tp || c.comanda_items.some(i => i.professional_id && nomeProfK(i.professional_id).includes(tp)))
-    && (st !== "agendadas" || c.comanda_items.some(i => ["scheduled", "confirmed"].includes(i.appointments?.status))));
+    && (st !== "agendadas" || c.comanda_items.some(i => ["scheduled", "confirmed"].includes(i.appointments?.status)))
+    && (!fcx || (fcx === "-" ? !c.cash_register_id : c.cash_register_id === fcx)));
   const SITK = { open: "aberta", closed: "fechada", cancelled: "cancelada" };
   const profsDe = (c) => [...new Set(c.comanda_items.map(i => profissionais.find(p => p.id === i.professional_id)?.name).filter(Boolean))].join(", ");
   $("kLista").innerHTML = comandas.length ? comandas.map(c => `<tr>
       <td><b>${c.number ? "#" + c.number : ""}</b></td>
       <td><b>${esc(c.clients?.full_name || "Cliente")}</b><br><span class="muted">${esc(telVisivel(c.clients?.phone_e164))}${profsDe(c) ? " · " + esc(profsDe(c)) : ""}</span></td>
       <td class="muted">${quando(c.opened_at)}${c.status === "open" && diaDe(c.opened_at) < hoje ? ' <span class="pill off">dia anterior</span>' : ""}</td>
+      <td>${c.cash_register_id ? esc(kCxNomes[c.cash_register_id]?.name || "—") : '<span class="muted">—</span>'}</td>
       <td><span class="pill ${c.status === "open" ? "off" : ""}">${SITK[c.status] || c.status}</span></td>
       <td>${reais(tot(c))}</td>
-      <td>${c.status !== "open" ? "" : !c.comanda_items.length ? '<span class="pill">vazia</span>' : falta(c) > 0 ? `<span class="pill off">${reais(falta(c))}</span>` : '<span class="pill">pago</span>'}</td>
+      <td>${c.status === "closed" && pago(c) < tot(c) ? `<span class="pill off">dívida ${reais(tot(c) - pago(c))}</span>` : c.status !== "open" ? "" : !c.comanda_items.length ? '<span class="pill">vazia</span>' : falta(c) > 0 ? `<span class="pill off">${reais(falta(c))}</span>` : '<span class="pill">pago</span>'}</td>
       <td><button class="ghost" data-k="${c.id}">Abrir</button></td></tr>`).join("")
-    : '<tr><td colspan="7" class="muted">Nenhuma comanda com esses filtros. A comanda é aberta pela Agenda.</td></tr>';
-  $("kSoma").innerHTML = comandas.length ? `<tr><td></td><td><b>${comandas.length} comanda(s)</b></td><td></td><td></td><td><b>${reais(comandas.reduce((t, c) => t + (c.status === "cancelled" ? 0 : tot(c)), 0))}</b></td><td><b>${reais(comandas.reduce((t, c) => t + falta(c), 0))}</b></td><td></td></tr>` : "";
+    : '<tr><td colspan="8" class="muted">Nenhuma comanda com esses filtros. A comanda é aberta pela Agenda.</td></tr>';
+  $("kSoma").innerHTML = comandas.length ? `<tr><td></td><td><b>${comandas.length} comanda(s)</b></td><td></td><td></td><td></td><td><b>${reais(comandas.reduce((t, c) => t + (c.status === "cancelled" ? 0 : tot(c)), 0))}</b></td><td><b>${reais(comandas.reduce((t, c) => t + falta(c), 0))}</b></td><td></td></tr>` : "";
   $("kLista").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { comandaAberta = b.dataset.k; abrirComanda().then(() => $("kDet").scrollIntoView({ behavior: "smooth" })); });
 }
 for (const id of ["kfStatus", "kfDe", "kfAte"]) $(id).onchange = listarComandas;
@@ -2946,7 +2989,7 @@ async function carregarComandas() {
   // Comandas de dias anteriores ainda abertas: o sistema fecha as pagas, cancela as vazias e avisa as que têm valor a receber
   const diaDe = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date(t)), hoje = hojeLocal();
   const antigas = data.filter(c => diaDe(c.opened_at) < hoje);
-  const fechadas = [], canceladas = [], pendentes = [];
+  const fechadas = [], canceladas = [], pendentes = [], dividas = [];
   if (!ehProf()) for (const c of antigas) {
     if (!c.comanda_items.length && !c.payments.length) {
       const r = await sb.from("comandas").update({ status: "cancelled", closed_at: new Date().toISOString(), closed_by: usuarioId }).eq("id", c.id);
@@ -2954,10 +2997,14 @@ async function carregarComandas() {
     } else if (c.comanda_items.length && pago(c) >= tot(c)) {
       const r = await sb.rpc("close_comanda", { p_comanda: c.id });
       if (!r.error) { fechadas.push(c); continue; }
+    } else if (c.comanda_items.length) {
+      const r = await sb.rpc("close_comanda", { p_comanda: c.id, p_divida: true });
+      if (!r.error) { dividas.push(c); continue; }
     }
     pendentes.push(c);
   }
   const nomeC = (c) => c.clients?.full_name || "Cliente";
+  if (dividas.length) aviso(`Comandas de dias anteriores fechadas com DÍVIDA: ${dividas.map(c => `${nomeC(c)} (${reais(tot(c) - pago(c))})`).join(", ")}.`, "err");
   if (fechadas.length || canceladas.length) {
     aviso(`Fechamento automático de comandas de dias anteriores: ${fechadas.length ? `${fechadas.length} fechada(s) (${fechadas.map(nomeC).join(", ")})` : ""}${fechadas.length && canceladas.length ? "; " : ""}${canceladas.length ? `${canceladas.length} vazia(s) cancelada(s)` : ""}.`, pendentes.length ? "err" : undefined);
     if (fechadas.length) carregar();
@@ -3023,7 +3070,7 @@ async function abrirComanda() {
   const aberta = c.status === "open";
   kPacItens = aberta ? await pacotesDaCliente(c.client_id) : [];
   $("kDet").classList.remove("hidden");
-  desenharCaixaComanda(c, aberta);
+  desenharCaixaComanda(c, aberta); desenharDividas(c);
   $("kTitulo").innerHTML = `Comanda ${c.number ? "nº " + c.number + " " : ""}de ${esc(c.clients?.full_name || "Cliente")} ${aberta ? "" : `<span class="pill ${c.status === "cancelled" ? "off" : ""}">${c.status === "closed" ? "fechada" : "cancelada"}</span>`}`;
   const SIT = { scheduled: "scheduled", confirmed: "scheduled", checked_in: "in_service", in_service: "in_service", done: "done", cancelled: "cancelled", no_show: "cancelled" };
   const SIT_TXT = { scheduled: "Agendado", in_service: "Atendendo", done: "Concluído", cancelled: "Cancelado" };
@@ -3150,6 +3197,7 @@ $("iAdd").onclick = async () => {
   const desc = $("iDesc").value.trim() ? paraCentavos($("iDesc").value) : 0;
   const brinde = $("iBrinde").checked && podeDesconto();
   if (!x) return aviso("Escolha o item.", "err");
+  if (kComanda && diaLocal(kComanda.opened_at) < hojeLocal()) return aviso("Esta comanda é de outro dia e não recebe novos itens. Feche-a (com dívida, se faltar pagamento) e abra uma comanda nova.", "err");
   if (!(qtd > 0)) return aviso(tipo === "uso" ? "Informe a fração usada (ex.: 0,25 = um quarto do produto)." : "Informe a quantidade (pode usar vírgula, ex.: 0,5).", "err");
   if (ehServ && !Number.isInteger(qtd)) return aviso("Serviço vai em quantidade inteira.", "err");
   if (!(preco >= 0)) return aviso("Confira o preço, por exemplo 89,90.", "err");
@@ -3185,6 +3233,7 @@ $("gAdd").onclick = async () => {
   const valor = paraCentavos($("gValor").value), metodo = $("gMetodo").value;
   if (!(valor > 0)) return aviso("Informe o valor recebido, por exemplo 120,00.", "err");
   if (metodo === "prepaid" && valor > kSaldo) return aviso(`O saldo de crédito da cliente é ${reais(kSaldo)}.`, "err");
+  if (cxTemTabela && !caixaEscolhido()) return aviso("Não há caixa aberto para receber. O administrador abre o caixa em Finanças › Caixa › Abrir caixa.", "err");
   const { error } = await sb.from("payments").insert({
     tenant_id: tenantId, comanda_id: comandaAberta, method: metodo, amount_cents: valor,
     installments: metodo === "credit" ? parseInt($("gParc").value, 10) : 1, received_by: usuarioId, ...comCaixa(),
@@ -3219,9 +3268,11 @@ async function salvarItensComanda(silencioso) {
 $("kSalvar").onclick = async () => { $("kSalvar").disabled = true; try { if (await salvarItensComanda()) carregarComandas(); } finally { $("kSalvar").disabled = false; } };
 $("kFechar").onclick = async () => {
   if (!(await salvarItensComanda(true))) return;
-  const { error } = await sb.rpc("close_comanda", { p_comanda: comandaAberta });
-  if (error) return aviso(error.message, "err");
-  aviso("Comanda fechada. Atendimentos marcados como finalizados e estoque atualizado.");
+  const tot = kItens.reduce((t, i) => t + totalItem(i), 0), pg = kPags.reduce((t, g) => t + g.amount_cents, 0), falta = tot - pg;
+  if (falta > 0 && !confirm(`Falta receber ${reais(falta)}. Fechar a comanda mesmo assim, deixando ${reais(falta)} como DÍVIDA da cliente? A dívida aparece em destaque na próxima comanda dela.`)) return;
+  const { error } = await sb.rpc("close_comanda", falta > 0 ? { p_comanda: comandaAberta, p_divida: true } : { p_comanda: comandaAberta });
+  if (error) return aviso(/p_divida|function|could not find/i.test(error.message) ? "Para fechar com dívida, rode no Supabase o SQL 20261127000300_divida_e_fechamento_caixa.sql." : error.message, "err");
+  aviso(falta > 0 ? `Comanda fechada com DÍVIDA de ${reais(falta)}.` : "Comanda fechada. Atendimentos marcados como finalizados e estoque atualizado.");
   comandaAberta = null; await carregar(); carregarComandas(); clientStats = {};
 };
 $("kCancelar").onclick = async () => {
@@ -3301,7 +3352,7 @@ $("kCriar").onclick = async () => {
   try { clientId = await kBusca.id(); } catch (e) { return aviso("Não deu para abrir: " + e.message, "err"); }
   $("kCriar").disabled = true;
   try {
-    const ab = await sb.from("comandas").select("id").eq("tenant_id", tenantId).eq("client_id", clientId).eq("status", "open").order("opened_at", { ascending: false }).limit(1);
+    const ab = await sb.from("comandas").select("id").eq("tenant_id", tenantId).eq("client_id", clientId).eq("status", "open").gte("opened_at", inicioDeHoje()).order("opened_at", { ascending: false }).limit(1);
     if (ab.error) return erro(ab.error);
     let jaAberta = ab.data[0]?.id;
     if (jaAberta) comandaAberta = jaAberta;
@@ -3395,7 +3446,7 @@ $("paVender").onclick = async () => {
   $("paVender").disabled = true;
   try {
     // comanda aberta da cliente (ou uma nova) para ela pagar o pacote
-    const ab = await sb.from("comandas").select("id").eq("tenant_id", tenantId).eq("client_id", clientId).eq("status", "open").order("opened_at", { ascending: false }).limit(1);
+    const ab = await sb.from("comandas").select("id").eq("tenant_id", tenantId).eq("client_id", clientId).eq("status", "open").gte("opened_at", inicioDeHoje()).order("opened_at", { ascending: false }).limit(1);
     if (ab.error) throw ab.error;
     let cid = ab.data[0]?.id;
     if (!cid) { const n = await sb.from("comandas").insert({ tenant_id: tenantId, client_id: clientId, opened_by: usuarioId }).select("id").single(); if (n.error) throw n.error; cid = n.data.id; }
@@ -3563,17 +3614,18 @@ $("cdTipo").onchange = () => {
 };
 
 // Calcula receitas, despesas e retiradas de um período (usado no caixa e no saldo anterior)
-async function cdCalcular(de, ate, settings) {
+async function cdCalcular(de, ate, settings, caixa) {
   const taxas = settings.taxas_cartao || {};
   const ini = localParaUtc(de, "00:00"), fim = localParaUtc(somarDias(ate, 1), "00:00");
   const [k, ag, ce] = await Promise.all([
-    sb.from("comandas").select("id, closed_at, client_id, clients(full_name), comanda_items(id, description, quantity, unit_price_cents, discount_cents, commission_cents, service_id, product_id, product_use, client_package_item_id, sold_package_id, is_gift, professional_id), payments(method, amount_cents, installments, comanda_item_id)")
+    sb.from("comandas").select("*, clients(full_name), comanda_items(id, description, quantity, unit_price_cents, discount_cents, commission_cents, service_id, product_id, product_use, client_package_item_id, sold_package_id, is_gift, professional_id), payments(method, amount_cents, installments, comanda_item_id)")
       .eq("tenant_id", tenantId).eq("status", "closed").gte("closed_at", ini.toISOString()).lt("closed_at", fim.toISOString()).order("closed_at"),
     sb.from("appointments").select("id, period, status, price_cents, client_id, professional_id, service_id, clients(full_name), services(name)")
       .eq("tenant_id", tenantId).in("status", ["scheduled", "confirmed", "checked_in", "in_service"]).overlaps("period", faixa(ini, fim)),
     sb.from("cash_entries").select("*").eq("tenant_id", tenantId).gte("entry_date", de).lte("entry_date", ate).order("entry_date").order("created_at"),
   ]);
   for (const r of [k, ag, ce]) if (r.error) { erro(r.error); return null; }
+  if (caixa) { k.data = k.data.filter(c => c.cash_register_id === caixa); ce.data = ce.data.filter(e => e.cash_register_id === caixa); ag.data = []; }
   // linhas: chave -> { v, det: [{ quem, quando, v, comanda }] }
   const L = {}; const add = (ch, v, d) => { const x = L[ch] || (L[ch] = { v: 0, det: [] }); x.v += v; if (d) x.det.push({ ...d, v }); };
   const nomeProf = (id) => profissionais.find(p => p.id === id)?.name || "";
@@ -3591,6 +3643,7 @@ async function cdCalcular(de, ate, settings) {
       if (i.product_id) { const cu = Math.round(Number(i.quantity) * custoProd(i.product_id)); if (cu) add(i.product_use ? "custoUso" : "custoProd", cu, { ...base, quem: `${cli} · ${i.description}` }); }
     }
     for (const [cat, v] of Object.entries(porCat)) add(cat, v, base);
+    { const fal = (c.comanda_items || []).reduce((t, i) => t + totalItem(i), 0) - (c.payments || []).reduce((t, g) => t + g.amount_cents, 0); if (fal > 0) add("divida", fal, base); }
     for (const g of c.payments || []) {
       add("m_" + g.method, g.amount_cents, base);
       if (g.method === "prepaid") add("prepUso", g.amount_cents, base);
@@ -3608,7 +3661,7 @@ async function cdCalcular(de, ate, settings) {
   for (const e of ce.data) add("ce_" + e.kind, e.amount_cents, { quem: `${e.description}${e.professional_id ? " · " + nomeProf(e.professional_id) : ""} · por ${e.created_by_name || "?"}`, quando: e.created_at, dia: e.entry_date, entrada: e.id });
   // sede: parte de cada dia do período
   const dias = cdDias(de, ate), mensal = cdSede.reduce((t, x) => t + (x.mensal_cents || 0), 0);
-  for (const d of dias) if (mensal) add("sede", Math.round(mensal / diasNoMes(d)), { quem: `${fmtDia(d)} · ${reais(mensal)} ÷ ${diasNoMes(d)} dias`, quando: null });
+  if (!caixa) for (const d of dias) if (mensal) add("sede", Math.round(mensal / diasNoMes(d)), { quem: `${fmtDia(d)} · ${reais(mensal)} ÷ ${diasNoMes(d)} dias`, quando: null });
 
   const val = (ch) => L[ch]?.v || 0;
   const rec = ["serv", "prod", "prodUso", "pacVenda", "cred", "outros"].reduce((t, ch) => t + val(ch), 0) - val("prepUso");
@@ -3802,12 +3855,12 @@ async function carregarMeuCaixa() {
   bar.classList.add(meuCaixa ? "aberto" : "fechado");
   const infoMeu = meuCaixa ? `<span>🟢 Você está no <b>${esc(meuCaixa.name)}</b> (aberto por ${esc(meuCaixa.opened_by_name || "")} às ${horaDe(meuCaixa.opened_at)}). Os recebimentos entram neste caixa.</span>` : "";
   if (!ehAdmin()) {
-    bar.innerHTML = infoMeu || `<span>Nenhum caixa aberto para você hoje. Ao registrar um pagamento, escolha o caixa no campo "Caixa", ou peça ao administrador para abrir um caixa para você.</span>`;
+    bar.innerHTML = infoMeu || (cxAbertos.length ? `<span>Caixas abertos hoje: ${cxAbertos.map(c => `<b>${esc(c.name)}</b>`).join(", ")}. Escolha o caixa na comanda.</span>` : `<span>Nenhum caixa aberto hoje. Peça ao administrador para abrir o caixa antes de receber.</span>`);
     return;
   }
   const listaAbertos = abertos.map(c => `<span class="cx-item"><b>${esc(c.name)}</b> · ${esc(c.responsible_name || c.opened_by_name || "")} · desde ${horaDe(c.opened_at)}</span>`).join("");
   bar.innerHTML = infoMeu + (listaAbertos ? `<span>Caixas abertos hoje:</span>${listaAbertos}` : `<span>Nenhum caixa aberto hoje.</span>`)
-    + `<span class="muted">Abrir e fechar caixas: Finanças › Caixa › Abertura do caixa.</span>`;
+    + `<span class="muted">Abrir e fechar caixas: Finanças › Caixa (botões Abrir caixa / Fechar caixa).</span>`;
 }
 async function abrirCaixa() {
   if (!ehAdmin()) return aviso("Só o administrador abre caixas.", "err");
@@ -3825,33 +3878,66 @@ async function abrirCaixa() {
   await carregarMeuCaixa();
   await carregarCaixaDia();
 }
+async function comandasAbertasDoCaixa(id) {
+  const r = await sb.from("comandas").select("id, number, opened_at, cash_register_id, clients(full_name)").eq("tenant_id", tenantId).eq("status", "open").eq("cash_register_id", id);
+  return r.error ? [] : (r.data || []).filter(c => c.cash_register_id === id);
+}
 async function fecharCaixa(id, contadoTxt, obs) {
+  const pend = await comandasAbertasDoCaixa(id);
+  if (pend.length) return aviso(`Para fechar o caixa, feche antes as comandas abertas dele: ${pend.map(c => `${c.number ? "nº " + c.number + " " : ""}${c.clients?.full_name || "Cliente"}`).join(", ")}. Se a cliente não pagou, feche a comanda com dívida.`, "err");
   const contado = String(contadoTxt || "").trim() ? paraCentavos(contadoTxt) : null;
   if (contado !== null && !(contado >= 0)) return aviso("Valor contado inválido. Exemplo: 350,00.", "err");
   const { error } = await sb.from("cash_registers").update({ closed_at: new Date().toISOString(), closed_by: usuarioId, closed_by_name: meuNome, closing_counted_cents: contado, notes: (obs || "").trim() || null }).eq("id", id);
   if (error) return aviso("Não deu para fechar o caixa: " + error.message, "err");
-  aviso("Caixa fechado.");
+  aviso("Caixa fechado. Ele não recebe mais comandas.");
+  $("cdFechaPop").classList.add("hidden");
   await carregarMeuCaixa();
   if (!$("tab-caixadia").classList.contains("hidden")) carregarCaixaDia();
 }
 // Caixa associado à comanda: os pagamentos dela vão para ele
+async function desenharDividas(c) {
+  const box = $("kDiv"); box.classList.add("hidden"); box.innerHTML = "";
+  if (!c.client_id) return;
+  const r = await sb.from("comandas").select("id, number, opened_at, comanda_items(quantity, unit_price_cents, discount_cents), payments(amount_cents)")
+    .eq("tenant_id", tenantId).eq("client_id", c.client_id).eq("status", "closed").order("opened_at");
+  if (r.error) return;
+  const div = (r.data || []).map(k => ({ ...k, falta: (k.comanda_items || []).reduce((t, i) => t + totalItem(i), 0) - (k.payments || []).reduce((t, g) => t + g.amount_cents, 0) })).filter(k => k.falta > 0 && k.id !== c.id);
+  if (!div.length) return;
+  const total = div.reduce((t, k) => t + k.falta, 0);
+  box.classList.remove("hidden");
+  box.innerHTML = `<b>⚠ DÍVIDA da cliente: ${reais(total)}</b> em ${div.length} comanda(s) anterior(es).`
+    + div.map(k => `<div class="kdiv-l">Comanda ${k.number ? "nº " + k.number + " " : ""}de ${dataBr(k.opened_at)}: falta <b>${reais(k.falta)}</b>`
+      + (c.status === "open" ? ` <select data-dvm="${k.id}" style="width:auto;min-height:26px;padding:2px 6px">${Object.entries(METODOS).filter(([m]) => !["package", "prepaid"].includes(m)).map(([m, t]) => `<option value="${m}">${t}</option>`).join("")}</select> <input data-dvv="${k.id}" value="${(k.falta / 100).toFixed(2).replace(".", ",")}" inputmode="decimal" style="width:90px;min-height:26px"> <button data-dvr="${k.id}" style="min-height:26px;padding:2px 8px">Receber</button>` : "") + `</div>`).join("");
+  box.querySelectorAll("[data-dvr]").forEach(b => b.onclick = async () => {
+    const id = b.dataset.dvr, k = div.find(x => x.id === id), v = paraCentavos(box.querySelector(`[data-dvv="${id}"]`).value), m = box.querySelector(`[data-dvm="${id}"]`).value;
+    if (!(v > 0) || v > k.falta) return aviso(`Informe um valor entre 0,01 e ${reais(k.falta)}.`, "err");
+    const cx = cxAbertos.find(x => x.id === (kComanda?.cash_register_id || $("kCaixa").value)) || caixaEscolhido();
+    b.disabled = true;
+    const { error } = await sb.from("payments").insert({ tenant_id: tenantId, comanda_id: id, method: m, amount_cents: v, installments: 1, received_by: usuarioId, ...(cx ? { cash_register_id: cx.id } : {}) });
+    b.disabled = false;
+    if (error) return aviso(error.message, "err");
+    aviso(`Dívida: recebido ${reais(v)} em ${METODOS[m]}${cx ? " no " + cx.name : ""}.`); desenharDividas(c);
+  });
+}
 async function desenharCaixaComanda(c, aberta) {
   const box = $("kCxBox");
   if (!cxTemTabela || !("cash_register_id" in c)) { box.classList.add("hidden"); return; }
   const ops = [...cxAbertos];
-  if (c.cash_register_id && !ops.some(x => x.id === c.cash_register_id)) {
+  if (c.cash_register_id && !ops.some(x => x.id === c.cash_register_id) && !aberta) {
     const r = await sb.from("cash_registers").select("*").eq("id", c.cash_register_id).maybeSingle();
     if (r.data) ops.unshift(r.data);
   }
   if (!ops.length && !c.cash_register_id) { box.classList.remove("hidden"); $("kCaixa").innerHTML = `<option value="">Nenhum caixa aberto hoje</option>`; $("kCaixa").disabled = true; $("kCxInfo").textContent = "Abra um caixa em Finanças › Caixa › Abertura do caixa."; return; }
   box.classList.remove("hidden");
-  const padrao = c.cash_register_id || (aberta ? (meuCaixa?.id || (ops.length === 1 ? ops[0].id : "")) : "");
-  $("kCaixa").innerHTML = (c.cash_register_id ? "" : `<option value="">Escolha o caixa…</option>`)
+  const ligadoAberto = ops.some(x => x.id === c.cash_register_id);
+  const padrao = (ligadoAberto || !aberta ? c.cash_register_id : null) || (aberta ? (meuCaixa?.id || (ops.length === 1 ? ops[0].id : "")) : "");
+  if (aberta && c.cash_register_id && !ligadoAberto) aviso("O caixa desta comanda foi fechado. Escolha um caixa aberto.", "err");
+  $("kCaixa").innerHTML = (padrao ? "" : `<option value="">Escolha o caixa…</option>`)
     + ops.map(x => `<option value="${x.id}">${esc(x.name)} · ${esc(x.responsible_name || x.opened_by_name || "")}${x.closed_at ? " (fechado)" : ""}</option>`).join("");
   $("kCaixa").value = padrao; $("kCaixa").disabled = !aberta;
   if (padrao && $("gCaixa").querySelector(`option[value="${padrao}"]`)) $("gCaixa").value = padrao;
   $("kCxInfo").textContent = c.cash_register_id ? "Os pagamentos desta comanda entram neste caixa." : padrao ? "Sugestão: confirme o caixa ou escolha outro." : "";
-  if (aberta && padrao && !c.cash_register_id) await associarCaixaComanda(padrao, true);
+  if (aberta && padrao && c.cash_register_id !== padrao) await associarCaixaComanda(padrao, true);
 }
 async function associarCaixaComanda(id, silencioso) {
   if (!comandaAberta) return;
@@ -3863,6 +3949,48 @@ async function associarCaixaComanda(id, silencioso) {
   if (!silencioso) aviso(id ? `Comanda associada ao ${$("kCaixa").selectedOptions[0].textContent.split(" · ")[0]}.` : "Comanda sem caixa.");
 }
 $("kCaixa").onchange = () => associarCaixaComanda($("kCaixa").value);
+async function caixasDoDia(dia, soAbertos) {
+  const r = await sb.from("cash_registers").select("*").eq("tenant_id", tenantId).eq("business_date", dia).order("opened_at");
+  return r.error ? [] : (r.data || []).filter(c => c.business_date === dia && (!soAbertos || !c.closed_at));
+}
+async function prepararLancamento() {
+  if (!$("cdData").value) $("cdData").value = hojeLocal();
+  const l = await caixasDoDia($("cdData").value, true), sel = $("cdCaixaL").value;
+  $("cdCaixaL").innerHTML = `<option value="">Sem caixa</option>` + l.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  $("cdCaixaL").value = l.some(c => c.id === sel) ? sel : (l[0]?.id || "");
+}
+async function prepararFechamento(id) {
+  const l = (await sb.from("cash_registers").select("*").eq("tenant_id", tenantId).is("closed_at", null).order("business_date").order("opened_at")).data || [];
+  const abertos = l.filter(c => !c.closed_at);
+  $("cfCaixa").innerHTML = abertos.length ? abertos.map(c => `<option value="${c.id}">${esc(c.name)} · ${fmtDia(c.business_date)} · ${esc(c.responsible_name || "")}</option>`).join("") : `<option value="">Nenhum caixa aberto</option>`;
+  if (id) $("cfCaixa").value = id;
+  cfLista = abertos; $("cfContado").value = ""; $("cfObs").value = "";
+  resumoFechamento();
+}
+let cfLista = [];
+async function resumoFechamento() {
+  const cx = cfLista.find(c => c.id === $("cfCaixa").value);
+  $("cfOk").disabled = !cx;
+  if (!cx) { $("cfResumo").innerHTML = '<p class="muted">Não há caixa aberto para fechar.</p>'; return; }
+  $("cfResumo").innerHTML = '<p class="muted">Calculando…</p>';
+  const st = await sb.from("tenants").select("settings").eq("id", tenantId).single();
+  const [C, pend, pg] = await Promise.all([cdCalcular(cx.business_date, cx.business_date, st.data?.settings || {}, cx.id), comandasAbertasDoCaixa(cx.id),
+    sb.from("payments").select("method, amount_cents, cash_register_id").eq("cash_register_id", cx.id)]);
+  if (!C) return;
+  const din = (pg.data || []).filter(g => g.cash_register_id === cx.id && g.method === "cash").reduce((t, g) => t + g.amount_cents, 0);
+  const ret = C.ret, esp = cx.opening_cents + din - ret, saldo = cx.opening_cents + C.res - ret;
+  const linha = (t, v, cls) => `<tr class="${cls || ""}"><td>${t}</td><td style="${v < 0 ? "color:var(--danger)" : ""}">${reais(v)}</td></tr>`;
+  $("cfResumo").innerHTML = (pend.length ? `<div class="kdiv"><b>⚠ ${pend.length} comanda(s) aberta(s) neste caixa.</b> Feche todas antes de fechar o caixa (se a cliente não pagou, feche com dívida): ${pend.map(c => esc(c.clients?.full_name || "Cliente")).join(", ")}.</div>` : "")
+    + `<table class="cd-tab"><tbody>${linha(`Valor inicial (aberto por ${esc(cx.opened_by_name || "")} às ${horaDe(cx.opened_at)})`, cx.opening_cents, "info")}${linha("Receitas do dia", C.rec)}${linha("Despesas do dia", C.desp)}`
+    + `${linha("Resultado do dia", C.res, "tot")}${linha("Retiradas", ret)}${linha("Saldo do dia (inicial + resultado − retiradas)", saldo, "tot")}`
+    + `${C.val("divida") ? linha("Dívidas de clientes (faturado e não recebido)", C.val("divida"), "info") : ""}${linha("Dinheiro esperado na gaveta (inicial + dinheiro recebido − retiradas)", esp, "info")}</tbody></table>`;
+  $("cfOk").disabled = !!pend.length;
+}
+async function confirmarFechamento() {
+  const id = $("cfCaixa").value; if (!id) return;
+  $("cfOk").disabled = true;
+  try { await fecharCaixa(id, $("cfContado").value, $("cfObs").value); } finally { $("cfOk").disabled = false; }
+}
 async function prepararAbertura() {
   if (!ehAdmin()) return;
   const dia = $("cdAbData").value || hojeLocal();
@@ -3876,12 +4004,12 @@ async function prepararAbertura() {
   if (!usados.has("Caixa especial")) livres.push("Caixa especial");
   $("cxNomesL").innerHTML = livres.map(n => `<option value="${esc(n)}">`).join("");
   if (!$("cxNome").value) $("cxNome").placeholder = "Ex.: " + livres[0] + ", Caixa do Paulo";
-  const pessoas = (eq.data || []).filter(e => e.role !== "professional" && e.user_id && !abertos.some(c => respDe(c) === e.user_id));
+  const pessoas = (eq.data || []).filter(e => ["owner", "manager"].includes(e.role) && e.user_id);
   const sel = $("cxResp").value;
   $("cxResp").innerHTML = pessoas.map(e => `<option value="${e.user_id}">${esc(e.full_name || "")}</option>`).join("");
   if (pessoas.some(e => e.user_id === sel)) $("cxResp").value = sel;
   $("cdAbInfo").innerHTML = abertos.length ? `Abertos em ${fmtDia(dia)}: ${abertos.map(c => `<b>${esc(c.name)}</b> (${esc(c.responsible_name || c.opened_by_name || "")}, ${horaDe(c.opened_at)})`).join(", ")}. Para fechar, use o botão Fechar no quadro "Caixas abertos no período".`
-    : `Nenhum caixa aberto em ${fmtDia(dia)}.` + (pessoas.length ? "" : " Não há responsável disponível: todos já têm caixa aberto.");
+    : `Nenhum caixa aberto em ${fmtDia(dia)}.` + (pessoas.length ? "" : " Não há administrador ativo para ser responsável.");
 }
 async function caixasDoPeriodo(de, ate) {
   const r = await sb.from("cash_registers").select("*").eq("tenant_id", tenantId).gte("business_date", de).lte("business_date", ate).order("business_date").order("opened_at");
@@ -3901,11 +4029,11 @@ function desenharCaixas(regs) {
     const out = Object.entries(c.m).filter(([k]) => !["pix", "cash", "debit", "credit", "package", "prepaid"].includes(k)).reduce((t, [, v]) => t + v, 0);
     const tot = pix + din + deb + cre + out, esp = c.opening_cents + din, dif = c.closing_counted_cents != null ? c.closing_counted_cents - esp : null;
     const fech = c.closed_at ? `${esc(c.closed_by_name || "")} às ${horaDe(c.closed_at)}${c.notes ? ` <span class="muted" title="${esc(c.notes)}">· obs.</span>` : ""}`
-      : `<span style="color:#1a7f37">aberto</span> <input data-cxc="${c.id}" inputmode="decimal" placeholder="contado" style="width:80px;min-height:26px"> <button class="ghost" data-cxf="${c.id}" style="min-height:26px;padding:2px 8px">Fechar</button>`;
+      : `<span style="color:#1a7f37">aberto</span> <button class="ghost" data-cxf="${c.id}" style="min-height:26px;padding:2px 8px">Fechar caixa</button>`;
     return `<tr><td><b>${esc(c.name)}</b></td><td>${fmtDia(c.business_date)}</td><td>${esc(c.responsible_name || c.opened_by_name || "")}</td><td>${esc(c.opened_by_name || "")} às ${horaDe(c.opened_at)}</td><td>${reais(c.opening_cents)}</td><td>${reais(pix)}</td><td>${reais(din)}</td><td>${reais(deb)}</td><td>${reais(cre)}</td><td>${reais(out)}</td><td><b>${reais(tot)}</b></td><td>${reais(esp)}</td><td>${c.closing_counted_cents != null ? reais(c.closing_counted_cents) : "—"}</td><td style="${dif != null ? cor(dif) : ""}">${dif != null ? (dif > 0 ? "+" : "") + reais(dif) : "—"}</td><td>${fech}</td></tr>`;
   }).join("") : `<tr><td colspan="15" class="muted">Nenhum caixa aberto neste período. Abra os caixas na tela Comandas, escolhendo o responsável de cada um.</td></tr>`;
   $("cxSem").textContent = regs.length ? "Pacote e crédito antecipado não aparecem aqui porque não entra dinheiro." : "";
-  document.querySelectorAll("#cxTab [data-cxf]").forEach(b => b.onclick = () => fecharCaixa(b.dataset.cxf, document.querySelector(`#cxTab [data-cxc="${b.dataset.cxf}"]`).value, ""));
+  document.querySelectorAll("#cxTab [data-cxf]").forEach(b => b.onclick = () => { document.querySelectorAll(".cd-pop").forEach(x => x.classList.add("hidden")); $("cdFechaPop").classList.remove("hidden"); prepararFechamento(b.dataset.cxf); });
 }
 
 async function carregarCaixaDia() {
@@ -3920,11 +4048,15 @@ async function carregarCaixaDia() {
   cdSede = sedeDe(settings);
   desenharSede();
 
-  const C = await cdCalcular(de, ate, settings); if (!C) return;
+  const fcx = $("cdFiltroCx").value;
+  const C = await cdCalcular(de, ate, settings, fcx || null); if (!C) return;
   const { L, val, rec, desp, res, ret, dias } = C, k = { data: { length: C.nComandas } };
   // valor inicial do caixa = abertura lançada para o (primeiro) dia
-  const regs = await caixasDoPeriodo(de, ate); desenharCaixas(regs);
-  const regsDe = (regs || []).filter(c => c.business_date === de);
+  const regsT = await caixasDoPeriodo(de, ate);
+  { const sel = $("cdFiltroCx").value; $("cdFiltroCx").innerHTML = `<option value="">Todos os caixas</option>` + (regsT || []).map(c => `<option value="${c.id}">${esc(c.name)} · ${fmtDia(c.business_date)}${c.closed_at ? " (fechado)" : ""}</option>`).join("");
+    $("cdFiltroCx").value = (regsT || []).some(c => c.id === sel) ? sel : ""; $("cdFiltroCx").classList.toggle("hidden", !(regsT || []).length); }
+  const regs = regsT && fcx ? regsT.filter(c => c.id === fcx) : regsT; desenharCaixas(regs);
+  const regsDe = (regs || []).filter(c => c.business_date === de || (fcx && c.id === fcx));
   const abs = settings.caixa_aberturas || {}, inicial = regsDe.length ? regsDe.reduce((t, c) => t + c.opening_cents, 0) : Number(abs[de] || 0);
   settingsAtuais = settings;
   if (!$("cdAbData").value) $("cdAbData").value = hojeLocal();
@@ -3941,7 +4073,8 @@ async function carregarCaixaDia() {
     + `<tr class="tot"><td>Receitas realizadas</td><td>${reais(rec)}</td></tr>`
     + lin("cortesia", "Cortesias (valor de tabela, não somam)", { cls: "info" })
     + lin("pacUso", "Sessões de pacote usadas (já faturadas na venda)", { cls: "info" })
-    + lin("aReceber", `Agendamentos a receber (${L.aReceber?.det.length || 0})`, { sempre: true, cls: "info" });
+    + lin("divida", "Dívidas de clientes (faturado e não recebido)", { cls: "info" })
+    + lin("aReceber", `Agendamentos a receber (${L.aReceber?.det.length || 0})`, { sempre: !fcx, cls: "info" });
   const metodos = Object.keys(METODOS).filter(m => val("m_" + m));
   $("cdMet").innerHTML = metodos.map(m => lin("m_" + m, METODOS[m] + (m === "package" || m === "prepaid" ? " <span class='muted'>(não entra dinheiro)</span>" : ""))).join("")
     + `<tr class="tot"><td>Entrou de dinheiro novo</td><td>${reais(metodos.filter(m => m !== "package" && m !== "prepaid").reduce((t, m) => t + val("m_" + m), 0))}</td></tr>`;
@@ -3986,6 +4119,7 @@ document.querySelectorAll("[data-mostra]").forEach(b => b.onclick = () => {
   box.classList.toggle("hidden", !abrir); b.textContent = abrir ? "Ocultar" : "Mostrar";
 });
 $("cdDetFechar").onclick = () => { if (cd) cd.aberto = null; $("cdDetCard").classList.add("hidden"); };
+$("cdData").onchange = () => prepararLancamento();
 $("cdLancar").onclick = async () => {
   const kind = $("cdTipo").value, desc = $("cdDesc").value.trim(), valor = paraCentavos($("cdValor").value), dia = $("cdData").value;
   if (!desc) return aviso(kind === "withdrawal" ? "Informe a finalidade da retirada." : "Informe a descrição.", "err");
@@ -3995,7 +4129,8 @@ $("cdLancar").onclick = async () => {
   if (kind === "advance" && !prof) return aviso("Escolha o profissional.", "err");
   $("cdLancar").disabled = true;
   try {
-    const { error } = await sb.from("cash_entries").insert({ tenant_id: tenantId, kind, description: desc, amount_cents: valor, entry_date: dia, professional_id: prof, created_by_name: meuNome });
+    const cxL = $("cdCaixaL").value;
+    const { error } = await sb.from("cash_entries").insert({ tenant_id: tenantId, kind, description: desc, amount_cents: valor, entry_date: dia, professional_id: prof, created_by_name: meuNome, ...(cxL ? { cash_register_id: cxL } : {}) });
     if (error) return erro(error);
     aviso(`${CD_TIPOS[kind]} de ${reais(valor)} lançado em ${fmtDia(dia)}.`);
     $("cdDesc").value = ""; $("cdValor").value = "";
@@ -4015,6 +4150,17 @@ function desenharSede() {
   $("cdSede").querySelectorAll("[data-sx]").forEach(b => b.onclick = () => { ler(); cdSede.splice(Number(b.dataset.sx), 1); desenharSede(); });
 }
 $("cdAbData").onchange = prepararAbertura;
+document.querySelectorAll("[data-abrepop]").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".cd-pop").forEach(x => x.classList.add("hidden"));
+  $(b.dataset.abrepop).classList.remove("hidden");
+  if (b.dataset.abrepop === "cdAbPop") prepararAbertura();
+  if (b.dataset.abrepop === "cdFechaPop") prepararFechamento();
+  if (b.dataset.abrepop === "cdLancPop") prepararLancamento();
+});
+document.querySelectorAll("[data-fechapop]").forEach(b => b.onclick = () => $(b.dataset.fechapop).classList.add("hidden"));
+$("cdFiltroCx").onchange = () => carregarCaixaDia();
+$("cfCaixa").onchange = () => resumoFechamento();
+$("cfOk").onclick = confirmarFechamento;
 $("cdAbSalvar").onclick = abrirCaixa;
 $("cdSedeAdd").onclick = () => { cdSede.push({ nome: "", mensal_cents: 0 }); desenharSede(); $("cdSede").querySelector(`[data-sn="${cdSede.length - 1}"]`)?.focus(); };
 $("cdSedeSalvar").onclick = async () => {
