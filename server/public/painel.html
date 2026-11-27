@@ -402,6 +402,27 @@
   .cx-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; padding:6px 10px; border-radius:8px; background:var(--bg, #f6f6f6); font-size:13px; }
   .cx-bar.aberto { background:#e8f6ec; } .cx-bar.fechado { background:#fff4e0; }
   .cx-bar input, .cx-bar select { width:auto; min-width:90px; } .cx-bar #cxInicial, .cx-bar #cxContado { width:110px; }
+  .mp-wrap { position:relative; overflow-x:auto; }
+  .mp-svg { position:absolute; inset:0; pointer-events:none; color:#b9aa98; overflow:visible; }
+  .mp-svg path.mp-l { fill:none; stroke:currentColor; stroke-width:1.4; opacity:.55; transition:opacity .15s, stroke-width .15s; }
+  .mp-svg path.mp-l.on { stroke:var(--brand); color:var(--brand); opacity:1; stroke-width:2.2; }
+  .mp-svg path.mp-l.off { opacity:.08; }
+  .mp-cols { position:relative; display:grid; grid-template-columns:repeat(4, minmax(170px, 1fr)); gap:56px; min-width:860px; padding:4px 30px 4px 0; }
+  .mp-col { display:flex; flex-direction:column; gap:10px; }
+  .mp-tit { font-family:Fraunces, serif; font-size:15px; color:var(--sage); border-bottom:2px solid var(--line); padding-bottom:4px; }
+  .mp-no { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--sage); border-radius:10px; padding:7px 10px; cursor:pointer; font-size:12.5px; position:relative; z-index:1; transition:opacity .15s, box-shadow .15s; }
+  .mp-no b { display:block; font-size:13.5px; }
+  .mp-no span { color:var(--muted); }
+  .mp-no.sel { border-color:var(--brand); border-left-color:var(--brand); box-shadow:0 0 0 2px var(--tint); }
+  .mp-no.off { opacity:.35; }
+  .mp-info { margin-top:12px; padding:10px 12px; border-radius:10px; background:var(--tint); font-size:13px; min-height:46px; }
+  .mp-io { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px; }
+  .mp-passos li { margin:4px 0; font-size:13.5px; }
+  .mn details { border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:8px; background:var(--card); }
+  .mn summary { cursor:pointer; font-weight:600; font-size:14.5px; }
+  .mn p, .mn li { font-size:13.5px; line-height:1.5; }
+  @media print { body.imprimindo-manual header, body.imprimindo-manual nav, body.imprimindo-manual #vApp > div:not(#tab-manual), body.imprimindo-manual #mnBusca, body.imprimindo-manual #mnAbrir, body.imprimindo-manual #mnImprimir, body.imprimindo-manual #msg { display:none !important; }
+    body.imprimindo-manual #tab-manual { display:block !important; } body.imprimindo-manual .mn details { break-inside:avoid; } }
   .kdiv { margin-top:8px; padding:8px 10px; border-radius:8px; background:#fdecea; color:#8a1f17; font-size:13px; border:1px solid #f1b5ae; }
   .kdiv-l { margin-top:4px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .cd-pop .row { margin-top:6px; }
@@ -440,6 +461,10 @@
     <div class="grp" data-grp="ia"><button type="button" class="grp-bt">Perfil de IA<span class="badge hidden" id="cBadgeGrp"></span></button><div class="grp-menu">
       <button data-tab="perfil">Perfil da IA</button>
       <button data-tab="conversas">Conversas<span class="badge hidden" id="cBadge"></span></button>
+    </div></div>
+    <div class="grp" data-grp="ajuda"><button type="button" class="grp-bt">Ajuda</button><div class="grp-menu">
+      <button data-tab="mapa">Mapa do sistema</button>
+      <button data-tab="manual">Manual</button>
     </div></div>
   </nav>
   <button class="hidden" id="btnKiara" title="Liga ou desliga as respostas automáticas no WhatsApp"></button>
@@ -873,6 +898,136 @@
         </div>
         <div id="cfResumo" style="margin-top:8px"></div>
         <div class="actions"><button id="cfOk">Fechar caixa</button></div>
+      </div>
+    </div>
+
+    <!-- Ajuda: mapa do sistema -->
+    <div id="tab-mapa" class="hidden">
+      <div class="card">
+        <h2 style="margin-top:0">Mapa do sistema</h2>
+        <p class="muted" style="font-size:13px;margin-top:0">Como as funções se ligam: cada seta mostra o que uma tela entrega para a outra. Passe o mouse (ou toque) em um quadro para destacar as ligações dele; clique em "Abrir" para ir à tela.</p>
+        <div class="mp-wrap" id="mpWrap">
+          <svg class="mp-svg" id="mpSvg" aria-hidden="true"><defs><marker id="mpSeta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs></svg>
+          <div class="mp-cols" id="mpCols"></div>
+        </div>
+        <div class="mp-info" id="mpInfo"><b>Dica:</b> escolha um quadro para ver de onde vêm e para onde vão as informações dele.</div>
+      </div>
+      <div class="card">
+        <h2 style="margin-top:0">O caminho do dinheiro (rotina do dia)</h2>
+        <ol class="mp-passos">
+          <li><b>Caixa › Abrir caixa</b>: o administrador abre o caixa do dia (nome, responsável, valor inicial).</li>
+          <li><b>Agenda</b>: a Kiara (WhatsApp) ou a recepção marca o horário; no dia, a cliente chega e o agendamento é confirmado.</li>
+          <li><b>Agenda › Abrir comanda</b>: a comanda nasce do agendamento do dia e fica associada a um caixa aberto.</li>
+          <li><b>Comandas</b>: entram produtos e outros serviços do dia; a cliente paga (Pix, dinheiro, cartão, pacote ou crédito antecipado).</li>
+          <li><b>Fechar comanda</b>: baixa o estoque, finaliza o atendimento e calcula a comissão. Se faltar pagamento, fecha como <b>dívida</b>.</li>
+          <li><b>Caixa › Fechar caixa</b>: só com todas as comandas do caixa fechadas; mostra receitas, despesas, saldo e dinheiro esperado na gaveta.</li>
+          <li><b>Comissões, Gerencial e Faturamento</b> passam a mostrar o dia automaticamente.</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Ajuda: manual -->
+    <div id="tab-manual" class="hidden">
+      <div class="card">
+        <div class="actions" style="margin-top:0;justify-content:space-between;align-items:center;flex-wrap:wrap">
+          <h2 style="margin:0">Manual do sistema</h2>
+          <span class="actions" style="margin:0"><input id="mnBusca" placeholder="Buscar no manual (ex.: dívida, pacote)" style="width:260px"><button class="ghost" id="mnAbrir">Abrir tudo</button><button class="ghost" id="mnImprimir">Imprimir</button></span>
+        </div>
+        <p class="muted" style="font-size:13px">Terrasso.AI é o sistema do salão: agenda, atendimento pelo WhatsApp com a Kiara, comandas, caixa, comissões e relatórios. Cada pessoa entra com o próprio e-mail e vê só o que a função dela permite.</p>
+        <div id="mnCorpo" class="mn">
+
+<details><summary>1. Acessos e funções</summary>
+<p><b>Administrador</b> (dono ou gerente): vê e faz tudo, inclusive Caixa, Gerencial, Faturamento, Projeções, Equipe e cadastros.</p>
+<p><b>Recepção</b>: Agenda, Clientes, Pacotes, Créditos, Comandas, Produtos e Conversas. Não vê caixa, saldo nem resultado.</p>
+<p><b>Profissional</b>: vê só a própria agenda e as próprias comissões. Pelo celular, usa a Área do Profissional (endereço /pro).</p>
+<p>Para dar acesso: <b>Serviços › Equipe › Convidar</b>. A pessoa abre o painel, digita o mesmo e-mail, cria a senha e já entra com a função escolhida.</p>
+</details>
+
+<details><summary>2. Rotina do dia (passo a passo)</summary>
+<ol>
+<li>Administrador abre o caixa: <b>Finanças › Caixa › Abrir caixa</b>.</li>
+<li>Recepção acompanha a <b>Agenda</b> e confirma quem chegou.</li>
+<li>No agendamento, clique em <b>Abrir comanda</b>. Escolha o <b>Caixa desta comanda</b>.</li>
+<li>Lance produtos e serviços extras e registre os pagamentos.</li>
+<li>Clique em <b>Fechar comanda</b>. Se a cliente não pagou tudo, confirme o fechamento como <b>dívida</b>.</li>
+<li>No fim do dia, o administrador clica em <b>Fechar caixa</b>, confere o resumo e informa o dinheiro contado.</li>
+</ol>
+</details>
+
+<details><summary>3. Agenda</summary>
+<p>Mostra os horários por profissional. O painel lateral tem calendário e filtros por categoria e profissional (botão "Calendário e filtros").</p>
+<p><b>Cores dos cartões</b>: verde = sem comanda; amarelo = comanda aberta; vermelho = comanda fechada; cinza = bloqueio.</p>
+<p><b>Novo agendamento</b>: cliente (busca por nome ou celular), serviço, profissional ou <b>profissional da vez</b>, data e hora. Cliente nova é cadastrada na hora.</p>
+<p><b>Popup do agendamento</b>: edita serviço, profissional, horário, valor e desconto; adiciona serviços; usa pacote ou crédito; muda a situação (confirmado, atendendo, feito, cancelado, faltou); remarca e abre a comanda.</p>
+<p><b>Profissional da vez</b>: a fila escolhe quem faz o serviço, está livre no horário e atendeu há mais tempo. Quando a cliente escolhe a profissional, a fila não anda.</p>
+<p><b>Bloquear</b>: folga, férias ou curso de um profissional. O horário some da agenda livre e da Kiara.</p>
+<p><b>Regra</b>: só se abre comanda de atendimento do dia.</p>
+</details>
+
+<details><summary>4. Comandas</summary>
+<p>A comanda nasce na Agenda ("Abrir comanda") e recebe <b>só serviços do dia</b>. Uma comanda de outro dia não aceita itens novos.</p>
+<p><b>Caixa desta comanda</b>: escolha um caixa aberto; os pagamentos vão para ele. Caixa fechado não recebe comandas.</p>
+<p><b>Itens</b>: serviço, produto vendido ou produto usado no serviço (aceita fração, ex.: 0,25 frasco), cortesia (desconto de 100%, só administrador). Quantidade, preço, desconto e profissional podem ser alterados e salvos sem fechar.</p>
+<p><b>Pagamentos</b>: Pix, dinheiro, débito, crédito (parcelas), vale, crédito antecipado (desconta do saldo da cliente) e pacote.</p>
+<p><b>Fechar comanda</b>: baixa o estoque, marca os atendimentos como feitos e calcula as comissões. Se faltar pagamento, o sistema pergunta se fecha como <b>DÍVIDA</b>.</p>
+<p><b>Dívidas</b>: aparecem em vermelho na próxima comanda da cliente, com o botão <b>Receber</b> (o valor entra no caixa da comanda atual). Comandas de dias anteriores que ficaram abertas são fechadas automaticamente: pagas, vazias (canceladas) ou como dívida.</p>
+<p><b>Filtros</b>: situação, datas, cliente, serviço, profissional e caixa. A lista mostra o número da comanda, o caixa, o total e o que falta.</p>
+</details>
+
+<details><summary>5. Caixa (só administrador)</summary>
+<p>Cabeçalho com período, filtro <b>por caixa</b> e os botões:</p>
+<ul>
+<li><b>Abrir caixa</b>: dia, nome livre (Caixa 1, Caixa especial, Caixa do Paulo...), responsável (administrador) e valor inicial. Grava o login, a data e a hora.</li>
+<li><b>Fechar caixa</b>: só fecha quando todas as comandas daquele caixa estão fechadas. Mostra valor inicial, receitas, despesas, resultado, retiradas, saldo do dia, dívidas e dinheiro esperado na gaveta; você informa o dinheiro contado e o sistema mostra a diferença.</li>
+<li><b>Lançar no caixa</b>: despesa extra, limpeza, adiantamento a profissional (desconta na comissão) ou retirada. Pode ser ligado a um caixa.</li>
+<li><b>Despesas da sede</b>: aluguel, luz, contador... por mês; o caixa divide pelos dias do mês.</li>
+</ul>
+<p><b>Receitas</b> = serviços, produtos, pacotes vendidos e créditos recebidos (o crédito conta no dia do depósito; o uso depois não conta de novo). Cortesias e sessões de pacote aparecem só como informação.</p>
+<p><b>Despesas</b> = comissões, custo dos produtos, taxas de cartão, lançamentos e sede. Clique em uma linha para ver as comandas.</p>
+</details>
+
+<details><summary>6. Pacotes e créditos antecipados</summary>
+<p><b>Pacote</b>: cesta de serviços paga antes. Ao vender, entra na comanda para pagamento. Cada sessão usada vale o preço do pacote rateado pelo preço avulso dos serviços (ex.: pacote R$ 200 de serviços que somam R$ 300 → cada serviço vale 2/3 do avulso). A comissão é sobre esse valor.</p>
+<p><b>Crédito antecipado</b>: a cliente deposita um valor (Finanças › Créditos). Vira receita no dia do depósito. Nas comandas, pague com "Crédito antecipado" para descontar do saldo.</p>
+</details>
+
+<details><summary>7. Comissões</summary>
+<p>A comissão é por profissional e por serviço (cadastro do profissional; se vazio, vale a comissão padrão). É calculada no fechamento da comanda sobre o valor do item menos a parte da taxa do cartão. Produtos não pagam comissão.</p>
+<p>A tela mostra o devido, os adiantamentos e o <b>a pagar</b>. Quando o administrador marca como paga, a comissão entra no fluxo do profissional na Área do Profissional.</p>
+</details>
+
+<details><summary>8. Gerencial, Faturamento e Projeções (administrador)</summary>
+<p><b>Gerencial</b>: indicadores do período comparados ao período anterior (faturamento, despesas, resultado, ticket médio, atendimentos, agendamentos, cancelamentos, faltas, ocupação), rankings de clientes, profissionais, serviços e produtos (com ticket médio) e exportação para Excel.</p>
+<p><b>Faturamento</b>: relatório por período com planilha.</p>
+<p><b>Projeções</b>: simula a meta (resultado ou faturamento), calcula quantos atendimentos cada profissional precisa e compara com o que já está agendado.</p>
+</details>
+
+<details><summary>9. Cadastros</summary>
+<p><b>Serviços</b>: nome, categoria, preço e duração (a Kiara e a agenda usam esses dados).</p>
+<p><b>Profissionais</b>: serviços que faz, comissão padrão e por serviço, login (liga a pessoa da Equipe).</p>
+<p><b>Horários</b>: escala de trabalho de cada profissional. Use dois intervalos no mesmo dia para o almoço.</p>
+<p><b>Produtos</b>: preço de venda, custo, estoque e descrição. O estoque baixa no fechamento da comanda.</p>
+<p><b>Clientes</b>: dados, quem trouxe, classificação (pontos por visitas, cancelamentos e faltas) e histórico.</p>
+<p><b>Equipe</b>: convites, funções e acesso.</p>
+</details>
+
+<details><summary>10. Kiara (WhatsApp) e Conversas</summary>
+<p>A Kiara responde as clientes no WhatsApp, consulta horários livres e marca na Agenda. Ela segue o que estiver escrito em <b>Perfil da IA</b> (escreva como para uma recepcionista nova).</p>
+<p>O botão no topo liga ou desliga a Kiara. Em <b>Conversas</b>, a equipe assume uma conversa e responde pelo painel (até 24 horas depois da última mensagem da cliente).</p>
+<p>Também envia lembrete na véspera e pede avaliação depois do atendimento, quando ligados.</p>
+</details>
+
+<details><summary>11. Glossário</summary>
+<ul>
+<li><b>Dívida</b>: valor que faltou pagar numa comanda fechada. Fica com a cliente até ser recebido.</li>
+<li><b>Cortesia</b>: item com 100% de desconto, mostrado pelo valor de tabela, sem somar na receita.</li>
+<li><b>Ticket médio</b>: valor ÷ número de atendimentos.</li>
+<li><b>Ocupação</b>: minutos agendados ÷ minutos de escala (menos bloqueios).</li>
+<li><b>Dinheiro esperado</b>: valor inicial + dinheiro recebido − retiradas.</li>
+<li><b>Profissional da vez</b>: escolha automática de quem atende, por fila.</li>
+</ul>
+</details>
+        </div>
       </div>
     </div>
 
@@ -1344,7 +1499,7 @@ document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") document
 function marcarGrupo() {
   if (typeof tituloPagina === "function") tituloPagina();
   document.querySelectorAll(".grp").forEach(g => {
-    const on = g.querySelector("button[data-tab].on"), bt = g.querySelector(".grp-bt"), nome = { agenda: "Agenda", financas: "Finanças", servicos: "Serviços", ia: "Perfil de IA" }[g.dataset.grp];
+    const on = g.querySelector("button[data-tab].on"), bt = g.querySelector(".grp-bt"), nome = { agenda: "Agenda", financas: "Finanças", servicos: "Serviços", ia: "Perfil de IA", ajuda: "Ajuda" }[g.dataset.grp];
     g.classList.toggle("on", !!on);
     const badge = bt.querySelector(".badge");
     bt.textContent = ""; bt.append(nome);
@@ -1374,12 +1529,106 @@ document.querySelectorAll(".tabs button[data-tab]").forEach(b => b.onclick = () 
   if (b.dataset.tab === "comissoes") carregarComissoes();
   if (b.dataset.tab === "pacotes") carregarPacotes();
   if (b.dataset.tab === "creditos") carregarCreditos();
+  if (b.dataset.tab === "mapa") desenharMapa();
 });
 
-const TODAS_ABAS = ["agenda","pacotes","creditos","comandas","gerencial","caixadia","caixa","comissoes","clientes","produtos","servicos","profissionais","horarios","conversas","perfil","equipe"];
+// ---------- Ajuda: mapa do sistema e manual ----------
+const MAPA = {
+  cols: [
+    { t: "Cadastros", n: [
+      ["equipe", "Equipe", "Logins e funções (administrador, recepção, profissional)."],
+      ["profissionais", "Profissionais", "Serviços que cada um faz e comissão por serviço."],
+      ["horarios", "Horários", "Escala de trabalho de cada profissional."],
+      ["servicos", "Serviços", "Preço, duração e categoria."],
+      ["produtos", "Produtos", "Preço, custo e estoque."],
+      ["clientes", "Clientes", "Cadastro, classificação e histórico."],
+      ["perfil", "Perfil da IA", "Instruções da Kiara."]] },
+    { t: "Atendimento", n: [
+      ["conversas", "Kiara / WhatsApp", "Atende as clientes, marca horários; a equipe assume em Conversas."],
+      ["agenda", "Agenda", "Horários, profissional da vez, bloqueios; abre a comanda do dia."],
+      ["pacotes", "Pacotes", "Venda de cestas de serviços e uso das sessões."],
+      ["creditos", "Créditos", "Depósito antecipado da cliente (receita no depósito)."],
+      ["comandas", "Comandas", "Itens do dia, pagamentos, dívidas; fechamento baixa estoque e gera comissões."]] },
+    { t: "Financeiro", n: [
+      ["caixadia", "Caixa", "Abrir e fechar caixas, receitas, despesas, saldo do dia."],
+      ["comissoes", "Comissões", "Devido, adiantado e a pagar por profissional."],
+      ["caixa", "Faturamento", "Relatório de faturamento por período."]] },
+    { t: "Gestão", n: [
+      ["gerencial", "Gerencial", "Indicadores, rankings, ocupação, comparação com o período anterior."],
+      ["projecao", "Projeções", "Meta de resultado e quantidade de atendimentos necessária."],
+      ["pro", "Área do Profissional", "Celular do profissional: agenda, comissões e fluxo (/pro)."]] },
+  ],
+  e: [
+    ["equipe", "profissionais", "login"], ["servicos", "profissionais", "serviços e comissão"], ["horarios", "agenda", "horários livres"],
+    ["profissionais", "agenda", "quem atende"], ["servicos", "agenda", "preço e duração"], ["clientes", "agenda", "cliente"],
+    ["perfil", "conversas", "instruções"], ["conversas", "agenda", "marca horário"], ["conversas", "clientes", "cadastra cliente nova"],
+    ["agenda", "comandas", "abrir comanda"], ["pacotes", "comandas", "venda e sessões"], ["creditos", "comandas", "saldo de crédito"],
+    ["produtos", "comandas", "venda e uso"], ["comandas", "produtos", "baixa de estoque"], ["creditos", "caixadia", "receita do depósito"],
+    ["caixadia", "comandas", "caixa aberto recebe"], ["comandas", "caixadia", "receitas, pagamentos, dívidas"], ["comandas", "comissoes", "comissão no fechamento"],
+    ["caixadia", "comissoes", "adiantamentos"], ["comandas", "caixa", "faturamento"], ["comandas", "gerencial", "vendas e atendimentos"],
+    ["caixadia", "gerencial", "despesas e resultado"], ["agenda", "gerencial", "ocupação e faltas"], ["servicos", "projecao", "preços"],
+    ["profissionais", "projecao", "capacidade e comissão"], ["comissoes", "pro", "comissões"], ["agenda", "pro", "agenda do dia"],
+  ],
+};
+let mpSel = null;
+function desenharMapa() {
+  const cols = $("mpCols");
+  if (!cols.children.length) {
+    cols.innerHTML = MAPA.cols.map(c => `<div class="mp-col"><div class="mp-tit">${c.t}</div>${c.n.map(([id, nome, d]) => `<div class="mp-no" data-mp="${id}" tabindex="0"><b>${nome}</b><span>${d}</span></div>`).join("")}</div>`).join("");
+    cols.querySelectorAll("[data-mp]").forEach(el => {
+      el.onmouseenter = el.onfocus = () => { mpSel = el.dataset.mp; marcarMapa(); };
+      el.onclick = () => { mpSel = el.dataset.mp; marcarMapa(); };
+    });
+    $("mpWrap").onmouseleave = () => { mpSel = null; marcarMapa(); };
+    window.addEventListener("resize", () => { if (!$("tab-mapa").classList.contains("hidden")) desenharSetas(); });
+  }
+  requestAnimationFrame(desenharSetas);
+}
+function desenharSetas() {
+  const svg = $("mpSvg"), w = $("mpWrap").getBoundingClientRect();
+  svg.setAttribute("width", w.width); svg.setAttribute("height", w.height);
+  svg.querySelectorAll("path.mp-l").forEach(x => x.remove());
+  const box = (id) => { const r = document.querySelector(`[data-mp="${id}"]`)?.getBoundingClientRect(); return r && { x: r.left - w.left, y: r.top - w.top, w: r.width, h: r.height }; };
+  for (const [a, b] of MAPA.e) {
+    const A = box(a), B = box(b); if (!A || !B) continue;
+    let d;
+    if (Math.abs(A.x - B.x) < 5) { // mesma coluna: curva pela direita
+      const x = A.x + A.w, y1 = A.y + A.h / 2, y2 = B.y + B.h / 2, bulge = 26 + Math.abs(y2 - y1) * .08;
+      d = `M${x},${y1} C${x + bulge},${y1} ${x + bulge},${y2} ${x},${y2}`;
+    } else {
+      const ida = A.x < B.x, x1 = ida ? A.x + A.w : A.x, x2 = ida ? B.x : B.x + B.w, y1 = A.y + A.h / 2, y2 = B.y + B.h / 2, m = (x1 + x2) / 2;
+      d = `M${x1},${y1} C${m},${y1} ${m},${y2} ${x2},${y2}`;
+    }
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("d", d); p.setAttribute("class", "mp-l"); p.setAttribute("marker-end", "url(#mpSeta)"); p.dataset.a = a; p.dataset.b = b;
+    svg.appendChild(p);
+  }
+  marcarMapa();
+}
+function marcarMapa() {
+  const s = mpSel, lig = new Set([s]);
+  document.querySelectorAll("#mpSvg path.mp-l").forEach(p => { const on = s && (p.dataset.a === s || p.dataset.b === s); p.classList.toggle("on", !!on); p.classList.toggle("off", !!s && !on); if (on) { lig.add(p.dataset.a); lig.add(p.dataset.b); } });
+  document.querySelectorAll("[data-mp]").forEach(el => { el.classList.toggle("sel", el.dataset.mp === s); el.classList.toggle("off", !!s && !lig.has(el.dataset.mp)); });
+  if (!s) { $("mpInfo").innerHTML = "<b>Dica:</b> escolha um quadro para ver de onde vêm e para onde vão as informações dele."; return; }
+  const nome = (id) => MAPA.cols.flatMap(c => c.n).find(n => n[0] === id)?.[1] || id, no = MAPA.cols.flatMap(c => c.n).find(n => n[0] === s);
+  const ent = MAPA.e.filter(e => e[1] === s), sai = MAPA.e.filter(e => e[0] === s);
+  const podeAbrir = s === "pro" || podeVer(s === "projecao" ? "caixa" : s);
+  $("mpInfo").innerHTML = `<div class="actions" style="margin:0 0 4px;justify-content:space-between;align-items:center"><b style="font-size:15px">${no[1]}</b>${podeAbrir ? `<button class="ghost" id="mpAbrir" style="min-height:28px;padding:3px 10px">Abrir</button>` : ""}</div><div class="muted">${no[2]}</div>`
+    + `<div class="mp-io"><div><b>Recebe de</b>${ent.length ? ent.map(e => `<div>← ${nome(e[0])} <span class="muted">(${e[2]})</span></div>`).join("") : '<div class="muted">—</div>'}</div>`
+    + `<div><b>Entrega para</b>${sai.length ? sai.map(e => `<div>→ ${nome(e[1])} <span class="muted">(${e[2]})</span></div>`).join("") : '<div class="muted">—</div>'}</div></div>`;
+  if ($("mpAbrir")) $("mpAbrir").onclick = () => s === "pro" ? window.open("/pro", "_blank") : document.querySelector(`.tabs button[data-tab="${s}"]`).click();
+}
+$("mnBusca").oninput = () => {
+  const t = semAcento($("mnBusca").value.trim());
+  document.querySelectorAll("#mnCorpo details").forEach(d => { const bate = !t || semAcento(d.textContent).includes(t); d.classList.toggle("hidden", !bate); d.open = !!t && bate; });
+};
+$("mnAbrir").onclick = () => { const todos = [...document.querySelectorAll("#mnCorpo details")], abrir = todos.some(d => !d.open); todos.forEach(d => d.open = abrir); $("mnAbrir").textContent = abrir ? "Fechar tudo" : "Abrir tudo"; };
+$("mnImprimir").onclick = () => { document.querySelectorAll("#mnCorpo details").forEach(d => d.open = true); document.body.classList.add("imprimindo-manual"); setTimeout(() => { window.print(); document.body.classList.remove("imprimindo-manual"); }, 50); };
+
+const TODAS_ABAS = ["mapa","manual","agenda","pacotes","creditos","comandas","gerencial","caixadia","caixa","comissoes","clientes","produtos","servicos","profissionais","horarios","conversas","perfil","equipe"];
 const ABAS_POR_FUNCAO = {
-  reception: ["agenda", "pacotes", "creditos", "comandas", "clientes", "produtos", "conversas"],
-  professional: ["agenda", "comissoes"],
+  reception: ["agenda", "pacotes", "creditos", "comandas", "clientes", "produtos", "conversas", "mapa", "manual"],
+  professional: ["agenda", "comissoes", "mapa", "manual"],
 };
 const ehAdmin = () => ["owner", "manager"].includes(meuPapel);
 const ehProf = () => meuPapel === "professional";
