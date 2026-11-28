@@ -428,6 +428,49 @@
   .cd-pop .row { margin-top:6px; }
   .cx-item { display:inline-flex; gap:4px; align-items:center; background:#fff; border-radius:6px; padding:2px 6px; }
   .cx-tab td, .cx-tab th { white-space:nowrap; font-size:12.5px; }
+  /* ---- agenda: ajustes visuais (expediente x bloqueio, linha do agora, cores, KPIs, legenda) ---- */
+  input[type=checkbox], input[type=radio] { accent-color:#B5502F; }
+  .cel.fora { background:#f1efec; }
+  .cel.fora:hover { background:#ebe7e2; }
+  .grade .bloq { background:repeating-linear-gradient(135deg,#ddd3c8 0 5px,#f3eee8 5px 10px); border:1px solid #c9bcae; border-left:3px solid #7d6f63; color:#3f3731; font-weight:600; }
+  .grade .bloq::before { content:"🔒"; font-size:10px; margin-right:3px; }
+  .grade.compacto .bloq { font-size:0; padding:2px; } .grade.compacto .bloq::before { font-size:10px; }
+  .agora { border-top:2px solid #B5502F; z-index:3; }
+  .agora.ponta::before { content:""; position:absolute; left:-5px; top:-6px; width:10px; height:10px; border-radius:50%; background:#B5502F; box-shadow:0 0 0 2px #fff; }
+  .agora-h { position:absolute; right:2px; transform:translateY(-50%); background:#B5502F; color:#fff; font-size:10.5px; font-weight:700; line-height:1; padding:3px 5px; border-radius:6px; z-index:5; pointer-events:none; }
+  #agCompacto.on { background:transparent; color:var(--brand); border:1px solid var(--brand); box-shadow:none; }
+  #agCompacto.on:hover { background:var(--tint); }
+  .gh { font-family:inherit; font-weight:600; font-size:13.5px; display:flex; align-items:center; gap:6px; }
+  .gh .av { flex:none; display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:20px; padding:0 4px; border-radius:999px; color:#fff; font-size:10.5px; font-weight:700; letter-spacing:.02em; text-shadow:0 0 2px rgba(0,0,0,.35); }
+  .gh .nm { overflow:hidden; text-overflow:ellipsis; }
+  .grade.estreita .gh { justify-content:center; padding:4px 1px; } .grade.estreita .gh .nm { display:none; }
+  .grade-wrap { max-height:calc(100vh - 150px); overflow:auto; }
+  .grade > .gh { position:sticky; top:0; z-index:5; background:var(--card); }
+  .grade > .gh0 { top:0; z-index:7; }
+  .grade > .horas .hora:first-child { transform:none; }
+  .ag-leg { gap:4px 12px; color:#4a413b; }
+  .ag-leg span { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+  .ag-leg i { margin-right:0; width:14px; height:14px; border-radius:4px; }
+  .ag-leg .l-sem, .grade .ap.cm-sem { background:#d3ecd5; } .ag-leg .l-aberta, .grade .ap.cm-aberta { background:#ffe9a3; } .ag-leg .l-fechada, .grade .ap.cm-fechada { background:#f6cdc6; }
+  .ag-leg .l-sem { box-shadow:inset 0 0 0 1.5px #3f8f4a; } .ag-leg .l-aberta { box-shadow:inset 0 0 0 1.5px #c99700; } .ag-leg .l-fechada { box-shadow:inset 0 0 0 1.5px #c2493b; }
+  .grade .ap.cm-sem { box-shadow:inset 0 0 0 1.5px #3f8f4a; } .grade .ap.cm-aberta { box-shadow:inset 0 0 0 1.5px #c99700; } .grade .ap.cm-fechada { box-shadow:inset 0 0 0 1.5px #c2493b; }
+  .ag-leg .l-bloq { background:repeating-linear-gradient(135deg,#ddd3c8 0 3px,#f3eee8 3px 6px); box-shadow:inset 0 0 0 1px #9b8d80; }
+  .ag-leg .l-fora { background:#f1efec; box-shadow:inset 0 0 0 1px #d6d0c9; }
+  .ic-cm { font-size:11px; margin-right:2px; } .grade.compacto .ic-cm { font-size:9px; }
+  .ag-vis .ajuda-box { margin:0; position:relative; }
+  .ag-vis .ajuda-box > p { position:absolute; right:0; top:28px; width:min(540px, 86vw); z-index:30; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.14); color:var(--ink); }
+  /* indicadores em três grupos: operação, alertas e financeiro */
+  #agKpis { display:flex; flex-wrap:wrap; gap:8px; }
+  #agKpis .kg { display:flex; flex-direction:column; gap:3px; min-width:0; }
+  #agKpis .kg.op { flex:4 1 300px; } #agKpis .kg.al { flex:2 1 150px; } #agKpis .kg.fin { flex:2.4 1 200px; }
+  #agKpis .kg-t { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#5a5048; padding-left:2px; }
+  #agKpis .kg-l { display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:6px; }
+  #agKpis .kpi { color:#4a413b; font-size:11.5px; font-weight:500; border:1px solid transparent; }
+  #agKpis .kpi.alerta { background:#fdecea; border-color:#f1b8b0; color:#8f1d14; } #agKpis .kpi.alerta b { color:#b3261e; }
+  #agKpis .kpi.aviso { background:#fff3d6; border-color:#f0d08a; color:#7a5300; } #agKpis .kpi.aviso b { color:#8a5d00; }
+  #agKpis .kg.fin .kpi { background:var(--tint); } #agKpis .kg.fin .kpi b { color:var(--brand); }
+  .lado-lista label.todas { font-weight:600; }
+  @media (max-width:700px) { .grade-wrap { max-height:none; } }
 </style>
 </head>
 <body>
@@ -570,7 +613,6 @@
 
       <div class="ag-corpo">
       <aside class="card" id="agLado">
-        <div class="lado-fechar"><button type="button" class="lnk" id="agLadoOcultar">‹ Ocultar calendário e filtros</button></div>
         <div class="mcal-top"><button type="button" class="ghost" id="mcAntes" aria-label="Mês anterior">‹</button><b id="mcMes"></b><button type="button" class="ghost" id="mcDepois" aria-label="Próximo mês">›</button></div>
         <div class="mcal-grid" id="mcGrid"></div>
         <b class="lado-t">Categorias</b>
@@ -583,14 +625,14 @@
         <div class="ag-vis">
           <span class="seg"><button type="button" data-agvis="prof" class="on">Por profissional</button><button type="button" data-agvis="serv">Por serviço</button></span>
           <button type="button" class="ghost" id="agCompacto" title="Mostra todas as colunas na tela. Clique num horário ou coluna para ampliar de novo.">Ver todos</button>
-          <span class="ag-leg"><i class="l-sem"></i>Agendado <i class="l-aberta"></i>Comanda aberta <i class="l-fechada"></i>Comanda fechada (pago) <i class="l-bloq"></i>Bloqueado</span>
+          <span class="ag-leg"><span><i class="l-sem"></i>🕒 Agendado</span><span><i class="l-aberta"></i>🧾 Comanda aberta</span><span><i class="l-fechada"></i>✓ Comanda fechada (pago)</span><span><i class="l-bloq"></i>🔒 Bloqueado</span><span><i class="l-fora"></i>Fora do expediente</span></span>
         </div>
         <div class="grade-box">
           <button type="button" class="ag-seta esq hidden" id="agEsq" aria-label="Voltar colunas">‹</button>
           <div class="grade-wrap" id="agWrap"><div class="grade" id="agGrade"></div></div>
           <button type="button" class="ag-seta dir hidden" id="agDir" aria-label="Avançar colunas">›</button>
         </div>
-        <p class="muted" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. Arraste um horário para remarcar. Clique num bloqueio cinza para removê-lo. Clique na situação para avançar: Agendado → Atendendo → Concluído ("Atrasado" é agendado com o horário já passado). "Feito" abre a comanda para lançar no caixa; o ✕ cancela o horário e conta na classificação da cliente. Clique no horário para ver mais opções. Áreas listradas ficam fora do horário de trabalho. "Ver todos" encolhe a grade para caber todas as colunas; clique numa coluna ou horário para ampliar de novo. As setas azuis passam as colunas para os lados. "Por serviço" mostra uma coluna para cada serviço marcado no dia, com o profissional em cada horário. A agenda se atualiza sozinha a cada minuto.</p>
+        <p class="muted" id="agAjuda" style="font-size:12px;margin-bottom:0">Clique num espaço livre para marcar. Arraste um horário para remarcar. Clique num bloqueio (listrado, com cadeado) para removê-lo. Clique na situação para avançar: Agendado → Atendendo → Concluído ("Atrasado" é agendado com o horário já passado). "Feito" abre a comanda para lançar no caixa; o ✕ cancela o horário e conta na classificação da cliente. Clique no horário para ver mais opções. Áreas em cinza claro ficam fora do horário de trabalho. A linha terracota com o horário marca a hora atual. A borda esquerda de cada horário tem a cor do profissional; o fundo e o ícone mostram a comanda (🕒 sem comanda, 🧾 aberta, ✓ fechada). Com nenhuma categoria marcada, aparecem todas. "Ver todos" encolhe a grade para caber todas as colunas (os nomes viram iniciais); clique numa coluna ou horário para ampliar de novo. O cabeçalho com os nomes fica fixo ao rolar. As setas azuis passam as colunas para os lados. "Por serviço" mostra uma coluna para cada serviço marcado no dia, com o profissional em cada horário. A agenda se atualiza sozinha a cada minuto.</p>
       </div>
       </div>
       </div>
@@ -956,7 +998,7 @@
 
 <details><summary>3. Agenda</summary>
 <p>Mostra os horários por profissional. O painel lateral tem calendário e filtros por categoria e profissional (botão "Calendário e filtros").</p>
-<p><b>Cores dos cartões</b>: verde = sem comanda; amarelo = comanda aberta; vermelho = comanda fechada; cinza = bloqueio.</p>
+<p><b>Cores dos cartões</b>: verde 🕒 = sem comanda; amarelo 🧾 = comanda aberta; vermelho ✓ = comanda fechada; listrado com 🔒 = bloqueio; cinza claro liso = fora do expediente. A borda esquerda do cartão tem a cor do profissional (quem tem cor repetida ganha uma cor própria na agenda). A linha terracota com o horário marca a hora atual.</p>
 <p><b>Novo agendamento</b>: cliente (busca por nome ou celular), serviço, profissional ou <b>profissional da vez</b>, data e hora. Cliente nova é cadastrada na hora.</p>
 <p><b>Popup do agendamento</b>: edita serviço, profissional, horário, valor e desconto; adiciona serviços; usa pacote ou crédito; muda a situação (confirmado, atendendo, feito, cancelado, faltou); remarca e abre a comanda.</p>
 <p><b>Profissional da vez</b>: a fila escolhe quem faz o serviço, está livre no horário e atendeu há mais tempo. Quando a cliente escolhe a profissional, a fila não anda.</p>
@@ -1414,6 +1456,7 @@ for (const p of document.querySelectorAll("main p.muted")) {
   bt.onclick = () => box.classList.toggle("aberta");
   p.replaceWith(box); box.append(bt, p);
 }
+{ const ajAg = $("agAjuda")?.closest(".ajuda-box"); if (ajAg) document.querySelector("#tab-agenda .ag-vis").append(ajAg); }
 let avisoTimer = null;
 function aviso(texto, tipo) {
   const m = $("msg"); m.textContent = texto; m.className = "msg " + (tipo || "ok");
@@ -2466,16 +2509,17 @@ function desenharKpis() {
   const vivos = agenda.ags.filter(a => a.status !== "cancelled");
   const n = (...st) => vivos.filter(a => st.includes(a.status)).length;
   const soma = (l) => reais(l.reduce((t, a) => t + a.price_cents, 0));
-  const itens = [
-    ["Horários", n("scheduled", "confirmed", "checked_in", "in_service", "done", "no_show")],
-    ["Agendados", n("scheduled", "confirmed")],
-    ["Atrasados", vivos.filter(atrasado).length],
-    ["Atendendo", n("checked_in", "in_service")],
-    ["Concluídos", n("done")],
-    ["Faltas", n("no_show")],
-    ...(ehAdmin() ? [["Previsto", soma(vivos.filter(a => a.status !== "no_show"))], ["Realizado", soma(vivos.filter(a => a.status === "done"))]] : []),
-  ];
-  $("agKpis").innerHTML = itens.map(([t, v]) => `<div class="kpi"><b>${v}</b>${t}</div>`).join("");
+  const nAtr = vivos.filter(atrasado).length, nFal = n("no_show");
+  const kpi = ([t, v, cls]) => `<div class="kpi ${cls || ""}"><b>${v}</b>${t}</div>`;
+  const grupo = (cls, titulo, itens) => `<div class="kg ${cls}"><span class="kg-t">${titulo}</span><div class="kg-l">${itens.map(kpi).join("")}</div></div>`;
+  $("agKpis").innerHTML = grupo("op", "Operação do dia", [
+      ["Horários", n("scheduled", "confirmed", "checked_in", "in_service", "done", "no_show")],
+      ["Agendados", n("scheduled", "confirmed")],
+      ["Atendendo", n("checked_in", "in_service")],
+      ["Concluídos", n("done")],
+    ])
+    + grupo("al", "Alertas", [["Atrasados", nAtr, nAtr ? "aviso" : ""], ["Faltas", nFal, nFal ? "alerta" : ""]])
+    + (ehAdmin() ? grupo("fin", "Financeiro", [["Previsto", soma(vivos.filter(a => a.status !== "no_show"))], ["Realizado", soma(vivos.filter(a => a.status === "done"))]]) : "");
 }
 
 function escalaDo(profId, wd) { return agenda.escalas.filter(s => s.professional_id === profId && s.weekday === wd).map(s => [hm(s.start_time), hm(s.end_time)]); }
@@ -2487,10 +2531,31 @@ const salvarFiltrosAg = () => { try { localStorage.setItem("agfCats", JSON.strin
 const catsDoProf = (pid) => vinculos.filter(v => v.professional_id === pid).map(v => servicos.find(s => s.id === v.service_id)?.category).filter(Boolean);
 function catPrincipal(pid) { const n = {}; for (const c of catsDoProf(pid)) n[c] = (n[c] || 0) + 1; return Object.keys(n).sort((a, b) => n[b] - n[a] || a.localeCompare(b, "pt-BR"))[0] || "Outros"; }
 const profNoFiltro = (p) => !agfOcultos.includes(p.id) && (!agfCats.length || catsDoProf(p.id).some(c => agfCats.includes(c)));
+// Cor de cada profissional na agenda: a cadastrada, se for só dele; se várias pessoas têm a mesma cor (ou a padrão), cada uma ganha uma cor distinta.
+const PALETA_PROF = ["#B5502F", "#2E7D6B", "#3E6FB0", "#C28A00", "#8E4BA8", "#C2185B", "#5B8C2A", "#00838F", "#D8572A", "#6D4C41", "#5C6BC0", "#AD1457", "#7CB342", "#F57C00", "#455A64", "#9C27B0"];
+let corProfCache = null, corProfChave = "";
+function corProf(p) {
+  if (!p) return "#B5502F";
+  const chave = profissionais.map(x => x.id + (x.color || "")).join(",");
+  if (!corProfCache || chave !== corProfChave) {
+    corProfChave = chave; corProfCache = {};
+    const lista = [...profissionais].sort((a, b) => (b.active - a.active) || String(a.name).localeCompare(String(b.name), "pt-BR"));
+    const norm = (c) => String(c || "").toLowerCase(), conta = {};
+    for (const x of lista) conta[norm(x.color)] = (conta[norm(x.color)] || 0) + 1;
+    const usadas = new Set(lista.filter(x => x.color && conta[norm(x.color)] === 1 && norm(x.color) !== "#b4532f").map(x => norm(x.color)));
+    const livres = PALETA_PROF.filter(c => !usadas.has(c.toLowerCase())); let i = 0;
+    for (const x of lista) corProfCache[x.id] = usadas.has(norm(x.color)) ? x.color : (livres[i++ % livres.length] || "#B5502F");
+  }
+  return corProfCache[p.id] || p.color || "#B5502F";
+}
+function iniciaisProf(nome) {
+  const ws = String(nome || "").trim().split(/\s+/).filter(Boolean);
+  return ws.length > 1 ? (ws[0][0] + ws[ws.length - 1][0]).toUpperCase() : (ws[0] || "?").slice(0, 3);
+}
 const servNoFiltro = (sv) => !agfCats.length || agfCats.includes(sv.category);
 function desenharLado() {
   $("agLado").classList.toggle("hidden", !agLado); $("agLadoBtn").classList.toggle("on", agLado);
-  $("agLadoBtn").textContent = agLado ? "Ocultar calendário e filtros" : "📅 Mostrar calendário e filtros";
+  $("agLadoBtn").textContent = agLado ? "‹ Ocultar calendário e filtros" : "📅 Mostrar calendário e filtros";
   if (!agLado) return;
   // calendário do mês, com o dia escolhido marcado
   const sel = $("agData").value || hojeLocal(), hoje = hojeLocal(), mes = mcMes || sel.slice(0, 7);
@@ -2503,24 +2568,24 @@ function desenharLado() {
   // categorias de serviço
   const todas = [...new Set(servicos.filter(s => s.active).map(s => s.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
   agfCats = agfCats.filter(c => todas.includes(c));
-  $("agfCats").innerHTML = todas.map(c => `<label><input type="checkbox" data-fcat="${esc(c)}" ${agfCats.includes(c) ? "checked" : ""}> ${esc(c)}</label>`).join("") || '<span class="muted" style="font-size:12px">Cadastre categorias nos serviços.</span>';
+  $("agfCats").innerHTML = (todas.length ? `<label class="todas" title="Sem categoria marcada, aparecem todas"><input type="checkbox" data-fcattodas ${agfCats.length ? "" : "checked"}> Todas</label>` : "") + todas.map(c => `<label><input type="checkbox" data-fcat="${esc(c)}" ${agfCats.includes(c) ? "checked" : ""}> ${esc(c)}</label>`).join("") || '<span class="muted" style="font-size:12px">Cadastre categorias nos serviços.</span>';
   // profissionais agrupados pela categoria principal do que fazem
   const base = profissionais.filter(p => p.active && (!ehProf() || meusProfs().includes(p.id)));
   const grupos = {}; for (const p of base) (grupos[catPrincipal(p.id)] ||= []).push(p);
   $("agfProfs").innerHTML = Object.keys(grupos).sort((a, b) => (a === "Outros") - (b === "Outros") || a.localeCompare(b, "pt-BR")).map(gr => `<div class="g">${esc(gr)}</div>` + grupos[gr].map(p =>
-    `<label class="${agfCats.length && !catsDoProf(p.id).some(c => agfCats.includes(c)) ? "fora" : ""}"><input type="checkbox" data-fprof="${p.id}" ${agfOcultos.includes(p.id) ? "" : "checked"}> <span class="bola" style="background:${esc(p.color || "#ccc")}"></span> ${esc(p.name)}</label>`).join("")).join("");
+    `<label class="${agfCats.length && !catsDoProf(p.id).some(c => agfCats.includes(c)) ? "fora" : ""}"><input type="checkbox" data-fprof="${p.id}" ${agfOcultos.includes(p.id) ? "" : "checked"}> <span class="bola" style="background:${esc(corProf(p))}"></span> ${esc(p.name)}</label>`).join("")).join("");
   const mudou = () => { salvarFiltrosAg(); desenharLado(); desenharGrade(); };
+  const fTodas = $("agfCats").querySelector("[data-fcattodas]"); if (fTodas) fTodas.onchange = () => { agfCats = []; mudou(); };
   $("agfCats").querySelectorAll("[data-fcat]").forEach(c => c.onchange = () => { agfCats = c.checked ? [...agfCats, c.dataset.fcat] : agfCats.filter(x => x !== c.dataset.fcat); mudou(); });
   $("agfProfs").querySelectorAll("[data-fprof]").forEach(c => c.onchange = () => { agfOcultos = c.checked ? agfOcultos.filter(x => x !== c.dataset.fprof) : [...agfOcultos, c.dataset.fprof]; mudou(); });
   $("agfTodos").onclick = () => { agfOcultos = []; mudou(); };
   $("agfNenhum").onclick = () => { agfOcultos = base.map(p => p.id); mudou(); };
 }
-$("agLadoOcultar").onclick = () => $("agLadoBtn").onclick();
 $("agLadoBtn").onclick = () => { agLado = !agLado; salvarFiltrosAg(); desenharLado(); requestAnimationFrame(setasAgenda); };
 $("mcAntes").onclick = () => { const b = mcMes || ($("agData").value || hojeLocal()).slice(0, 7); mcMes = somarDias(b + "-01", -1).slice(0, 7); desenharLado(); };
 $("mcDepois").onclick = () => { const b = mcMes || ($("agData").value || hojeLocal()).slice(0, 7); mcMes = somarDias(b + "-28", 7).slice(0, 7); desenharLado(); };
 
-let agVis = "prof", agCompacto = false;
+let agVis = "prof", agCompacto = false, agRolouDia = null;
 try { agVis = localStorage.getItem("agVis") === "serv" ? "serv" : "prof"; agCompacto = localStorage.getItem("agCompacto") === "1"; } catch (e) {}
 document.querySelectorAll("[data-agvis]").forEach(b => b.onclick = () => {
   agVis = b.dataset.agvis; try { localStorage.setItem("agVis", agVis); } catch (e) {}
@@ -2586,22 +2651,24 @@ function desenharGrade() {
 
   const horas = []; for (let m = de; m < ate; m += 60) horas.push(`<div class="hora" style="top:${top(m)}px">${hhmm(m)}</div>`);
   const agoraMin = agenda.data === hojeLocal() ? minutoNoDia(new Date(), agenda.ini) : null;
-  const linhaAgora = agoraMin !== null && agoraMin >= de && agoraMin <= ate ? `<div class="agora" style="top:${top(agoraMin)}px"></div>` : "";
+  const temAgora = agoraMin !== null && agoraMin >= de && agoraMin <= ate;
+  const linhaAgora = (i) => temAgora ? `<div class="agora ${i === 0 ? "ponta" : ""}" style="top:${top(agoraMin)}px"></div>` : "";
+  if (temAgora) horas.push(`<div class="agora-h" style="top:${top(agoraMin)}px">${hhmm(agoraMin)}</div>`);
 
   const cartao = (a, p, extra) => {
     const ini = Math.max(de, minutoNoDia(a.ini, agenda.ini)), fim = Math.min(ate, minutoNoDia(a.fim, agenda.ini));
     const arrasta = !porServ && balcao && ["scheduled", "confirmed"].includes(a.status), aberto = balcao && ["scheduled", "confirmed", "checked_in", "in_service"].includes(a.status);
     const n = porServ ? (a.nFaixas || 1) : 1, larg = 100 / n, pos = porServ ? `left:calc(${(a.faixa || 0) * larg}% + 2px);right:auto;width:calc(${larg}% - 4px);` : "";
     const cm = ["cancelled", "no_show"].includes(a.status) ? "" : agCmd[a.id] === "closed" ? "cm-fechada" : agCmd[a.id] === "open" ? "cm-aberta" : "cm-sem";
-    return `<div class="ap ${a.status} ${cm} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" ${arrasta ? 'draggable="true"' : ""} style="${pos}top:${top(ini)}px;height:${Math.max(18, (fim - ini) * px - 2)}px;border-left-color:${esc(p?.color || "#b4532f")}">
+    return `<div class="ap ${a.status} ${cm} ${agSel === a.id ? "sel" : ""}" data-ag="${a.id}" ${arrasta ? 'draggable="true"' : ""} style="${pos}top:${top(ini)}px;height:${Math.max(18, (fim - ini) * px - 2)}px;border-left-color:${esc(corProf(p))}">
       ${aberto && n === 1 && a.status !== "scheduled" ? `<span class="ap-bt"><button class="feito" data-feito="${a.id}" title="Abrir a comanda deste atendimento">Comanda</button></span>` : ""}
-      <b>${hhmm(minutoNoDia(a.ini, agenda.ini))} ${esc(a.clients?.full_name || "Cliente")}</b> ${estrela(a.client_id)}<br>
+      <b>${cm ? `<span class="ic-cm" title="${cm === "cm-fechada" ? "Comanda fechada (pago)" : cm === "cm-aberta" ? "Comanda aberta" : "Sem comanda"}">${cm === "cm-fechada" ? "✓" : cm === "cm-aberta" ? "🧾" : "🕒"}</span>` : ""}${hhmm(minutoNoDia(a.ini, agenda.ini))} ${esc(a.clients?.full_name || "Cliente")}</b> ${estrela(a.client_id)}<br>
       ${extra} ${seloStatus(a)}${aberto ? `<button class="xcanc" data-canc="${a.id}" title="Cancelar horário">✕</button>` : ""}${a.source === "whatsapp_ai" ? " 💬" : ""}</div>`;
   };
 
   let titulos, colunas;
   if (!porServ) {
-    titulos = profs.map(p => `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(p.color || "#ccc")}"></span> ${esc(p.name)}`);
+    titulos = profs.map(p => `<span class="av" style="background:${esc(corProf(p))}" title="${esc(p.name)}">${esc(iniciaisProf(p.name))}</span><span class="nm">${esc(p.name)}</span>`);
     colunas = profs.map(p => {
       const turnos = escalaDo(p.id, wd);
       const cels = [];
@@ -2627,14 +2694,19 @@ function desenharGrade() {
       const cels = [];
       for (let m = de; m < ate; m += 30) cels.push(`<div class="cel" style="top:${top(m)}px;height:${30 * px}px;${balcao ? "" : "cursor:default"}" ${balcao ? `data-livreserv="${sv.id}|${m}"` : ""} title="${hhmm(m)}"></div>`);
       const meus = emFaixas(visiveis.filter(a => a.service_id === sv.id).map(a => Object.assign(a, { faixa: 0, nFaixas: 1 })));
-      const ags = meus.map(a => { const p = profissionais.find(x => x.id === a.professional_id); return cartao(a, p, `<span class="ap-det"><span class="ap-prof" style="background:${esc(p?.color || "#ccc")}"></span>${esc(p?.name || "")}</span>`); }).join("");
+      const ags = meus.map(a => { const p = profissionais.find(x => x.id === a.professional_id); return cartao(a, p, `<span class="ap-det"><span class="ap-prof" style="background:${esc(corProf(p))}"></span>${esc(p?.name || "")}</span>`); }).join("");
       return { html: cels.join("") + ags };
     });
   }
 
   $("agGrade").style.gridTemplateColumns = agCompacto ? `40px repeat(${colunas.length}, minmax(0, 1fr))` : `48px repeat(${colunas.length}, minmax(${porServ ? 170 : 150}px, 1fr))`;
   $("agGrade").innerHTML = `<div class="gh0"></div>` + titulos.map((t, i) => `<div class="gh" data-colidx="${i}" title="${agCompacto ? "Clique para ampliar" : ""}">${t}</div>`).join("")
-    + `<div class="horas" style="height:${altura}px">${horas.join("")}</div>` + colunas.map((c, i) => `<div class="col" data-colidx="${i}" style="height:${altura}px">${c.html}${linhaAgora}</div>`).join("");
+    + `<div class="horas" style="height:${altura}px">${horas.join("")}</div>` + colunas.map((c, i) => `<div class="col" data-colidx="${i}" style="height:${altura}px">${c.html}${linhaAgora(i)}</div>`).join("");
+  // colunas estreitas: só as iniciais do profissional no cabeçalho
+  const gh1 = $("agGrade").querySelector(".gh"); $("agGrade").classList.toggle("estreita", !porServ && !!gh1 && gh1.offsetWidth < 86);
+  // ao abrir o dia de hoje, rola até a hora atual
+  if (temAgora && agRolouDia !== agenda.data) { agRolouDia = agenda.data; const w = $("agWrap"); w.style.scrollBehavior = "auto"; w.scrollTop = Math.max(0, top(agoraMin) - 120); w.style.scrollBehavior = ""; }
+  if (!temAgora) agRolouDia = null;
   $("agGrade").querySelectorAll("[data-ag]").forEach(el => el.onclick = () => abrirAgendamento(el.dataset.ag));
   $("agGrade").querySelectorAll("[data-feito]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); comandaDoAgendamento(agenda.ags.find(x => x.id === el.dataset.feito)); });
   $("agGrade").querySelectorAll("[data-prox]").forEach(el => el.onclick = (ev) => { ev.stopPropagation(); const a = agenda.ags.find(x => x.id === el.dataset.prox); mudarStatus(a, PROXIMO_CLIQUE[a.status]); });
