@@ -471,6 +471,12 @@
   #agKpis .kg.fin .kpi { background:var(--tint); } #agKpis .kg.fin .kpi b { color:var(--brand); }
   .lado-lista label.todas { font-weight:600; }
   @media (max-width:700px) { .grade-wrap { max-height:none; } }
+  /* preço e duração por profissional (cadastro do serviço) */
+  .s-profs { margin:10px 0 4px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:#fffdfb; }
+  .s-profs-tab { width:100%; max-width:560px; }
+  .s-profs-tab td { padding:3px 6px; } .s-profs-tab th.n, .s-profs-tab td.n { text-align:right; }
+  .s-profs-tab tr.s-off input:not([type=checkbox]) { opacity:.35; } .s-profs-tab tr.s-off td { color:var(--muted); }
+  .s-profs-tab input:not([type=checkbox]) { width:110px; min-height:0; padding:5px 8px; text-align:right; }
 </style>
 </head>
 <body>
@@ -1045,7 +1051,7 @@
 </details>
 
 <details><summary>9. Cadastros</summary>
-<p><b>Serviços</b>: nome, categoria, preço e duração (a Kiara e a agenda usam esses dados).</p>
+<p><b>Serviços</b>: nome, categoria, preço e duração padrão (a Kiara e a agenda usam esses dados). No quadro <b>Profissionais que fazem este serviço</b>, marque quem faz e, se alguém cobra ou demora diferente, preencha o preço e a duração dessa pessoa (em branco vale o padrão). Assim não é preciso criar um serviço por profissional: a agenda, a comanda e a Kiara usam o preço e a duração de quem atende, e a comissão em % acompanha o valor cobrado.</p>
 <p><b>Profissionais</b>: serviços que faz, comissão padrão e por serviço, login (liga a pessoa da Equipe).</p>
 <p><b>Horários</b>: escala de trabalho de cada profissional. Use dois intervalos no mesmo dia para o almoço.</p>
 <p><b>Produtos</b>: preço de venda, custo, estoque e descrição. O estoque baixa no fechamento da comanda.</p>
@@ -1281,6 +1287,12 @@
           <div><label for="sDur">Duração (minutos)</label><input id="sDur" type="number" min="5" step="5" placeholder="60"></div>
           <div><label for="sPreco">Preço (R$)</label><input id="sPreco" inputmode="decimal" placeholder="120,00"></div>
         </div>
+        <div class="s-profs">
+          <b>Profissionais que fazem este serviço</b>
+          <p class="muted" style="font-size:12.5px;margin:2px 0 6px">Marque quem faz. Preço e duração em branco = valem os do serviço. Preencha só para quem cobra ou demora diferente (a comissão em % acompanha o valor cobrado).</p>
+          <div id="sProfsAviso" class="muted hidden" style="font-size:12.5px;color:var(--danger)">Para gravar preço e duração por profissional, rode a migração 20261128000100_preco_por_profissional.sql no Supabase. Até lá, só dá para marcar quem faz o serviço.</div>
+          <table class="s-profs-tab"><thead><tr><th>Profissional</th><th class="n">Preço (R$)</th><th class="n">Duração (min)</th></tr></thead><tbody id="sProfs"></tbody></table>
+        </div>
         <label for="sDesc">Descrição para a recepcionista IA (opcional)</label>
         <textarea id="sDesc" placeholder="Ex.: Inclui lavagem e finalização. Não inclui escova."></textarea>
         <label class="checks"><span><input type="checkbox" id="sAtivo" checked> Ativo (aparece para as clientes)</span></label>
@@ -1445,7 +1457,7 @@ const SUPABASE_KEY = "sb_publishable_apq4DYqUCLSr82maiLjIiQ_PmknYK9b";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const $ = (id) => document.getElementById(id);
-let meuNome = "", kiaraLigada = true, equipe = [], cats = [], meuPapel = null, produtos = [], tenantId = null, usuarioId = null, TZ = "America/Sao_Paulo", servicos = [], profissionais = [], vinculos = [];
+let meuNome = "", kiaraLigada = true, equipe = [], cats = [], meuPapel = null, produtos = [], tenantId = null, usuarioId = null, TZ = "America/Sao_Paulo", servicos = [], profissionais = [], vinculos = [], temPrecoProf = false;
 
 // Textos de ajuda longos ficam escondidos atrás de um ícone "i"
 for (const p of document.querySelectorAll("main p.muted")) {
@@ -1582,7 +1594,7 @@ const MAPA = {
       ["equipe", "Equipe", "Logins e funções (administrador, recepção, profissional)."],
       ["profissionais", "Profissionais", "Serviços que cada um faz e comissão por serviço."],
       ["horarios", "Horários", "Escala de trabalho de cada profissional."],
-      ["servicos", "Serviços", "Preço, duração e categoria."],
+      ["servicos", "Serviços", "Preço, duração e categoria; preço e duração próprios por profissional."],
       ["produtos", "Produtos", "Preço, custo e estoque."],
       ["clientes", "Clientes", "Cadastro, classificação e histórico."],
       ["perfil", "Perfil da IA", "Instruções da Kiara."]] },
@@ -1708,10 +1720,13 @@ async function carregar() {
   const [s, p, v, pr, ct] = await Promise.all([
     sb.from("services").select("*").eq("tenant_id", tenantId).order("name"),
     sb.from("professionals").select("*").eq("tenant_id", tenantId).order("name"),
-    sb.from("professional_services").select("professional_id, service_id, commission_pct").eq("tenant_id", tenantId),
+    sb.from("professional_services").select("professional_id, service_id, commission_pct, price_cents, duration_min").eq("tenant_id", tenantId),
     sb.from("products").select("*").eq("tenant_id", tenantId).order("name"),
     sb.from("categories").select("id, name").eq("tenant_id", tenantId).order("name"),
   ]);
+  // sem a migração do preço por profissional, as colunas não existem: lê o vínculo como antes
+  temPrecoProf = !v.error;
+  if (v.error) { const v2 = await sb.from("professional_services").select("professional_id, service_id, commission_pct").eq("tenant_id", tenantId); v.data = v2.data; v.error = v2.error; }
   for (const r of [s, p, v, pr, ct]) if (r.error) return erro(r.error);
   cats = ct.data;
   if (!$("sId").value) opcoesCategoria("sCat", $("sCat").value); if (!$("prId").value) opcoesCategoria("prCat", $("prCat").value);
@@ -1754,7 +1769,7 @@ function desenharServicos() {
       <td><b>${esc(s.name)}</b>${s.category ? ` <span class="muted">· ${esc(s.category)}</span>` : ""}
         ${s.active ? "" : ' <span class="pill off">inativo</span>'}</td>
       <td>${s.duration_min} min</td>
-      <td>${reais(s.price_cents)}</td>
+      <td>${reais(s.price_cents)}${temVariacao(s.id) ? '<br><span class="muted" style="font-size:12px" title="Algum profissional tem preço ou duração próprios">varia por profissional</span>' : ""}</td>
       <td><button class="ghost" data-edit-s="${s.id}">Editar</button></td>
     </tr>`).join("") : '<tr><td colspan="5" class="muted">Nenhum serviço nesse filtro.</td></tr>';
   document.querySelectorAll("[data-edit-s]").forEach(b => b.onclick = () => editarServico(b.dataset.editS));
@@ -1763,13 +1778,31 @@ function desenharServicos() {
 function limparServico() {
   for (const id of ["sId","sNome","sDur","sPreco","sDesc"]) $(id).value = ""; opcoesCategoria("sCat", "");
   $("sAtivo").checked = true; $("fsTitulo").textContent = "Novo serviço";
+  desenharProfsDoServico();
 }
+// quadro "Profissionais que fazem este serviço": marca quem faz e, se precisar, preço/duração próprios
+function desenharProfsDoServico() {
+  const sid = $("sId").value, ph = (x) => x ? ` placeholder="${esc(x)}"` : "";
+  // quem faz o serviço primeiro; nos demais, preço e duração ficam apagados até marcar
+  const lista = profissionais.filter(p => p.active || vinculoDe(p.id, sid)).sort((a, b) => (vinculoDe(b.id, sid) ? 1 : 0) - (vinculoDe(a.id, sid) ? 1 : 0) || a.name.localeCompare(b.name, "pt-BR"));
+  $("sProfsAviso").classList.toggle("hidden", temPrecoProf);
+  $("sProfs").innerHTML = lista.map(p => { const v = sid ? vinculoDe(p.id, sid) : null;
+    return `<tr class="${v ? "" : "s-off"}"><td><label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" data-spf="${p.id}" ${v ? "checked" : ""} style="width:auto"> ${esc(p.name)}${p.active ? "" : ' <span class="pill off">inativo</span>'}</label></td>
+      <td class="n"><input data-spp="${p.id}" inputmode="decimal" value="${v?.price_cents != null ? centsBr(v.price_cents) : ""}"${ph($("sPreco").value)} ${temPrecoProf ? "" : "disabled"}></td>
+      <td class="n"><input data-spd="${p.id}" type="number" min="5" step="5" value="${v?.duration_min ?? ""}"${ph($("sDur").value)} ${temPrecoProf ? "" : "disabled"}></td></tr>`; }).join("")
+    || '<tr><td colspan="3" class="muted">Cadastre os profissionais primeiro.</td></tr>';
+  // preencher preço ou duração já marca o profissional
+  $("sProfs").querySelectorAll("[data-spp],[data-spd]").forEach(i => i.oninput = () => { if (i.value.trim()) $("sProfs").querySelector(`[data-spf="${i.dataset.spp || i.dataset.spd}"]`).checked = true; });
+  $("sProfs").querySelectorAll("[data-spf]").forEach(c => c.onchange = () => c.closest("tr").classList.toggle("s-off", !c.checked));
+}
+$("sPreco").addEventListener("input", () => $("sProfs").querySelectorAll("[data-spp]").forEach(i => i.placeholder = $("sPreco").value));
+$("sDur").addEventListener("input", () => $("sProfs").querySelectorAll("[data-spd]").forEach(i => i.placeholder = $("sDur").value));
 function editarServico(id) {
   const s = servicos.find(x => x.id === id); if (!s) return;
   $("sId").value = s.id; $("sNome").value = s.name; opcoesCategoria("sCat", s.category);
   $("sDur").value = s.duration_min; $("sPreco").value = (s.price_cents / 100).toFixed(2).replace(".", ",");
   $("sDesc").value = s.description || ""; $("sAtivo").checked = s.active;
-  $("fsTitulo").textContent = "Editar serviço"; window.scrollTo({ top: 0, behavior: "smooth" });
+  $("fsTitulo").textContent = "Editar serviço"; desenharProfsDoServico(); window.scrollTo({ top: 0, behavior: "smooth" });
 }
 $("sLimpar").onclick = limparServico;
 $("sfCat").onchange = () => { $("sfServ").value = ""; desenharServicos(); };
@@ -1783,10 +1816,28 @@ $("sSalvar").onclick = async () => {
   if (!row.name) return aviso("Informe o nome do serviço.", "err");
   if (!(row.duration_min > 0)) return aviso("Informe a duração em minutos.", "err");
   if (!(row.price_cents >= 0)) return aviso("Informe o preço, por exemplo 120,00.", "err");
-  const id = $("sId").value;
-  const { error } = id ? await sb.from("services").update(row).eq("id", id) : await sb.from("services").insert(row);
-  if (error) return erro(error);
-  aviso("Serviço salvo."); limparServico(); carregar();
+  // profissionais do serviço: quem faz, com preço/duração próprios (em branco = padrão do serviço)
+  const marc = [];
+  for (const cb of $("sProfs").querySelectorAll("[data-spf]")) {
+    const pid = cb.dataset.spf, tp = $("sProfs").querySelector(`[data-spp="${pid}"]`).value.trim(), td = $("sProfs").querySelector(`[data-spd="${pid}"]`).value.trim();
+    const preco = tp ? paraCentavos(tp) : null, dur = td ? parseInt(td, 10) : null;
+    if (tp && !(preco >= 0)) return aviso(`Confira o preço de ${profissionais.find(p => p.id === pid)?.name}, por exemplo 150,00.`, "err");
+    if (td && !(dur > 0)) return aviso(`Confira a duração de ${profissionais.find(p => p.id === pid)?.name}, em minutos.`, "err");
+    marc.push({ pid, on: cb.checked, preco, dur });
+  }
+  let id = $("sId").value;
+  if (id) { const { error } = await sb.from("services").update(row).eq("id", id); if (error) return erro(error); }
+  else { const { data, error } = await sb.from("services").insert(row).select("id").single(); if (error) return erro(error); id = data.id; }
+  for (const m of marc) {
+    const v = vinculoDe(m.pid, id), extra = temPrecoProf ? { price_cents: m.preco, duration_min: m.dur } : {};
+    let r = null;
+    if (m.on && !v) r = await sb.from("professional_services").insert({ tenant_id: tenantId, professional_id: m.pid, service_id: id, commission_pct: null, ...extra });
+    else if (!m.on && v) r = await sb.from("professional_services").delete().eq("professional_id", m.pid).eq("service_id", id);
+    else if (m.on && v && temPrecoProf && ((v.price_cents ?? null) !== m.preco || (v.duration_min ?? null) !== m.dur))
+      r = await sb.from("professional_services").update(extra).eq("professional_id", m.pid).eq("service_id", id);
+    if (r?.error) return erro(r.error);
+  }
+  aviso("Serviço salvo."); await carregar(); limparServico();
 };
 
 // ---------- Profissionais ----------
@@ -1799,6 +1850,12 @@ const comissaoDe = (profId, servId) => {
   if (v && v.commission_pct != null) return Number(v.commission_pct);
   return Number(profissionais.find(x => x.id === profId)?.commission_pct || 0);
 };
+// Preço e duração: o serviço tem o padrão; o vínculo profissional–serviço pode ter um valor próprio que substitui o padrão.
+const vinculoDe = (profId, servId) => profId ? vinculos.find(x => x.professional_id === profId && x.service_id === servId) : null;
+const precoDe = (servId, profId) => vinculoDe(profId, servId)?.price_cents ?? servicos.find(x => x.id === servId)?.price_cents ?? 0;
+const duracaoDe = (servId, profId) => vinculoDe(profId, servId)?.duration_min ?? servicos.find(x => x.id === servId)?.duration_min ?? 30;
+const temVariacao = (servId) => vinculos.some(v => v.service_id === servId && (v.price_cents != null || v.duration_min != null));
+const centsBr = (c) => (c / 100).toFixed(2).replace(".", ",");
 function carregarMarcados() {
   const id = $("pId").value || "";
   if (pMarcadosDe === id) return;
@@ -2865,9 +2922,15 @@ function desenharLinhasAg(a) {
   }).join("");
   const q = (sel) => $("dLinhas").querySelectorAll(sel), sujo = () => { dSujo = true; };
   q("[data-lserv]").forEach(el => el.onchange = () => { const l = dLin[el.dataset.lserv], sv = servicos.find(x => x.id === el.value); l.serv = el.value;
-    if (sv) { l.dur = sv.duration_min || 30; l.preco = sv.price_cents; if (l.prof && !profsDoServico(sv.id).some(p => p.id === l.prof)) l.prof = ""; if (!l.prof) l.vez = true; }
+    if (sv) { if (l.prof && !profsDoServico(sv.id).some(p => p.id === l.prof)) l.prof = ""; if (!l.prof) l.vez = true; l.dur = duracaoDe(sv.id, l.prof); l.preco = precoDe(sv.id, l.prof); }
     sujo(); desenharLinhasAg(a); });
-  q("[data-lprof]").forEach(el => el.onchange = () => { const l = dLin[el.dataset.lprof]; if (el.value === "vez") { l.prof = ""; l.vez = true; } else { l.prof = el.value; l.vez = false; } sujo(); });
+  q("[data-lprof]").forEach(el => el.onchange = () => { const l = dLin[el.dataset.lprof], antes = l.prof; if (el.value === "vez") { l.prof = ""; l.vez = true; } else { l.prof = el.value; l.vez = false; }
+    // trocou o profissional: se o preço/duração eram os do profissional anterior (não editados à mão), passam para os do novo
+    if (l.serv) { let mudou = false;
+      if (l.preco === precoDe(l.serv, antes)) { l.preco = precoDe(l.serv, l.prof); mudou = true; }
+      if (l.dur === duracaoDe(l.serv, antes)) { l.dur = duracaoDe(l.serv, l.prof); mudou = true; }
+      if (mudou) { sujo(); return desenharLinhasAg(a); } }
+    sujo(); });
   q("[data-ldur]").forEach(el => el.oninput = () => { const l = dLin[el.dataset.ldur], v = parseInt(el.value, 10); if (v > 0) { l.dur = v; q(`[data-lfim="${el.dataset.ldur}"]`)[0].value = hhmm(l.ini + v); } sujo(); });
   q("[data-lini]").forEach(el => el.onchange = () => { const l = dLin[el.dataset.lini]; if (el.value) { l.ini = hm(el.value); q(`[data-lfim="${el.dataset.lini}"]`)[0].value = hhmm(l.ini + l.dur); } sujo(); });
   q("[data-lfim]").forEach(el => el.onchange = () => { const l = dLin[el.dataset.lfim]; if (el.value && hm(el.value) > l.ini) { l.dur = hm(el.value) - l.ini; q(`[data-ldur="${el.dataset.lfim}"]`)[0].value = l.dur; } sujo(); });
@@ -3011,11 +3074,15 @@ function mostrarFila() {
     .sort((a, b) => (a.last_turn_at || "") < (b.last_turn_at || "") ? -1 : (a.last_turn_at || "") > (b.last_turn_at || "") ? 1 : a.name.localeCompare(b.name));
   $("nFila").innerHTML = ord.length ? `<b>Fila da vez:</b> ${ord.map((p, i) => `${i + 1}. ${esc(p.name)}`).join(" · ")}. Ao marcar, o sistema escolhe o primeiro da fila que faz o serviço, trabalha nesse horário e está livre. Quando a cliente escolhe o profissional, a fila não anda.` : "Nenhum profissional na fila da vez.";
 }
-$("nProf").onchange = mostrarFila;
+// preço sugerido = preço do profissional escolhido (ou o padrão do serviço); se a recepção digitar outro valor, ele vale
+let nPrecoManual = false;
+const precoSugerido = () => { const p = $("nProf").value; return precoDe($("nServ").value, p === "vez" ? null : p); };
+function sugerirPreco() { if (!nPrecoManual && $("nServ").value) $("nPreco").value = centsBr(precoSugerido()); }
+$("nPreco").addEventListener("input", () => { nPrecoManual = true; });
+$("nProf").onchange = () => { mostrarFila(); sugerirPreco(); };
 $("nServ").onchange = () => {
-  const s = servicos.find(x => x.id === $("nServ").value);
-  if (s) $("nPreco").value = (s.price_cents / 100).toFixed(2).replace(".", ",");
-  preencherProfs($("nProf").value);
+  nPrecoManual = false;
+  preencherProfs($("nProf").value); sugerirPreco();
 };
 function novoHorario(profId, hora, servId) {
   agSel = null; $("agDetalhe").classList.add("hidden"); $("agBloq").classList.add("hidden");
@@ -3027,7 +3094,7 @@ function novoHorario(profId, hora, servId) {
   $("nServ").innerHTML = ativos.map(s => `<option value="${s.id}">${esc(s.name)} · ${s.duration_min} min</option>`).join("");
   if (servId && ativos.some(s => s.id === servId)) $("nServ").value = servId;
   else if (profId) { const v = vinculos.find(x => x.professional_id === profId && ativos.some(s => s.id === x.service_id)); if (v) $("nServ").value = v.service_id; }
-  $("nServ").onchange(); preencherProfs(profId);
+  $("nServ").onchange(); preencherProfs(profId); sugerirPreco();
   $("nData").value = agenda.data || hojeLocal();
   $("nHora").value = hora || "";
   $("agNovo").classList.remove("hidden");
@@ -3041,7 +3108,7 @@ function remarcar(a) {
   $("nClienteBox").classList.add("hidden");
   $("nClienteInfo").textContent = "Escolha o novo dia, hora ou profissional.";
   if (servicos.some(s => s.id === a.service_id)) { $("nServ").value = a.service_id; preencherProfs(a.professional_id); }
-  $("nPreco").value = (a.price_cents / 100).toFixed(2).replace(".", ",");
+  $("nPreco").value = centsBr(a.price_cents); nPrecoManual = true;
   $("nObs").value = a.notes || "";
   $("nData").focus();
 }
@@ -3050,14 +3117,15 @@ $("nFechar").onclick = () => $("agNovo").classList.add("hidden");
 $("nSalvar").onclick = async () => {
   const tel = normalizarTel($("nTel").value), nome = $("nNome").value.trim();
   const s = servicos.find(x => x.id === $("nServ").value); let profId = $("nProf").value; const vez = profId === "vez";
-  const data = $("nData").value, hora = $("nHora").value, preco = paraCentavos($("nPreco").value);
+  const data = $("nData").value, hora = $("nHora").value; let preco = paraCentavos($("nPreco").value);
   if (!tel && !remarcando && !clienteAchado) return aviso("Escolha a cliente na lista pelo nome, ou informe o WhatsApp com DDD, por exemplo 41 99999-9999.", "err");
   if (!nome && !clienteAchado && !remarcando) return aviso("Informe o nome da cliente.", "err");
   if (!s || !profId) return aviso("Escolha o serviço e o profissional.", "err");
   if (!data || !hora) return aviso("Escolha a data e a hora.", "err");
   if (!(preco >= 0)) return aviso("Confira o preço, por exemplo 120,00.", "err");
-  const ini = localParaUtc(data, hora), fim = new Date(ini.getTime() + s.duration_min * 60000);
-  const minIni = hm(hora), minFim = minIni + s.duration_min;
+  // duração do profissional escolhido (na fila da vez, a busca usa a duração padrão e depois ajusta para quem foi escolhido)
+  const ini = localParaUtc(data, hora); let dur = duracaoDe(s.id, vez ? null : profId), fim = new Date(ini.getTime() + dur * 60000);
+  const minIni = hm(hora); let minFim = minIni + dur;
   let clientId = null;
   if (vez) {
     // da vez: a cliente primeiro (para a fila só andar se o horário for mesmo marcado), depois a fila escolhe o profissional
@@ -3066,6 +3134,8 @@ $("nSalvar").onclick = async () => {
     if (r.error) return erro(r.error);
     if (!r.data) return aviso("Nenhum profissional da fila está livre nesse horário para esse serviço. Escolha outro horário ou um profissional.", "err");
     profId = r.data;
+    dur = duracaoDe(s.id, profId); fim = new Date(ini.getTime() + dur * 60000); minFim = minIni + dur;
+    if (!nPrecoManual) preco = precoDe(s.id, profId);
   }
   const dentro = agenda.escalas.filter(x => x.professional_id === profId && x.weekday === diaSemana(data))
     .some(x => minIni >= hm(x.start_time) && minFim <= hm(x.end_time));
@@ -3150,7 +3220,7 @@ const pacoteDoServico = (lista, servId) => lista.find(i => i.service_id === serv
 
 // Grava na agenda um serviço lançado direto na comanda (começa agora, ou logo depois do atendimento que ocupa o profissional).
 async function gravarNaAgenda(itemId, serv, profId, clientId, preco, situacao = "in_service") {
-  const dur = (serv.duration_min || 30) * 60000;
+  const dur = duracaoDe(serv.id, profId) * 60000;
   let ini = new Date(Math.floor(Date.now() / 300000) * 300000);
   for (let t = 0; t < 3; t++) {
     const fim = new Date(ini.getTime() + dur);
@@ -3177,6 +3247,7 @@ async function lancarServico({ comanda, clientId, serv, prof, preco, desc = 0, p
     prof = r.data; vez = true;
     if (!prof) throw new Error("não há profissional na fila da vez para esse serviço");
   }
+  if (preco == null) preco = precoDe(serv.id, prof); // sem preço informado: o do profissional (ou o padrão do serviço)
   const valor = pacItem ? pacItem.unit_value_cents : preco;
   const descF = pacItem ? 0 : brinde ? valor : desc;
   const ins = await sb.from("comanda_items").insert({
@@ -3459,7 +3530,7 @@ function ligarBuscaItens(inputId, sugId, tipoFn, onPick) {
       const ss = servicos.filter(s => s.active && semAcento(s.name).includes(t)).slice(0, 8);
       const ps = profissionais.filter(p => p.active && semAcento(p.name).includes(t)).slice(0, 4);
       html += ss.map(s => `<div class="sl"><b>${esc(s.name)}</b> <span class="muted">${reais(s.price_cents)} · ${s.duration_min} min${pacoteDoServico(kPacItens, s.id) ? " · tem pacote" : ""}</span>
-        <div class="chips">${profsDoServico(s.id).map(p => `<button type="button" data-bs="${s.id}" data-bp="${p.id}">${esc(p.name)}</button>`).join("")}</div></div>`).join("");
+        <div class="chips">${profsDoServico(s.id).map(p => `<button type="button" data-bs="${s.id}" data-bp="${p.id}">${esc(p.name)}${precoDe(s.id, p.id) !== s.price_cents ? ` · ${reais(precoDe(s.id, p.id))}` : ""}</button>`).join("")}</div></div>`).join("");
       html += ps.map(p => { const sv = servicos.filter(s => s.active && vinculos.some(v => v.professional_id === p.id && v.service_id === s.id)).slice(0, 12);
         return `<div class="sl"><b>${esc(p.name)}</b> <span class="muted">profissional</span><div class="chips">${sv.map(s => `<button type="button" data-bs="${s.id}" data-bp="${p.id}">${esc(s.name)}</button>`).join("") || '<span class="muted">sem serviços ligados</span>'}</div></div>`; }).join("");
     } else {
@@ -3491,11 +3562,12 @@ $("iTipo").onchange = () => { $("iBusca").value = ""; preencherItens(); };
 $("iItem").onchange = () => {
   const tipo = $("iTipo").value, id = $("iItem").value;
   const x = (tipo === "servico" ? servicos : produtos).find(y => y.id === id);
-  $("iPreco").value = x ? (x.price_cents / 100).toFixed(2).replace(".", ",") : "";
+  $("iPreco").value = x ? centsBr(x.price_cents) : "";
   if (tipo === "servico") {
     const atual = $("iProf").value;
     $("iProf").innerHTML = profsDoServico(id).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
     if ([...$("iProf").options].some(o => o.value === atual)) $("iProf").value = atual;
+    if (x) $("iPreco").value = centsBr(precoDe(id, $("iProf").value));
   }
   const pac = tipo === "servico" ? pacoteDoServico(kPacItens, id) : null;
   $("iUsarPacBox").classList.toggle("hidden", !pac);
@@ -3507,8 +3579,10 @@ function calcItem() {
   $("iCalc").textContent = $("iTipo").value !== "servico" && q > 0 && p >= 0 ? `${fmtQ(q)} × ${reais(p)} = ${reais(Math.round(q * p))}` : "";
 }
 $("iQtd").oninput = $("iPreco").oninput = calcItem;
+// trocar o profissional do item traz o preço dele para o serviço
+$("iProf").addEventListener("change", () => { if ($("iTipo").value === "servico" && $("iItem").value) { $("iPreco").value = centsBr(precoDe($("iItem").value, $("iProf").value)); calcItem(); } });
 ligarBuscaItens("iBusca", "iSug", () => $("iTipo").value, ({ serv, prod, prof }) => {
-  if (serv) { $("iItem").value = serv.id; $("iItem").onchange(); if (prof) $("iProf").value = prof; $("iBusca").value = serv.name; }
+  if (serv) { $("iItem").value = serv.id; $("iItem").onchange(); if (prof) { $("iProf").value = prof; $("iPreco").value = centsBr(precoDe(serv.id, prof)); calcItem(); } $("iBusca").value = serv.name; }
   if (prod) { $("iItem").value = prod.id; $("iItem").onchange(); $("iBusca").value = prod.name; $("iQtd").focus(); }
 });
 $("iAdd").onclick = async () => {
@@ -3685,7 +3759,7 @@ $("kCriar").onclick = async () => {
     if (jaAberta && !kNovaServ) aviso("Esta cliente já tem uma comanda aberta. Abri a mesma comanda.");
     if (kNovaServ) {
       const pac = pacoteDoServico(await pacotesDaCliente(clientId), kNovaServ.id);
-      try { const r = await lancarServico({ comanda: comandaAberta, clientId, serv: kNovaServ, prof: $("kProf").value, preco: kNovaServ.price_cents, pacItem: pac }); aviso((jaAberta ? "Lançado na comanda que já estava aberta. " : "Comanda aberta. ") + textoLancado(r, kNovaServ) + (pac ? ` Usou 1 sessão do pacote ${pac.pacote.name}.` : "")); }
+      try { const r = await lancarServico({ comanda: comandaAberta, clientId, serv: kNovaServ, prof: $("kProf").value, preco: null, pacItem: pac }); aviso((jaAberta ? "Lançado na comanda que já estava aberta. " : "Comanda aberta. ") + textoLancado(r, kNovaServ) + (pac ? ` Usou 1 sessão do pacote ${pac.pacote.name}.` : "")); }
       catch (e) { aviso("Comanda aberta, mas o serviço não foi lançado: " + (e.message || e), "err"); }
     }
     kBusca.limpar(); kNovaServ = null; $("kServBusca").value = ""; $("kProf").innerHTML = '<option value="vez">Profissional da vez</option>';
