@@ -162,6 +162,25 @@ export async function runTool(name: string, input: unknown, ctx: Ctx): Promise<R
 
 // ---------------------------------------------------------------------------
 
+/**
+ * Preço e duração próprios de cada profissional por serviço (professional_services.price_cents / duration_min).
+ * Em branco vale o padrão do serviço. Se a migração ainda não rodou (colunas inexistentes), devolve vazio
+ * e tudo segue com o padrão do serviço.
+ */
+type Override = { price_cents: number | null; duration_min: number | null };
+async function overrides(ctx: Ctx, serviceId?: string): Promise<Map<string, Override>> {
+  let q = db.from("professional_services").select("professional_id, service_id, price_cents, duration_min").eq("tenant_id", ctx.tenantId);
+  if (serviceId) q = q.eq("service_id", serviceId);
+  const { data, error } = await q;
+  const m = new Map<string, Override>();
+  if (error) return m;
+  for (const r of (data ?? []) as any[]) m.set(`${r.professional_id}:${r.service_id}`, { price_cents: r.price_cents, duration_min: r.duration_min });
+  return m;
+}
+const priceFor = (ov: Map<string, Override>, s: { id: string; price_cents: number }, proId: string) => ov.get(`${proId}:${s.id}`)?.price_cents ?? s.price_cents;
+const durationFor = (ov: Map<string, Override>, s: { id: string; duration_min: number }, proId: string) => ov.get(`${proId}:${s.id}`)?.duration_min ?? s.duration_min;
+const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 async function listServices(ctx: Ctx): Promise<Result> {
   const { data, error } = await db
     .from("services")
@@ -171,19 +190,24 @@ async function listServices(ctx: Ctx): Promise<Result> {
     .order("category")
     .order("name");
   if (error) throw error;
+  const ov = await overrides(ctx);
   return {
     ok: true,
+    observacao: "Quando um profissional tem preço ou duração próprios, eles aparecem nele; senão valem o preço e a duração do serviço.",
     servicos: (data ?? []).map((s: any) => ({
       id: s.id,
       nome: s.name,
       categoria: s.category,
       duracao_min: s.duration_min,
-      preco: (s.price_cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+      preco: brl(s.price_cents),
       descricao: s.description,
       profissionais: (s.professional_services ?? [])
         .map((ps: any) => ps.professionals)
         .filter((p: any) => p?.active)
-        .map((p: any) => ({ id: p.id, nome: p.name })),
+        .map((p: any) => {
+          const pc = priceFor(ov, s, p.id), du = durationFor(ov, s, p.id);
+          return { id: p.id, nome: p.name, ...(pc !== s.price_cents ? { preco: brl(pc) } : {}), ...(du !== s.duration_min ? { duracao_min: du } : {}) };
+        }),
     })),
   };
 }
@@ -243,11 +267,15 @@ async function searchSlots(ctx: Ctx, serviceId: string, date: string, profession
   if (pros.length === 0) return { ok: false, erro: "nenhum profissional ativo faz esse serviço" };
   const result = [];
   const lead = leadOf(ctx), hoje = utcToLocal(new Date(), ctx.timeZone).date;
+  const ov = await overrides(ctx, serviceId);
   for (const p of pros) {
-    const slots = await slotsFor(ctx, p.id, date, service.duration_min);
+    const dur = durationFor(ov, service, p.id);
+    const slots = await slotsFor(ctx, p.id, date, dur);
     result.push({
       profissional_id: p.id,
       profissional: p.name,
+      preco: brl(priceFor(ov, service, p.id)),
+      duracao_min: dur,
       // todos os inícios possíveis (passo de 15 min); não cortar, senão a tarde some
       horarios: slots.map((s) => utcToLocal(s, ctx.timeZone).time),
       expediente_no_dia: slots.expediente.length ? slots.expediente : "não trabalha nesse dia (sem horário cadastrado)",
@@ -257,7 +285,8 @@ async function searchSlots(ctx: Ctx, serviceId: string, date: string, profession
   return {
     ok: true, servico: service.name, data: date, duracao_min: service.duration_min, opcoes: result,
     regras: [
-      `Só aparecem inícios em que o serviço inteiro (${service.duration_min} min) cabe antes do fim do expediente e não encosta em 'ocupados'.`,
+      `Só aparecem inícios em que o serviço inteiro (a duração de cada profissional, em 'duracao_min' da opção) cabe antes do fim do expediente e não encosta em 'ocupados'.`,
+      "Se o preço for diferente entre os profissionais, informe o preço de quem a cliente escolher.",
       date === hoje ? `Pelo WhatsApp só dá para marcar com ${lead} min de antecedência: hoje, nada antes de ${utcToLocal(new Date(Date.now() + lead * 60_000), ctx.timeZone).time}.` : "",
       "Se o horário pedido não estiver em 'horarios', explique o motivo real com esses dados (fora do expediente, antecedência mínima, ocupado ou o serviço não cabe até o fim do expediente). Nunca diga que a agenda mudou ou que há bloqueio se 'ocupados' estiver vazio.",
     ].filter(Boolean),
@@ -270,11 +299,13 @@ async function book(ctx: Ctx, a: { servico_id: string; profissional_id: string; 
   const pros = await professionalsFor(ctx, a.servico_id, a.profissional_id);
   if (pros.length === 0) return { ok: false, erro: "esse profissional não faz esse serviço" };
   const start = localToUtc(a.data, a.hora, ctx.timeZone);
-  const free = await slotsFor(ctx, a.profissional_id, a.data, service.duration_min);
+  const ov = await overrides(ctx, a.servico_id);
+  const dur = durationFor(ov, service, a.profissional_id);
+  const free = await slotsFor(ctx, a.profissional_id, a.data, dur);
   if (!free.some((s) => s.getTime() === start.getTime())) {
     return { ok: false, erro: "horário indisponível; busque os horários de novo" };
   }
-  const end = new Date(start.getTime() + service.duration_min * 60_000);
+  const end = new Date(start.getTime() + dur * 60_000);
   const { data, error } = await db.from("appointments").insert({
     tenant_id: ctx.tenantId,
     unit_id: ctx.unitId,
@@ -282,7 +313,7 @@ async function book(ctx: Ctx, a: { servico_id: string; profissional_id: string; 
     professional_id: a.profissional_id,
     service_id: a.servico_id,
     period: toRange(start, end),
-    price_cents: service.price_cents,
+    price_cents: priceFor(ov, service, a.profissional_id),
     source: "whatsapp_ai",
   }).select("id").single();
   if (error) {
@@ -320,7 +351,7 @@ async function myAppointments(ctx: Ctx): Promise<Result> {
 
 async function ownAppointment(ctx: Ctx, id: string) {
   const { data } = await db.from("appointments")
-    .select("id, period, status, service_id, professional_id, services(name, duration_min)")
+    .select("id, period, status, service_id, professional_id, price_cents, services(name, duration_min, price_cents)")
     .eq("tenant_id", ctx.tenantId).eq("client_id", ctx.clientId).eq("id", id).maybeSingle();
   return data as any;
 }
@@ -333,13 +364,18 @@ async function reschedule(ctx: Ctx, a: { agendamento_id: string; data: string; h
     const pros = await professionalsFor(ctx, appt.service_id, proId);
     if (pros.length === 0) return { ok: false, erro: "esse profissional não faz esse serviço" };
   }
-  const duration = appt.services.duration_min as number;
+  const ov = await overrides(ctx, appt.service_id);
+  const serv = { id: appt.service_id as string, duration_min: appt.services.duration_min as number, price_cents: appt.services.price_cents as number };
+  const duration = durationFor(ov, serv, proId);
+  // trocou de profissional: o preço passa a ser o do novo profissional
+  const novoPreco = proId !== appt.professional_id ? priceFor(ov, serv, proId) : appt.price_cents;
   const start = localToUtc(a.data, a.hora, ctx.timeZone);
   const free = await slotsFor(ctx, proId, a.data, duration, appt.id);
   if (!free.some((s) => s.getTime() === start.getTime())) return { ok: false, erro: "horário indisponível" };
   const { error } = await db.from("appointments").update({
     professional_id: proId,
     period: toRange(start, new Date(start.getTime() + duration * 60_000)),
+    price_cents: novoPreco,
     status: "scheduled",
     updated_at: new Date().toISOString(),
   }).eq("tenant_id", ctx.tenantId).eq("id", appt.id);
