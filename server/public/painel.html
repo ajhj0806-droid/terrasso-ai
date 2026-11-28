@@ -471,6 +471,35 @@
   #agKpis .kg.fin .kpi { background:var(--tint); } #agKpis .kg.fin .kpi b { color:var(--brand); }
   .lado-lista label.todas { font-weight:600; }
   @media (max-width:700px) { .grade-wrap { max-height:none; } }
+  /* ===== gerencial: ajustes visuais (crítica de design) =====
+     regra de cor: terracota = dinheiro, verde = operação (KPIs, gráficos e barras dos rankings) */
+  #tab-gerencial h2.ge-h { font-family:inherit; font-weight:700; letter-spacing:-.01em; }
+  .ge-per.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+  .ge-per.on:hover { background:var(--brand); filter:brightness(1.06); }
+  .ge-grid { align-items:start; }
+  .ge-grp { display:flex; align-items:center; gap:6px; margin:12px 0 5px; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+  .ge-grp::before, .ge-tit::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--brand); display:inline-block; }
+  .ge-grp.op::before, .ge-tit.op::before { background:var(--sage); }
+  .ge-tit { display:inline-flex; align-items:center; gap:7px; }
+  .ge-kfin, .ge-kop { display:grid; gap:8px; }
+  .ge-kfin { grid-template-columns:1.25fr 1.25fr 1.25fr 1fr; }
+  .ge-kop { grid-template-columns:repeat(6, minmax(0, 1fr)); }
+  .ge-k { background:#fff; border:1px solid var(--line); border-top:3px solid var(--brand); border-radius:12px; padding:9px 12px 8px; min-width:0; cursor:default; font-variant-numeric:tabular-nums; }
+  .ge-kop .ge-k { border-top-color:var(--sage); }
+  .ge-k .ge-t { display:block; font-size:12px; font-weight:600; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ge-k b { display:block; font-size:18px; font-weight:700; color:var(--ink); margin:2px 0 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ge-k.dest { background:var(--tint); }
+  .ge-k.dest b { font-size:26px; letter-spacing:-.01em; }
+  .ge-k .ge-var { min-height:0; }
+  @media (max-width:1100px) { .ge-kfin { grid-template-columns:repeat(2, minmax(0, 1fr)); } .ge-kop { grid-template-columns:repeat(3, minmax(0, 1fr)); } }
+  @media (max-width:600px) { .ge-kop { grid-template-columns:repeat(2, minmax(0, 1fr)); } .ge-k.dest b { font-size:21px; } }
+  .ge-bv:empty { visibility:hidden; }
+  .ge-bv { font-weight:600; color:var(--ink); font-size:10px; }
+  .ge-b.vazio .ge-bl { opacity:.55; }
+  .ge-nota { font-size:11.5px; margin:6px 0 0; }
+  .ge-tab td.n, .ge-tab th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .ge-tab td:last-child:not(.n) { padding-left:14px; }
+  .ge-mini.q i { background:var(--sage); }
 </style>
 </head>
 <body>
@@ -819,35 +848,35 @@
     <!-- Caixa do dia -->
     <div id="tab-gerencial" class="hidden">
       <div class="card">
-        <h2 style="margin-top:0">Gerencial</h2>
+        <h2 style="margin-top:0" class="ge-h">Gerencial</h2>
         <div class="ag-top" style="flex-wrap:wrap">
           <button class="ghost" id="geAntes" aria-label="Período anterior">‹</button>
           <input type="date" id="geDe" aria-label="De"><span class="muted">até</span><input type="date" id="geAte" aria-label="Até">
           <button class="ghost" id="geDepois" aria-label="Próximo período">›</button>
-          <button class="ghost" data-geper="hoje">Hoje</button>
-          <button class="ghost" data-geper="mes">Este mês</button>
-          <button class="ghost" data-geper="mesant">Mês passado</button>
-          <button class="ghost" data-geper="30">Últimos 30 dias</button>
-          <button class="ghost" data-geper="ano">Este ano</button>
+          <button class="ghost ge-per" data-geper="hoje">Hoje</button>
+          <button class="ghost ge-per" data-geper="mes">Este mês</button>
+          <button class="ghost ge-per" data-geper="mesant">Mês passado</button>
+          <button class="ghost ge-per" data-geper="30">Últimos 30 dias</button>
+          <button class="ghost ge-per" data-geper="ano">Este ano</button>
           <b id="geTitulo" style="flex:1"></b>
           <button class="ghost" id="geXlsx">Baixar relatório (xlsx)</button>
         </div>
         <p class="muted" style="font-size:12px;margin:6px 0 0" id="geComp"></p>
-        <div class="kpis ge-kpis" id="geKpis"></div>
+        <div id="geKpis"></div>
       </div>
       <div class="ge-grid">
-        <div class="card"><b>Faturamento por dia</b><div id="geGrFat" class="ge-graf"></div></div>
-        <div class="card"><b>Ocupação por dia</b><div id="geGrOcup" class="ge-graf"></div></div>
+        <div class="card"><b class="ge-tit fin">Faturamento por dia</b><div id="geGrFat" class="ge-graf"></div></div>
+        <div class="card"><b class="ge-tit op">Ocupação por dia</b><div id="geGrOcup" class="ge-graf"></div><p class="muted ge-nota" id="geOcNota"></p></div>
       </div>
       <div class="ge-grid">
-        <div class="card"><b>Melhores clientes</b><div class="ge-ord" data-geord="cli"></div><table><thead><tr><th>Cliente</th><th>Atend.</th><th>Valor</th><th>Ticket médio</th><th></th></tr></thead><tbody id="geCli"></tbody></table></div>
-        <div class="card"><b>Melhores profissionais</b><div class="ge-ord" data-geord="prof"></div><table><thead><tr><th>Profissional</th><th>Atend.</th><th>Valor</th><th>Ticket médio</th><th>Ocupação</th></tr></thead><tbody id="geProf"></tbody></table></div>
+        <div class="card"><b>Melhores clientes</b><div class="ge-ord" data-geord="cli"></div><table class="ge-tab"><thead><tr><th>Cliente</th><th class="n">Atend.</th><th class="n">Valor</th><th class="n">Ticket médio</th><th></th></tr></thead><tbody id="geCli"></tbody></table></div>
+        <div class="card"><b>Melhores profissionais</b><div class="ge-ord" data-geord="prof"></div><table class="ge-tab"><thead><tr><th>Profissional</th><th class="n">Atend.</th><th class="n">Valor</th><th class="n">Ticket médio</th><th class="n">Ocupação</th></tr></thead><tbody id="geProf"></tbody></table></div>
       </div>
       <div class="ge-grid">
-        <div class="card"><b>Serviços mais vendidos</b><div class="ge-ord" data-geord="serv"></div><table><thead><tr><th>Serviço</th><th>Qtd.</th><th>Valor</th><th></th></tr></thead><tbody id="geServ"></tbody></table></div>
-        <div class="card"><b>Produtos mais vendidos</b><div class="ge-ord" data-geord="prod"></div><table><thead><tr><th>Produto</th><th>Qtd.</th><th>Valor</th><th></th></tr></thead><tbody id="geProd"></tbody></table></div>
+        <div class="card"><b>Serviços mais vendidos</b><div class="ge-ord" data-geord="serv"></div><table class="ge-tab"><thead><tr><th>Serviço</th><th class="n">Qtd.</th><th class="n">Valor</th><th></th></tr></thead><tbody id="geServ"></tbody></table></div>
+        <div class="card"><b>Produtos mais vendidos</b><div class="ge-ord" data-geord="prod"></div><table class="ge-tab"><thead><tr><th>Produto</th><th class="n">Qtd.</th><th class="n">Valor</th><th></th></tr></thead><tbody id="geProd"></tbody></table></div>
       </div>
-      <div class="card"><b>Agenda do período</b><table><thead><tr><th>Situação</th><th>Quantidade</th><th>%</th><th>Valor</th></tr></thead><tbody id="geAg"></tbody></table>
+      <div class="card"><b>Agenda do período</b><table class="ge-tab"><thead><tr><th>Situação</th><th class="n">Quantidade</th><th class="n">%</th><th class="n">Valor</th></tr></thead><tbody id="geAg"></tbody></table>
         <p class="muted" style="font-size:12px;margin-bottom:0">Faturamento, despesas e resultado usam a mesma conta do Caixa (comandas fechadas no período, comissões, custos, taxas de cartão, lançamentos e despesas da sede). Ocupação = minutos com atendimento ÷ minutos de trabalho na escala (menos bloqueios). Os rankings vêm das comandas fechadas no período. Sessão de pacote entra com o valor proporcional (preço do pacote ÷ soma dos preços avulsos × preço avulso do serviço); no ranking de clientes conta o que a cliente consumiu, sem a compra do pacote ou do crédito, para não contar duas vezes.</p>
       </div>
     </div>
@@ -1039,7 +1068,7 @@
 </details>
 
 <details><summary>8. Gerencial, Faturamento e Projeções (administrador)</summary>
-<p><b>Gerencial</b>: indicadores do período comparados ao período anterior (faturamento, despesas, resultado, ticket médio, atendimentos, agendamentos, cancelamentos, faltas, ocupação), rankings de clientes, profissionais, serviços e produtos (com ticket médio) e exportação para Excel.</p>
+<p><b>Gerencial</b>: indicadores do período comparados ao período anterior (faturamento, despesas, resultado, ticket médio, atendimentos, agendamentos, cancelamentos, faltas, ocupação), rankings de clientes, profissionais, serviços e produtos (com ticket médio) e exportação para Excel. Os atalhos de período (Hoje, Este mês...) ficam destacados quando estão em uso. Cores: terracota = dinheiro, verde = operação. A <b>ocupação</b> é contada a partir do primeiro agendamento real (não cancelado) no sistema, para que os dias anteriores ao uso da agenda não derrubem a taxa.</p>
 <p><b>Faturamento</b>: relatório por período com planilha.</p>
 <p><b>Projeções</b>: simula a meta (resultado ou faturamento), calcula quantos atendimentos cada profissional precisa e compara com o que já está agendado.</p>
 </details>
@@ -3998,19 +4027,25 @@ const sedeDe = (settings) => Array.isArray(settings.caixa_sede) ? settings.caixa
 let ge = null;
 function gePer() { const de = $("geDe").value || hojeLocal(); let ate = $("geAte").value || de; if (ate < de) ate = de; return { de, ate }; }
 const geNDias = (de, ate) => Math.round((new Date(ate + "T12:00:00Z") - new Date(de + "T12:00:00Z")) / 86400000) + 1;
-document.querySelectorAll("[data-geper]").forEach(b => b.onclick = () => {
-  const h = hojeLocal(), t = b.dataset.geper; let de = h, ate = h;
+function gePreset(t) {
+  const h = hojeLocal(); let de = h, ate = h;
   if (t === "mes") { de = h.slice(0, 8) + "01"; }
   if (t === "mesant") { ate = somarDias(h.slice(0, 8) + "01", -1); de = ate.slice(0, 8) + "01"; }
   if (t === "30") de = somarDias(h, -29);
   if (t === "ano") de = h.slice(0, 5) + "01-01";
+  return { de, ate };
+}
+// destaca o atalho de período que corresponde às datas escolhidas (nenhum, se for um período livre)
+function geMarcarPer(de, ate) { document.querySelectorAll("[data-geper]").forEach(b => { const p = gePreset(b.dataset.geper); b.classList.toggle("on", p.de === de && p.ate === ate); }); }
+document.querySelectorAll("[data-geper]").forEach(b => b.onclick = () => {
+  const { de, ate } = gePreset(b.dataset.geper);
   $("geDe").value = de; $("geAte").value = ate; carregarGerencial();
 });
 $("geAntes").onclick = () => { const { de, ate } = gePer(), n = geNDias(de, ate); $("geDe").value = somarDias(de, -n); $("geAte").value = somarDias(ate, -n); carregarGerencial(); };
 $("geDepois").onclick = () => { const { de, ate } = gePer(), n = geNDias(de, ate); $("geDe").value = somarDias(de, n); $("geAte").value = somarDias(ate, n); carregarGerencial(); };
 $("geDe").onchange = $("geAte").onchange = () => carregarGerencial();
 
-async function geDados(de, ate, settings) {
+async function geDados(de, ate, settings, inicio) {
   const C = await cdCalcular(de, ate, settings); if (!C) return null;
   const ini = localParaUtc(de, "00:00"), fim = localParaUtc(somarDias(ate, 1), "00:00");
   const [a, b] = await Promise.all([
@@ -4040,10 +4075,12 @@ async function geDados(de, ate, settings) {
     for (const g of c.payments || []) if (g.method === "prepaid") fatDia[dia] = (fatDia[dia] || 0) - g.amount_cents;
     if (c.client_id) soma(R.cli, c.client_id, c.clients?.full_name || "Cliente", nServ, vCli);
   }
-  // ocupação: minutos atendidos ÷ minutos de trabalho (escala menos bloqueios), por dia e por profissional
-  const dias = cdDias(de, ate), ativos = profissionais.filter(p => p.active), ocDia = {}, ocProf = {};
+  // ocupação: minutos atendidos ÷ minutos de trabalho (escala menos bloqueios), por dia e por profissional.
+  // Só conta a partir do início do uso da agenda (primeiro agendamento não cancelado): antes disso a escala
+  // existia, mas os atendimentos não eram lançados no sistema, e a capacidade desses dias derrubava a taxa.
+  const dias = cdDias(de, ate), diasOc = inicio ? dias.filter(d => d >= inicio) : [], ativos = profissionais.filter(p => p.active), ocDia = {}, ocProf = {};
   const sobre = (a1, a2, b1, b2) => Math.max(0, Math.min(a2, b2) - Math.max(a1, b1));
-  for (const d of dias) {
+  for (const d of diasOc) {
     const d0 = localParaUtc(d, "00:00").getTime(), wd = diaSemana(d);
     for (const p of ativos) {
       let trab = 0, ocup = 0;
@@ -4061,11 +4098,11 @@ async function geDados(de, ate, settings) {
   const conta = (...st) => ags.filter(x => st.includes(x.status) && x.ini >= ini && x.ini < fim);
   const doPer = ags.filter(x => x.ini >= ini && x.ini < fim);
   const nAtend = Object.values(R.serv).reduce((t, x) => t + x.q, 0);
-  return { C, R, fatDia, ocDia, ocProf, ocup: tot.t ? tot.o / tot.t : 0, dias, ags: doPer, conta,
+  return { C, R, fatDia, ocDia, ocProf, ocup: tot.t ? tot.o / tot.t : null, dias, ags: doPer, conta,
     k: { fat: C.rec, desp: C.desp, res: C.res, atend: nAtend, agend: doPer.length, canc: conta("cancelled").length, faltas: conta("no_show").length,
       ticket: C.nComandas ? Math.round(C.rec / C.nComandas) : 0, comandas: C.nComandas } };
 }
-let agEscalas = [];
+let agEscalas = [], geInicio;
 async function carregarGerencial() {
   if (!tenantId || !ehAdmin()) return;
   if (!$("geDe").value) { const h = hojeLocal(); $("geDe").value = h.slice(0, 8) + "01"; $("geAte").value = h; }
@@ -4076,33 +4113,42 @@ async function carregarGerencial() {
   const [st, es] = await Promise.all([sb.from("tenants").select("settings").eq("id", tenantId).single(), sb.from("work_schedules").select("professional_id, weekday, start_time, end_time").eq("tenant_id", tenantId)]);
   if (st.error) return erro(st.error); if (es.error) return erro(es.error);
   agEscalas = es.data;
+  // início do uso da agenda: primeiro agendamento que não foi cancelado (agendamentos de teste cancelados não contam)
+  if (geInicio === undefined) {
+    const pr = await sb.from("appointments").select("period").eq("tenant_id", tenantId).neq("status", "cancelled").order("period").limit(1);
+    geInicio = pr.error || !pr.data?.length ? null : new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(lerFaixa(pr.data[0].period).ini);
+  }
+  geMarcarPer(de, ate);
   const settings = st.data?.settings || {}; cdSede = sedeDe(settings);
-  const A = await geDados(de, ate, settings); if (!A) return;
-  const P = await geDados(pde, pate, settings);
+  const A = await geDados(de, ate, settings, geInicio); if (!A) return;
+  const P = await geDados(pde, pate, settings, geInicio);
   ge = { de, ate, A, P };
   $("geComp").textContent = `▲▼ comparação com o período anterior de mesmo tamanho (${fmtDia(pde)} a ${fmtDia(pate)}). Verde = melhorou, vermelho = piorou. Passe o mouse num quadro para ver o valor anterior.`;
-  const var_ = (a, b, menorMelhor, dinheiro) => { if (!P || !b) return '<span class="ge-var">—</span>';
+  // sem base de comparação (período anterior vazio): não mostra nada, em vez de um "—" que só faz ruído
+  const var_ = (a, b, menorMelhor, dinheiro) => { if (!P || !b || a == null) return "";
     const v = (a - b) / Math.abs(b) * 100; if (Math.abs(v) < 0.5) return '<span class="ge-var">= anterior</span>';
     const bom = menorMelhor ? v < 0 : v > 0, txt = dinheiro && (a < 0 || b < 0) ? (a > b ? "+ " : "− ") + reais(Math.abs(a - b)) : Math.abs(v).toLocaleString("pt-BR", { maximumFractionDigits: 0 }) + "%";
     return `<span class="ge-var ${bom ? "bom" : "ruim"}" title="Período anterior: ${dinheiro ? reais(b) : typeof b === "number" && b < 1 ? pct(b) : b}">${v > 0 ? "▲" : "▼"} ${txt}</span>`; };
   const pct = (x) => (x * 100).toLocaleString("pt-BR", { maximumFractionDigits: x < 0.1 ? 1 : 0 }) + "%";
   const k = A.k, pk = P?.k || {}, taxaF = k.agend ? k.faltas / k.agend : 0;
   const itens = [
-    ["fin", "Faturamento", reais(k.fat), var_(k.fat, pk.fat, false, true)],
+    ["fin dest", "Faturamento", reais(k.fat), var_(k.fat, pk.fat, false, true)],
+    ["fin dest", "Resultado", `<span style="${k.res < 0 ? "color:var(--danger)" : "color:var(--ok)"}">${reais(k.res)}</span>`, var_(k.res, pk.res, false, true), "Faturamento − despesas"],
+    ["fin dest", "Ticket médio", reais(k.ticket), var_(k.ticket, pk.ticket, false, true), "Faturamento ÷ comandas fechadas"],
     ["fin", "Despesas", reais(k.desp), var_(k.desp, pk.desp, true, true)],
-    ["fin", "Resultado", `<span style="${k.res < 0 ? "color:var(--danger)" : "color:var(--ok)"}">${reais(k.res)}</span>`, var_(k.res, pk.res, false, true)],
-    ["fin", "Ticket médio", reais(k.ticket), var_(k.ticket, pk.ticket, false, true), "Faturamento ÷ comandas fechadas"],
     ["op", "Atendimentos", k.atend, var_(k.atend, pk.atend), "Serviços feitos (comandas fechadas)"],
     ["op", "Agendados", k.agend, var_(k.agend, pk.agend)],
     ["op", "Cancelados", k.canc, var_(k.canc, pk.canc, true)],
     ["op", `Faltas · ${pct(taxaF)}`, k.faltas, var_(k.faltas, pk.faltas, true), "Faltas e taxa de no-show (faltas ÷ agendamentos)"],
-    ["op", "Ocupação", pct(A.ocup), var_(A.ocup, P?.ocup), "Minutos com atendimento ÷ minutos de trabalho na escala (menos bloqueios), de todos os profissionais ativos"],
+    ["op", "Ocupação", A.ocup == null ? "—" : pct(A.ocup), var_(A.ocup, P?.ocup), "Minutos com atendimento ÷ minutos de trabalho na escala (menos bloqueios), de todos os profissionais ativos" + (geInicio ? `, contando a partir de ${fmtDia(geInicio)} (início do uso da agenda)` : "")],
     ["op", "Comandas", k.comandas, var_(k.comandas, pk.comandas), "Comandas fechadas no período"],
   ];
-  $("geKpis").innerHTML = itens.map(([g, t, v, c, dica]) => `<div class="kpi ge-k ${g}" ${dica ? `title="${esc(dica)}"` : ""}><span class="ge-t">${t}</span><b>${v}</b>${c}</div>`).join("");
+  const card = ([g, t, v, c, dica]) => `<div class="ge-k ${g}" ${dica ? `title="${esc(dica)}"` : ""}><span class="ge-t">${t}</span><b>${v}</b>${c}</div>`;
+  $("geKpis").innerHTML = `<div class="ge-grp fin">Financeiro</div><div class="ge-kfin">${itens.filter(x => x[0].startsWith("fin")).map(card).join("")}</div>`
+    + `<div class="ge-grp op">Operação</div><div class="ge-kop">${itens.filter(x => x[0] === "op").map(card).join("")}</div>`;
   // gráficos
   const barras = (lista, fmt, cor) => { const mx = Math.max(1, ...lista.map(x => x.v));
-    return lista.length ? `<div class="ge-barras">${lista.map(x => `<div class="ge-b" title="${esc(x.r)}: ${fmt(x.v)}"><span class="ge-bv">${fmt(x.v)}</span><i style="height:${Math.max(2, x.v / mx * 100)}%;background:${cor}"></i><span class="ge-bl">${esc(x.l)}</span></div>`).join("")}</div>` : '<p class="muted">Sem dados no período.</p>'; };
+    return lista.length ? `<div class="ge-barras">${lista.map(x => `<div class="ge-b${x.v ? "" : " vazio"}" title="${esc(x.r)}: ${fmt(x.v)}"><span class="ge-bv">${x.v ? fmt(x.v) : ""}</span><i style="height:${Math.max(2, x.v / mx * 100)}%;background:${cor}"></i><span class="ge-bl">${esc(x.l)}</span></div>`).join("")}</div>` : '<p class="muted">Sem dados no período.</p>'; };
   const porMes = A.dias.length > 62;
   const agrupa = (fn) => { const m = {}; for (const d of A.dias) { const ch = porMes ? d.slice(0, 7) : d; const r = fn(d); const x = m[ch] || (m[ch] = { a: 0, b: 0 }); x.a += r[0]; x.b += r[1]; } return m; };
   const rot = (ch) => porMes ? ch.slice(5, 7) + "/" + ch.slice(2, 4) : ch.slice(8, 10) + (A.dias.length > 7 ? "" : "/" + ch.slice(5, 7));
@@ -4110,24 +4156,26 @@ async function carregarGerencial() {
   const mf = agrupa(d => [A.fatDia[d] || 0, 0]);
   $("geGrFat").innerHTML = barras(Object.entries(mf).map(([ch, x]) => ({ l: rot(ch), r: porMes ? ch : fmtDia(ch), v: x.a })), kf, "var(--brand)");
   const mo = agrupa(d => [A.ocDia[d]?.o || 0, A.ocDia[d]?.t || 0]);
+  $("geOcNota").textContent = !geInicio ? "Ainda não há agendamentos para calcular a ocupação." : geInicio > de ? `Contada a partir de ${fmtDia(geInicio)}, quando a agenda começou a ser usada. Antes disso a escala existia, mas os atendimentos não estavam no sistema.` : "";
   $("geGrOcup").innerHTML = barras(Object.entries(mo).filter(([, x]) => x.b).map(([ch, x]) => ({ l: rot(ch), r: porMes ? ch : fmtDia(ch), v: Math.round(x.a / x.b * 100) })), (v) => v + "%", "var(--sage)");
   // rankings
   const ordem = {}; document.querySelectorAll("[data-geord]").forEach(d => { ordem[d.dataset.geord] = d.dataset.por || "v"; });
   const rank = (m, por) => Object.entries(m).map(([id, x]) => ({ id, ...x })).sort((a, b) => b[por] - a[por] || b.v - a.v).slice(0, 15);
   const fq = (q) => Number(q).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
-  const linhas = (lista, extra, ticket) => { const mx = Math.max(1, ...lista.map(x => x.v));
-    return lista.map((x, i) => `<tr><td>${i + 1}. ${esc(x.nome)}</td><td>${fq(x.q)}</td><td>${reais(x.v)}</td>${ticket ? `<td>${x.q ? reais(Math.round(x.v / x.q)) : "—"}</td>` : ""}<td style="min-width:90px">${extra ? extra(x) : `<div class="ge-mini"><i style="width:${x.v / mx * 100}%"></i></div>`}</td></tr>`).join("") || `<tr><td colspan="${ticket ? 5 : 4}" class="muted">Nada no período.</td></tr>`; };
-  $("geCli").innerHTML = linhas(rank(A.R.cli, ordem.cli), null, true);
-  $("geProf").innerHTML = linhas(rank(A.R.prof, ordem.prof), (x) => { const o = A.ocProf[x.id]; return o?.t ? pct(o.o / o.t) : "—"; }, true);
-  $("geServ").innerHTML = linhas(rank(A.R.serv, ordem.serv));
-  $("geProd").innerHTML = linhas(rank(A.R.prod, ordem.prod));
+  // barra do ranking segue a ordenação: valor (dinheiro) em terracota, quantidade em verde
+  const linhas = (lista, extra, ticket, por) => { const ch = por === "q" ? "q" : "v", mx = Math.max(1, ...lista.map(x => x[ch]));
+    return lista.map((x, i) => `<tr><td>${i + 1}. ${esc(x.nome)}</td><td class="n">${fq(x.q)}</td><td class="n">${reais(x.v)}</td>${ticket ? `<td class="n">${x.q ? reais(Math.round(x.v / x.q)) : "—"}</td>` : ""}${extra ? `<td class="n">${extra(x)}</td>` : `<td style="min-width:90px"><div class="ge-mini${ch === "q" ? " q" : ""}"><i style="width:${x[ch] / mx * 100}%"></i></div></td>`}</tr>`).join("") || `<tr><td colspan="${ticket ? 5 : 4}" class="muted">Nada no período.</td></tr>`; };
+  $("geCli").innerHTML = linhas(rank(A.R.cli, ordem.cli), null, true, ordem.cli);
+  $("geProf").innerHTML = linhas(rank(A.R.prof, ordem.prof), (x) => { const o = A.ocProf[x.id]; return o?.t ? pct(o.o / o.t) : "—"; }, true, ordem.prof);
+  $("geServ").innerHTML = linhas(rank(A.R.serv, ordem.serv), null, false, ordem.serv);
+  $("geProd").innerHTML = linhas(rank(A.R.prod, ordem.prod), null, false, ordem.prod);
   document.querySelectorAll("[data-geord]").forEach(d => { const por = d.dataset.por || "v";
     d.innerHTML = `<span class="seg"><button type="button" data-o="v" class="${por === "v" ? "on" : ""}">Por valor</button><button type="button" data-o="q" class="${por === "q" ? "on" : ""}">Por quantidade</button></span>`;
     d.querySelectorAll("[data-o]").forEach(b => b.onclick = () => { d.dataset.por = b.dataset.o; carregarGerencial(); }); });
   // situação da agenda
   const SIT = [["done", "Concluídos"], ["scheduled", "Agendados (a confirmar)"], ["confirmed", "Confirmados"], ["checked_in", "Chegou"], ["in_service", "Atendendo"], ["cancelled", "Cancelados"], ["no_show", "Faltas"]];
-  $("geAg").innerHTML = SIT.map(([st, t]) => { const l = A.conta(st); if (!l.length) return ""; return `<tr><td>${t}</td><td>${l.length}</td><td>${pct(l.length / (A.ags.length || 1))}</td><td>${reais(l.reduce((s, x) => s + (x.price_cents || 0), 0))}</td></tr>`; }).join("")
-    + `<tr class="tot"><td><b>Total de agendamentos</b></td><td><b>${A.ags.length}</b></td><td></td><td><b>${reais(A.ags.reduce((s, x) => s + (x.price_cents || 0), 0))}</b></td></tr>`;
+  $("geAg").innerHTML = SIT.map(([st, t]) => { const l = A.conta(st); if (!l.length) return ""; return `<tr><td>${t}</td><td class="n">${l.length}</td><td class="n">${pct(l.length / (A.ags.length || 1))}</td><td class="n">${reais(l.reduce((s, x) => s + (x.price_cents || 0), 0))}</td></tr>`; }).join("")
+    + `<tr class="tot"><td><b>Total de agendamentos</b></td><td class="n"><b>${A.ags.length}</b></td><td></td><td class="n"><b>${reais(A.ags.reduce((s, x) => s + (x.price_cents || 0), 0))}</b></td></tr>`;
 }
 $("geXlsx").onclick = async () => {
   if (!ge) return;
@@ -4138,7 +4186,7 @@ $("geXlsx").onclick = async () => {
     ws.columns.forEach((c, i) => { c.width = Math.min(50, Math.max(12, ...[cab[i], ...linhas.map(l => l[i])].map(v => String(v ?? "").length + 2))); }); };
   const k = A.k, r = (v) => Math.round(v) / 100;
   aba("Resumo", ["Indicador", "Valor"], [["Período", `${fmtDia(de)} a ${fmtDia(ate)}`], ["Faturamento (R$)", r(k.fat)], ["Despesas (R$)", r(k.desp)], ["Resultado (R$)", r(k.res)], ["Ticket médio (R$)", r(k.ticket)],
-    ["Comandas fechadas", k.comandas], ["Atendimentos", k.atend], ["Agendamentos", k.agend], ["Cancelamentos", k.canc], ["Faltas", k.faltas], ["Taxa de ocupação (%)", Math.round(A.ocup * 1000) / 10]]);
+    ["Comandas fechadas", k.comandas], ["Atendimentos", k.atend], ["Agendamentos", k.agend], ["Cancelamentos", k.canc], ["Faltas", k.faltas], ["Taxa de ocupação (%)", A.ocup == null ? "" : Math.round(A.ocup * 1000) / 10]]);
   const lst = (m) => Object.values(m).sort((a, b) => b.v - a.v).map(x => [x.nome, x.q, r(x.v)]);
   const tk = (x) => x.q ? r(Math.round(x.v / x.q)) : "";
   aba("Clientes", ["Cliente", "Atendimentos", "Valor (R$)", "Ticket médio (R$)"], Object.values(A.R.cli).sort((a, b) => b.v - a.v).map(x => [x.nome, x.q, r(x.v), tk(x)]));
